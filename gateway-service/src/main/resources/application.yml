@@ -1,6 +1,12 @@
 server:
   port: 8080
 spring:
+  config:
+    import: "configserver:"
+  cloud:
+    config:
+      uri: http://localhost:8888
+
   application:
     name: gateway-service
   cloud:
@@ -22,6 +28,7 @@ spring:
           uri: lb://trace-service
           predicates:
             - Path=/api/traces/**
+
 eureka:
   client:
     service-url:

@@ -1,6 +1,12 @@
 server:
   port: 8084
 spring:
+  config:
+    import: "configserver:"
+  cloud:
+    config:
+      uri: http://localhost:8888
+
   application:
     name: trace-service
   datasource:
@@ -17,6 +23,7 @@ spring:
       group-id: trace-group
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+
 eureka:
   client:
     service-url:
