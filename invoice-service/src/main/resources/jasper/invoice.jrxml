@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="invoice" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="12345678-1234-1234-1234-123456789012">
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="New Data Adapter"/>
+	<parameter name="invoiceNumber" class="java.lang.String"/>
+	<parameter name="issueDate" class="java.util.Date"/>
+	<parameter name="userId" class="java.lang.Integer"/>
+	<parameter name="clientId" class="java.lang.Integer"/>
+	<parameter name="baseAmount" class="java.lang.String"/>
+	<parameter name="vatPercentage" class="java.lang.String"/>
+	<parameter name="vatAmount" class="java.lang.String"/>
+	<parameter name="irpfPercentage" class="java.lang.String"/>
+	<parameter name="irpfAmount" class="java.lang.String"/>
+	<parameter name="rePercentage" class="java.lang.String"/>
+	<parameter name="reAmount" class="java.lang.String"/>
+	<parameter name="totalAmount" class="java.lang.String"/>
+	<parameter name="status" class="java.lang.String"/>
+	<parameter name="notes" class="java.lang.String"/>
+	<parameter name="iban" class="java.lang.String"/>
+	<parameter name="itemsDataSource" class="net.sf.jasperreports.engine.data.JRBeanCollectionDataSource"/>
+	<queryString language="SQL">
+		<![CDATA[]]>
+	</queryString>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="120" splitType="Stretch">
+			<rectangle>
+				<reportElement x="0" y="0" width="555" height="120" backcolor="#2C3E50" uuid="12345678-1234-1234-1234-123456789012"/>
+				<graphicElement>
+					<pen lineWidth="0.0"/>
+				</graphicElement>
+			</rectangle>
+			<staticText>
+				<reportElement x="20" y="20" width="200" height="40" forecolor="#FFFFFF" uuid="12345678-1234-1234-1234-123456789012">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<textElement>
+					<font size="28" isBold="true"/>
+				</textElement>
+				<text><![CDATA[FACTURA]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="400" y="30" width="135" height="30" forecolor="#FFFFFF" uuid="12345678-1234-1234-1234-123456789012"/>
+				<textElement textAlignment="Right">
+					<font size="18" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{invoiceNumber}]]></textFieldExpression>
+			</textField>
+			<textField pattern="dd/MM/yyyy">
+				<reportElement x="400" y="65" width="135" height="20" forecolor="#FFFFFF" uuid="12345678-1234-1234-1234-123456789012"/>
+				<textElement textAlignment="Right">
+					<font size="11"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{issueDate}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="400" y="45" width="135" height="15" forecolor="#FFFFFF" uuid="12345678-1234-1234-1234-123456789012"/>
+				<textElement textAlignment="Right">
+					<font size="9"/>
+				</textElement>
+				<text><![CDATA[Fecha de emisión:]]></text>
+			</staticText>
+		</band>
+	</title>
+	<pageHeader>
+		<band height="150" splitType="Stretch">
+			<rectangle>
+				<reportElement x="0" y="0" width="555" height="80" backcolor="#ECF0F1" uuid="12345678-1234-1234-1234-123456789012"/>
+				<graphicElement>
+					<pen lineWidth="0.0"/>
+				</graphicElement>
+			</rectangle>
+			<staticText>
+				<reportElement x="20" y="5" width="100" height="15" uuid="12345678-1234-1234-1234-123456789012">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<textElement>
+					<font size="11" isBold="true"/>
+				</textElement>
+				<text><![CDATA[EMISOR]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="300" y="5" width="100" height="15" uuid="12345678-1234-1234-1234-123456789012">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<textElement>
+					<font size="11" isBold="true"/>
+				</textElement>
+				<text><![CDATA[CLIENTE]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="20" y="25" width="260" height="45" uuid="12345678-1234-1234-1234-123456789012"/>
+				<textElement>
+					<font size="10"/>
+				</textElement>
+				<text><![CDATA[Usuario ID: (Información del emisor se rellenará desde la BD)
+Empresa emisora
+CIF/NIF: XXXXX
+Dirección completa]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="300" y="25" width="255" height="45" uuid="12345678-1234-1234-1234-123456789012"/>
+				<textElement>
+					<font size="10"/>
+				</textElement>
+				<text><![CDATA[Cliente ID: (Información del cliente se rellenará desde la BD)
+Nombre empresa cliente
+CIF/NIF: XXXXX
+Dirección completa cliente]]></text>
+			</staticText>
+			<line>
+				<reportElement x="0" y="80" width="555" height="1" forecolor="#BDC3C7" uuid="12345678-1234-1234-1234-123456789012"/>
+			</line>
+		</band>
+	</pageHeader>
+	<columnHeader>
+		<band height="30" splitType="Stretch">
+			<rectangle>
+				<reportElement x="0" y="0" width="555" height="30" backcolor="#34495E" uuid="12345678-1234-1234-1234-123456789012"/>
+				<graphicElement>
+					<pen lineWidth="0.0"/>
+				</graphicElement>
+			</rectangle>
+			<staticText>
+				<reportElement x="20" y="5" width="200" height="20" forecolor="#FFFFFF" uuid="12345678-1234-1234-1234-123456789012"/>
+				<textElement>
+					<font size="10" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Descripción]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="230" y="5" width="50" height="20" forecolor="#FFFFFF" uuid="12345678-1234-1234-1234-123456789012"/>
+				<textElement textAlignment="Center">
+					<font size="10" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Uds.]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="290" y="5" width="60" height="20" forecolor="#FFFFFF" uuid="12345678-1234-1234-1234-123456789012"/>
+				<textElement textAlignment="Right">
+					<font size="10" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Precio]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="360" y="5" width="60" height="20" forecolor="#FFFFFF" uuid="12345678-1234-1234-1234-123456789012"/>
+				<textElement textAlignment="Center">
+					<font size="10" isBold="true"/>
+				</textElement>
+				<text><![CDATA[IVA %]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="430" y="5" width="90" height="20" forecolor="#FFFFFF" uuid="12345678-1234-1234-1234-123456789012"/>
+				<textElement textAlignment="Right">
+					<font size="10" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Importe]]></text>
+			</staticText>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="25" splitType="Stretch">
+			<subreport>
+				<reportElement x="0" y="0" width="555" height="25" uuid="12345678-1234-1234-1234-123456789012"/>
+				<dataSourceExpression><![CDATA[$P{itemsDataSource}]]></dataSourceExpression>
+				<subreportExpression><![CDATA["jasper/invoice_items.jrxml"]]></subreportExpression>
+			</subreport>
+		</band>
+	</detail>
+	<summary>
+		<band height="150" splitType="Stretch">
+			<line>
+				<reportElement x="0" y="0" width="555" height="1" forecolor="#BDC3C7" uuid="12345678-1234-1234-1234-123456789012"/>
+			</line>
+			<staticText>
+				<reportElement x="350" y="10" width="80" height="20" uuid="12345678-1234-1234-1234-123456789012"/>
+				<textElement textAlignment="Right">
+					<font size="10" isBold="false"/>
+				</textElement>
+				<text><![CDATA[Base imponible:]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="440" y="10" width="80" height="20" uuid="12345678-1234-1234-1234-123456789012"/>
+				<textElement textAlignment="Right">
+					<font size="10"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{baseAmount}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="350" y="35" width="80" height="20" uuid="12345678-1234-1234-1234-123456789012"/>
+				<textElement textAlignment="Right">
+					<font size="10" isBold="false"/>
+				</textElement>
+				<text><![CDATA[IVA (21%):]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="440" y="35" width="80" height="20" uuid="12345678-1234-1234-1234-123456789012"/>
+				<textElement textAlignment="Right">
+					<font size="10"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{vatAmount}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="350" y="60" width="80" height="20" forecolor="#FFFFFF" backcolor="#2C3E50" uuid="12345678-1234-1234-1234-123456789012"/>
+				<textElement textAlignment="Right">
+					<font size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[TOTAL (€):]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="440" y="60" width="80" height="20" forecolor="#FFFFFF" backcolor="#2C3E50" uuid="12345678-1234-1234-1234-123456789012"/>
+				<textElement textAlignment="Right">
+					<font size="12" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{totalAmount}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="20" y="90" width="100" height="15" uuid="12345678-1234-1234-1234-123456789012"/>
+				<textElement>
+					<font size="10" isBold="true"/>
+				</textElement>
+				<text><![CDATA[OBSERVACIONES]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="20" y="110" width="515" height="35" uuid="12345678-1234-1234-1234-123456789012"/>
+				<textElement>
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{notes} != null ? "IBAN: " + $P{iban} + "\n" + $P{notes} : "IBAN: " + $P{iban}]]></textFieldExpression>
+			</textField>
+		</band>
+	</summary>
+</jasperReport>
