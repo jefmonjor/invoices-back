@@ -1,6 +1,12 @@
 server:
   port: 8082
 spring:
+  config:
+    import: "configserver:"
+  cloud:
+    config:
+      uri: http://localhost:8888
+
   application:
     name: user-service
   datasource:
@@ -11,6 +17,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
+
 eureka:
   client:
     service-url:

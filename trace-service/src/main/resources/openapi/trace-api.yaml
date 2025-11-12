@@ -1,0 +1,73 @@
+openapi: 3.0.3
+info:
+  title: Trace Service API
+  version: 1.0.0
+  description: API for managing trace logs (internal use).
+paths:
+  /traces:
+    get:
+      summary: Get all traces
+      description: Retrieve a list of trace logs, optionally filtered by invoiceId.
+      parameters:
+        - name: invoiceId
+          in: query
+          required: false
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TraceDTO'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    TraceDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        invoiceId:
+          type: integer
+          example: 1
+        userId:
+          type: integer
+          example: 1
+        action:
+          type: string
+          example: "Email Sent"
+        timestamp:
+          type: string
+          format: date-time
+          example: "2025-03-14T10:30:00Z"
+        details:
+          type: string
+          example: "Enviado a contacto@empresaxyz.com"
+      required:
+        - id
+        - invoiceId
+        - action
+        - timestamp
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 500
+        message:
+          type: string
+          example: "Internal server error"
+      required:
+        - code
+        - message
