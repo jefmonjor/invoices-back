@@ -1,8 +1,6 @@
-server:
-  port: 8888
 spring:
+  config:
+    import: "optional:configserver:"
   cloud:
     config:
-      server:
-        git:
-          uri: https://github.com/jefmonjor/invoices-config.git
+      uri: https://github.com/jefmonjor/invoices-back.git

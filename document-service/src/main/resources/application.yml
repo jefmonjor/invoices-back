@@ -1,8 +1,14 @@
 server:
-  port: 8084
+  port: 8083
 spring:
+  config:
+    import: "configserver:"
+  cloud:
+    config:
+      uri: http://localhost:8888
+
   application:
-    name: trace-service
+    name: document-service
   datasource:
     url: jdbc:postgresql://localhost:5432/invoicesdb
     username: user
@@ -11,12 +17,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
-  kafka:
-    bootstrap-servers: localhost:9092
-    consumer:
-      group-id: trace-group
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+
 eureka:
   client:
     service-url:
