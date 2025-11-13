@@ -1,7 +1,6 @@
 package com.invoices.invoice_service.dto;
 
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -10,30 +9,35 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDate;
+import java.math.BigDecimal;
 import java.util.List;
 
+/**
+ * Request DTO for creating a new invoice.
+ * Matches OpenAPI specification v2.0.
+ */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class CreateInvoiceRequest {
 
-    @NotNull(message = "El ID del cliente es obligatorio")
+    @NotNull(message = "Company ID is required")
+    private Long companyId;
+
+    @NotNull(message = "Client ID is required")
     private Long clientId;
 
-    @NotBlank(message = "El email del cliente es obligatorio")
-    @Email(message = "El email del cliente debe ser válido")
-    private String clientEmail;
+    @NotBlank(message = "Invoice number is required")
+    private String invoiceNumber;
 
-    @NotNull(message = "La fecha de la factura es obligatoria")
-    private LocalDate invoiceDate;
+    private BigDecimal irpfPercentage;
 
-    private LocalDate dueDate;
-
-    @NotEmpty(message = "La factura debe tener al menos un item")
-    @Valid
-    private List<CreateInvoiceItemRequest> items;
+    private BigDecimal rePercentage;
 
     private String notes;
+
+    @NotEmpty(message = "Invoice must have at least one item")
+    @Valid
+    private List<CreateInvoiceItemRequest> items;
 }

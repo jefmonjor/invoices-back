@@ -11,20 +11,30 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 
+/**
+ * Request DTO for creating an invoice item.
+ * Matches OpenAPI specification v2.0.
+ */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class CreateInvoiceItemRequest {
 
-    @NotBlank(message = "La descripción del item es obligatoria")
+    @NotBlank(message = "Description is required")
     private String description;
 
-    @NotNull(message = "La cantidad es obligatoria")
-    @Min(value = 1, message = "La cantidad debe ser al menos 1")
-    private Integer quantity;
+    @NotNull(message = "Units are required")
+    @Min(value = 1, message = "Units must be at least 1")
+    private Integer units;
 
-    @NotNull(message = "El precio unitario es obligatorio")
-    @DecimalMin(value = "0.01", message = "El precio unitario debe ser mayor a 0")
-    private BigDecimal unitPrice;
+    @NotNull(message = "Price is required")
+    @DecimalMin(value = "0.01", message = "Price must be greater than 0")
+    private BigDecimal price;
+
+    @NotNull(message = "VAT percentage is required")
+    @DecimalMin(value = "0.0", message = "VAT percentage must be non-negative")
+    private BigDecimal vatPercentage;
+
+    private BigDecimal discountPercentage;
 }
