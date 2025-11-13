@@ -24,7 +24,7 @@ public class InvoiceJpaMapper {
 
         InvoiceJpaEntity jpaEntity = new InvoiceJpaEntity();
         jpaEntity.setId(invoice.getId());
-        jpaEntity.setUserId(invoice.getUserId());
+        jpaEntity.setCompanyId(invoice.getCompanyId());
         jpaEntity.setClientId(invoice.getClientId());
         jpaEntity.setInvoiceNumber(invoice.getInvoiceNumber());
         jpaEntity.setIssueDate(invoice.getIssueDate());
@@ -54,7 +54,7 @@ public class InvoiceJpaMapper {
 
         Invoice invoice = new Invoice(
             jpaEntity.getId(),
-            jpaEntity.getUserId(),
+            jpaEntity.getCompanyId(),
             jpaEntity.getClientId(),
             jpaEntity.getInvoiceNumber(),
             jpaEntity.getIssueDate(),

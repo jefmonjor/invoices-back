@@ -1,13 +1,60 @@
 openapi: 3.0.3
 info:
   title: Invoice Service API
-  version: 1.0.0
-  description: API for managing invoices, items, and generating PDFs.
+  version: 2.0.0
+  description: Complete CRUD API for managing invoices, items, and generating PDFs.
 paths:
+  /invoices:
+    get:
+      summary: Get all invoices
+      description: Retrieve all invoices in the system.
+      responses:
+        '200':
+          description: List of invoices.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/InvoiceDTO'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      summary: Create new invoice
+      description: Create a new invoice with items.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateInvoiceRequest'
+      responses:
+        '201':
+          description: Invoice created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvoiceDTO'
+        '400':
+          description: Invalid input.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /invoices/{id}:
     get:
       summary: Get invoice by ID
-      description: Retrieve invoice details along with its items for preview.
+      description: Retrieve invoice details along with its items.
       parameters:
         - name: id
           in: path
@@ -22,6 +69,78 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/InvoiceDTO'
+        '404':
+          description: Invoice not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      summary: Update invoice
+      description: Update an existing invoice.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateInvoiceRequest'
+      responses:
+        '200':
+          description: Invoice updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvoiceDTO'
+        '400':
+          description: Invalid input.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Invoice not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      summary: Delete invoice
+      description: Delete an existing invoice (cannot delete paid invoices).
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '204':
+          description: Invoice deleted successfully.
+        '400':
+          description: Cannot delete (e.g., invoice is paid).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: Invoice not found.
           content:
@@ -74,6 +193,74 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 components:
   schemas:
+    CreateInvoiceRequest:
+      type: object
+      properties:
+        companyId:
+          type: integer
+          example: 1
+        clientId:
+          type: integer
+          example: 1
+        invoiceNumber:
+          type: string
+          example: "2025-001"
+        irpfPercentage:
+          type: number
+          format: float
+          example: 15.00
+        rePercentage:
+          type: number
+          format: float
+          example: 5.00
+        notes:
+          type: string
+          example: "Factura de servicios profesionales"
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CreateInvoiceItemRequest'
+      required:
+        - companyId
+        - clientId
+        - invoiceNumber
+        - items
+    CreateInvoiceItemRequest:
+      type: object
+      properties:
+        description:
+          type: string
+          example: "Consultoría de software"
+        units:
+          type: integer
+          example: 10
+        price:
+          type: number
+          format: float
+          example: 100.00
+        vatPercentage:
+          type: number
+          format: float
+          example: 21.00
+        discountPercentage:
+          type: number
+          format: float
+          example: 0.00
+      required:
+        - description
+        - units
+        - price
+        - vatPercentage
+    UpdateInvoiceRequest:
+      type: object
+      properties:
+        notes:
+          type: string
+          example: "Factura actualizada"
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CreateInvoiceItemRequest'
     CompanyDTO:
       type: object
       properties:
