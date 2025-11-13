@@ -1,0 +1,363 @@
+version: '3.8'
+
+services:
+  # =================================================================
+  # INFRASTRUCTURE SERVICES
+  # =================================================================
+
+  # PostgreSQL - 4 bases de datos separadas
+  postgres:
+    image: postgres:16-alpine
+    container_name: invoices-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_ROOT_PASSWORD:-postgres_root_pass}
+      POSTGRES_MULTIPLE_DATABASES: userdb,invoicedb,documentdb,tracedb
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./docker/init-databases.sh:/docker-entrypoint-initdb.d/init-databases.sh
+    ports:
+      - "5432:5432"
+    networks:
+      - invoices-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Zookeeper (para Kafka)
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: invoices-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    volumes:
+      - zookeeper-data:/var/lib/zookeeper/data
+      - zookeeper-logs:/var/lib/zookeeper/log
+    ports:
+      - "2181:2181"
+    networks:
+      - invoices-network
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "2181"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Kafka
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: invoices-kafka
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    ports:
+      - "9092:9092"
+    networks:
+      - invoices-network
+    healthcheck:
+      test: ["CMD", "kafka-topics", "--bootstrap-server", "localhost:9092", "--list"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+  # MinIO (almacenamiento de PDFs)
+  minio:
+    image: minio/minio:latest
+    container_name: invoices-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin123}
+    volumes:
+      - minio-data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    networks:
+      - invoices-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # =================================================================
+  # SPRING CLOUD SERVICES
+  # =================================================================
+
+  # Eureka Server
+  eureka-server:
+    build:
+      context: ./eureka-server
+      dockerfile: Dockerfile
+    container_name: invoices-eureka
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
+      - EUREKA_USERNAME=${EUREKA_USERNAME:-eureka-admin}
+      - EUREKA_PASSWORD=${EUREKA_PASSWORD:-eureka_pass_2025}
+    ports:
+      - "8761:8761"
+    networks:
+      - invoices-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8761/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+  # Config Server
+  config-server:
+    build:
+      context: ./config-server
+      dockerfile: Dockerfile
+    container_name: invoices-config-server
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
+      - EUREKA_SERVER_HOST=eureka-server
+      - EUREKA_SERVER_PORT=8761
+      - EUREKA_USERNAME=${EUREKA_USERNAME:-eureka-admin}
+      - EUREKA_PASSWORD=${EUREKA_PASSWORD:-eureka_pass_2025}
+    ports:
+      - "8888:8888"
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - invoices-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8888/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+  # =================================================================
+  # BUSINESS SERVICES
+  # =================================================================
+
+  # User Service
+  user-service:
+    build:
+      context: ./user-service
+      dockerfile: Dockerfile
+    container_name: invoices-user-service
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
+      - USER_DB_HOST=postgres
+      - USER_DB_PORT=5432
+      - USER_DB_NAME=userdb
+      - USER_DB_USERNAME=${USER_DB_USERNAME:-user_service_user}
+      - USER_DB_PASSWORD=${USER_DB_PASSWORD:-user_pass_2025}
+      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-min-32-chars-base64-encoded-change-in-production}
+      - JWT_EXPIRATION_MS=${JWT_EXPIRATION_MS:-3600000}
+      - JWT_ISSUER=${JWT_ISSUER:-invoices-backend}
+      - EUREKA_SERVER_HOST=eureka-server
+      - EUREKA_SERVER_PORT=8761
+      - EUREKA_USERNAME=${EUREKA_USERNAME:-eureka-admin}
+      - EUREKA_PASSWORD=${EUREKA_PASSWORD:-eureka_pass_2025}
+    ports:
+      - "8082:8082"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - invoices-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+  # Invoice Service
+  invoice-service:
+    build:
+      context: ./invoice-service
+      dockerfile: Dockerfile
+    container_name: invoices-invoice-service
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
+      - INVOICE_DB_HOST=postgres
+      - INVOICE_DB_PORT=5432
+      - INVOICE_DB_NAME=invoicedb
+      - INVOICE_DB_USERNAME=${INVOICE_DB_USERNAME:-invoice_service_user}
+      - INVOICE_DB_PASSWORD=${INVOICE_DB_PASSWORD:-invoice_pass_2025}
+      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-min-32-chars-base64-encoded-change-in-production}
+      - JWT_ISSUER=${JWT_ISSUER:-invoices-backend}
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+      - KAFKA_INVOICE_TOPIC=${KAFKA_INVOICE_TOPIC:-invoice-events}
+      - EUREKA_SERVER_HOST=eureka-server
+      - EUREKA_SERVER_PORT=8761
+      - EUREKA_USERNAME=${EUREKA_USERNAME:-eureka-admin}
+      - EUREKA_PASSWORD=${EUREKA_PASSWORD:-eureka_pass_2025}
+    ports:
+      - "8081:8081"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+      user-service:
+        condition: service_healthy
+    networks:
+      - invoices-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+  # Document Service
+  document-service:
+    build:
+      context: ./document-service
+      dockerfile: Dockerfile
+    container_name: invoices-document-service
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
+      - DOCUMENT_DB_HOST=postgres
+      - DOCUMENT_DB_PORT=5432
+      - DOCUMENT_DB_NAME=documentdb
+      - DOCUMENT_DB_USERNAME=${DOCUMENT_DB_USERNAME:-document_service_user}
+      - DOCUMENT_DB_PASSWORD=${DOCUMENT_DB_PASSWORD:-document_pass_2025}
+      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-min-32-chars-base64-encoded-change-in-production}
+      - JWT_ISSUER=${JWT_ISSUER:-invoices-backend}
+      - MINIO_ENDPOINT=http://minio:9000
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY:-minioadmin}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY:-minioadmin123}
+      - MINIO_BUCKET_NAME=${MINIO_BUCKET_NAME:-invoices-pdfs}
+      - EUREKA_SERVER_HOST=eureka-server
+      - EUREKA_SERVER_PORT=8761
+      - EUREKA_USERNAME=${EUREKA_USERNAME:-eureka-admin}
+      - EUREKA_PASSWORD=${EUREKA_PASSWORD:-eureka_pass_2025}
+    ports:
+      - "8083:8083"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - invoices-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8083/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+  # Trace Service
+  trace-service:
+    build:
+      context: ./trace-service
+      dockerfile: Dockerfile
+    container_name: invoices-trace-service
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
+      - TRACE_DB_HOST=postgres
+      - TRACE_DB_PORT=5432
+      - TRACE_DB_NAME=tracedb
+      - TRACE_DB_USERNAME=${TRACE_DB_USERNAME:-trace_service_user}
+      - TRACE_DB_PASSWORD=${TRACE_DB_PASSWORD:-trace_pass_2025}
+      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-min-32-chars-base64-encoded-change-in-production}
+      - JWT_ISSUER=${JWT_ISSUER:-invoices-backend}
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+      - KAFKA_INVOICE_TOPIC=${KAFKA_INVOICE_TOPIC:-invoice-events}
+      - KAFKA_TRACE_GROUP_ID=${KAFKA_TRACE_GROUP_ID:-trace-group}
+      - EUREKA_SERVER_HOST=eureka-server
+      - EUREKA_SERVER_PORT=8761
+      - EUREKA_USERNAME=${EUREKA_USERNAME:-eureka-admin}
+      - EUREKA_PASSWORD=${EUREKA_PASSWORD:-eureka_pass_2025}
+    ports:
+      - "8084:8084"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - invoices-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8084/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+  # Gateway Service
+  gateway-service:
+    build:
+      context: ./gateway-service
+      dockerfile: Dockerfile
+    container_name: invoices-gateway
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
+      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-min-32-chars-base64-encoded-change-in-production}
+      - JWT_ISSUER=${JWT_ISSUER:-invoices-backend}
+      - EUREKA_SERVER_HOST=eureka-server
+      - EUREKA_SERVER_PORT=8761
+      - EUREKA_USERNAME=${EUREKA_USERNAME:-eureka-admin}
+      - EUREKA_PASSWORD=${EUREKA_PASSWORD:-eureka_pass_2025}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:5173}
+      - CORS_ALLOWED_METHODS=${CORS_ALLOWED_METHODS:-GET,POST,PUT,DELETE,OPTIONS}
+      - CORS_MAX_AGE=${CORS_MAX_AGE:-3600}
+    ports:
+      - "8080:8080"
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+      user-service:
+        condition: service_healthy
+      invoice-service:
+        condition: service_healthy
+      document-service:
+        condition: service_healthy
+      trace-service:
+        condition: service_healthy
+    networks:
+      - invoices-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+# =================================================================
+# NETWORKS
+# =================================================================
+networks:
+  invoices-network:
+    driver: bridge
+    name: invoices-network
+
+# =================================================================
+# VOLUMES (persistencia de datos)
+# =================================================================
+volumes:
+  postgres-data:
+    name: invoices-postgres-data
+  zookeeper-data:
+    name: invoices-zookeeper-data
+  zookeeper-logs:
+    name: invoices-zookeeper-logs
+  kafka-data:
+    name: invoices-kafka-data
+  minio-data:
+    name: invoices-minio-data

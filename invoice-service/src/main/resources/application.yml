@@ -43,6 +43,8 @@ spring:
         spring.json.add.type.headers: false
     template:
       default-topic: ${KAFKA_INVOICE_TOPIC:invoice-events}
+    topic:
+      invoice-events: ${KAFKA_INVOICE_TOPIC:invoice-events}
 
 # Eureka Configuration
 eureka:
@@ -65,11 +67,6 @@ springdoc:
 jwt:
   secret: ${JWT_SECRET:default-secret-key-change-in-production-min-32-chars}
   issuer: ${JWT_ISSUER:invoices-backend}
-
-# Kafka Topics
-kafka:
-  topic:
-    invoice-events: ${KAFKA_INVOICE_TOPIC:invoice-events}
 
 # Logging
 logging:
