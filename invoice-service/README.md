@@ -1,300 +1,237 @@
-# Invoice Service
+# Invoice Service - Clean Architecture Implementation
 
-Microservicio para gestionar facturas, items y generar PDFs con JasperReports.
-
-## Tecnologías
-
-- **Spring Boot 3.4.4** - Framework principal
-- **Spring Data JPA** - Persistencia de datos
-- **PostgreSQL** - Base de datos
-- **Flyway** - Migraciones de base de datos
-- **Spring Cloud** - Microservicios (Eureka, Config Server, OpenFeign)
-- **Apache Kafka** - Mensajería asíncrona
-- **JasperReports 7.0.2** - Generación de PDFs
-- **OpenAPI/Swagger** - Documentación de API
-- **Lombok** - Reducción de boilerplate
-- **Bean Validation** - Validación de datos
+## Descripción
+Microservicio para gestión de facturas con generación de PDFs usando JasperReports. Implementado siguiendo **Clean Architecture** y **Clean Code** principles.
 
 ## Arquitectura
 
-### Estructura del Proyecto
-
 ```
 invoice-service/
-├── src/main/java/com/invoices/invoice_service/
-│   ├── client/          # Feign Clients para comunicación con otros servicios
-│   ├── config/          # Configuraciones (Feign, Kafka, OpenAPI)
-│   ├── controller/      # Controladores REST
-│   ├── dto/             # Data Transfer Objects
-│   ├── entity/          # Entidades JPA
-│   ├── exception/       # Excepciones personalizadas y handlers
-│   ├── kafka/           # Productores y eventos de Kafka
-│   ├── repository/      # Repositorios JPA
-│   └── service/         # Lógica de negocio
-└── src/main/resources/
-    ├── db/migration/    # Scripts de migración Flyway
-    └── application.yml  # Configuración de la aplicación
+├── domain/                    # ⭐ CAPA DOMINIO (Sin dependencias externas)
+│   ├── entities/              # Entidades con lógica de negocio
+│   │   ├── Invoice.java
+│   │   ├── InvoiceItem.java
+│   │   └── InvoiceStatus.java
+│   ├── usecases/              # Casos de uso (reglas de negocio puras)
+│   │   ├── GetInvoiceByIdUseCase.java
+│   │   └── GeneratePdfUseCase.java
+│   ├── ports/                 # Interfaces (Dependency Inversion)
+│   │   ├── InvoiceRepository.java
+│   │   └── PdfGeneratorService.java
+│   └── exceptions/            # Excepciones de dominio
+│       ├── InvoiceNotFoundException.java
+│       ├── InvalidInvoiceStateException.java
+│       └── InvalidInvoiceNumberFormatException.java
+│
+├── application/               # ⭐ CAPA APLICACIÓN (Orquestación)
+│   └── services/              # Servicios de aplicación (no implementados aún)
+│
+├── infrastructure/            # ⭐ CAPA INFRAESTRUCTURA (Adaptadores)
+│   ├── persistence/           # Adaptador JPA
+│   │   ├── entities/          # JPA Entities (separadas del dominio)
+│   │   │   ├── InvoiceJpaEntity.java
+│   │   │   └── InvoiceItemJpaEntity.java
+│   │   ├── repositories/      # Spring Data JPA
+│   │   │   ├── JpaInvoiceRepository.java
+│   │   │   └── InvoiceRepositoryImpl.java (implementa port)
+│   │   └── mappers/           # Mappers Domain ↔ JPA
+│   │       └── InvoiceJpaMapper.java
+│   ├── external/              # Adaptadores externos
+│   │   └── jasper/            # JasperReports adapter
+│   │       └── JasperPdfGeneratorService.java
+│   └── config/                # Configuración Spring
+│       └── UseCaseConfiguration.java
+│
+└── presentation/              # ⭐ CAPA PRESENTACIÓN (Entrada)
+    ├── controllers/           # REST Controllers
+    │   └── InvoiceController.java
+    └── mappers/               # Mappers Domain ↔ DTO
+        └── InvoiceDtoMapper.java
 ```
 
-## Características Principales
+## Endpoints (OpenAPI)
 
-### 1. Gestión de Facturas
+### GET /invoices/{id}
+Obtener factura por ID.
 
-- **Crear facturas** con múltiples items
-- **Consultar facturas** por ID o por cliente
-- **Actualizar facturas** (fecha de vencimiento, estado, notas)
-- **Eliminar facturas**
-- **Marcar facturas como pagadas**
+**Request:**
+```bash
+curl -X GET http://localhost:8081/invoices/1
+```
 
-### 2. Cálculos Automáticos
-
-- **Subtotal**: Suma de todos los items
-- **IVA (19%)**: Calculado sobre el subtotal
-- **Total**: Subtotal + IVA
-- **Número de factura**: Generado automáticamente en formato `INV-YYYY-NNNN`
-
-### 3. Generación de PDFs
-
-- Genera PDFs de facturas usando **JasperReports**
-- Diseño programático (no requiere archivos JRXML)
-- Sube automáticamente el PDF al **document-service** vía Feign
-- Retorna URL de descarga del documento
-
-### 4. Eventos Kafka
-
-Publica eventos en el topic `invoice-events` para las siguientes operaciones:
-
-- `CREATED`: Factura creada
-- `UPDATED`: Factura actualizada
-- `PAID`: Factura marcada como pagada
-- `CANCELLED`: Factura cancelada
-
-### 5. Integración con Otros Servicios
-
-- **user-service**: Valida que el cliente existe antes de crear factura
-- **document-service**: Almacena PDFs generados
-
-## API Endpoints
-
-### Facturas
-
-| Método | Endpoint | Descripción | Roles |
-|--------|----------|-------------|-------|
-| POST | `/api/invoices` | Crear nueva factura | USER, ADMIN |
-| GET | `/api/invoices` | Listar todas las facturas | ADMIN |
-| GET | `/api/invoices?clientId={id}` | Listar facturas de un cliente | USER, ADMIN |
-| GET | `/api/invoices/{id}` | Obtener factura por ID | USER, ADMIN |
-| PUT | `/api/invoices/{id}` | Actualizar factura | USER, ADMIN |
-| DELETE | `/api/invoices/{id}` | Eliminar factura | ADMIN |
-| POST | `/api/invoices/{id}/pay` | Marcar como pagada | USER, ADMIN |
-| POST | `/api/invoices/generate-pdf` | Generar PDF | USER, ADMIN |
-
-## Modelo de Datos
-
-### Invoice (Factura)
-
-```java
+**Response 200:**
+```json
 {
   "id": 1,
-  "invoiceNumber": "INV-2025-0001",
-  "clientId": 1,
-  "clientEmail": "admin@invoices.com",
-  "invoiceDate": "2025-11-13",
-  "dueDate": "2025-12-13",
-  "subtotal": 1000.00,
-  "tax": 190.00,
-  "total": 1190.00,
-  "status": "PENDING",
-  "notes": "Consultoría de software",
-  "items": [...],
-  "createdAt": "2025-11-13T10:00:00"
+  "userId": 10,
+  "clientId": 20,
+  "invoiceNumber": "2025-001",
+  "issueDate": "2025-03-14T10:00:00Z",
+  "baseAmount": 1000.00,
+  "irpfPercentage": 15.00,
+  "irpfAmount": 150.00,
+  "rePercentage": 5.00,
+  "reAmount": 50.00,
+  "totalAmount": 1210.00,
+  "status": "Pendiente",
+  "items": [...]
 }
 ```
 
-### InvoiceItem (Item de Factura)
+### POST /invoices/generate-pdf
+Generar PDF personalizado.
 
-```java
-{
-  "id": 1,
-  "description": "Consultoría de Software",
-  "quantity": 10,
-  "unitPrice": 100.00,
-  "total": 1000.00
-}
+**Request:**
+```bash
+curl -X POST http://localhost:8081/invoices/generate-pdf \
+  -H "Content-Type: application/json" \
+  -d '{
+    "invoiceNumber": "2025-001",
+    "baseAmount": 1000.00,
+    "irpfPercentage": 15.00,
+    "rePercentage": 5.00,
+    "totalAmount": 1210.00,
+    "color": "#FFFFFF",
+    "textStyle": "bold"
+  }' \
+  --output invoice.pdf
 ```
 
-### Estados de Factura
+**Response 200:** PDF binary (application/pdf)
 
-- `PENDING`: Pendiente de pago
-- `PAID`: Pagada
-- `CANCELLED`: Cancelada
-- `OVERDUE`: Vencida (no implementado aún)
+## Reglas de Negocio Implementadas
+
+### Invoice Entity
+- Validación de formato de número de factura: `YYYY-XXX` (e.g., `2025-001`)
+- Cálculo automático de base, IRPF, RE y total
+- Estados del ciclo de vida:
+  - `DRAFT` → `PENDING` → `PAID`
+  - `DRAFT` → `CANCELLED`
+- No se puede modificar factura `FINALIZED` o `PAID`
+- No se puede cancelar factura `PAID`
+- No se puede marcar como pendiente sin items
+
+### InvoiceItem Entity
+- Validación de campos obligatorios
+- Cálculo de subtotal con descuento
+- Cálculo de total con IVA
+- Validaciones:
+  - Units > 0
+  - Price > 0
+  - VAT ≥ 0
+  - Discount entre 0-100%
+
+## Tests Unitarios
+
+### Cobertura Objetivo: 90%+
+```bash
+# Ejecutar tests
+mvn clean test
+
+# Ver reporte de cobertura
+mvn jacoco:report
+# Reporte en: target/site/jacoco/index.html
+```
+
+### Tests Implementados
+- ✅ `InvoiceTest.java` - 15 tests (entidad Invoice)
+- ✅ `InvoiceItemTest.java` - 12 tests (entidad InvoiceItem)
+- ✅ `GetInvoiceByIdUseCaseTest.java` - 6 tests (caso de uso)
+- ✅ `GeneratePdfUseCaseTest.java` - 7 tests (caso de uso)
+
+**Total: 40+ tests**
+
+## Calidad de Código
+
+### JaCoCo (Cobertura)
+```bash
+mvn jacoco:check  # Falla si < 90% líneas o < 85% ramas
+```
+
+### Checkstyle (Estilo)
+```bash
+mvn checkstyle:check  # Valida Google Java Style
+```
+
+### SpotBugs (Análisis Estático)
+```bash
+mvn spotbugs:check  # Detecta bugs potenciales
+```
+
+### Ejecutar todo
+```bash
+mvn clean verify  # Compila, tests, cobertura, calidad
+```
+
+## Dependencias Principales
+
+- **Spring Boot 3.4.4** (Web, Data JPA, Cloud Config)
+- **Spring Cloud 2024.0.1** (Eureka Client)
+- **PostgreSQL** (producción) / **H2** (tests)
+- **JasperReports 7.0.2** (generación de PDFs)
+- **OpenAPI Generator 7.0.1** (generación de APIs)
+- **JUnit 5 + Mockito + AssertJ** (tests)
 
 ## Configuración
 
-### Variables de Entorno
+### application.yml
+```yaml
+spring:
+  application:
+    name: invoice-service
+  datasource:
+    url: jdbc:postgresql://localhost:5432/invoices_db
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
 
-```bash
-# Database
-INVOICE_DB_HOST=localhost
-INVOICE_DB_PORT=5432
-INVOICE_DB_NAME=invoicedb
-INVOICE_DB_USERNAME=invoice_service_user
-INVOICE_DB_PASSWORD=password
+server:
+  port: 8081
 
-# Kafka
-KAFKA_BOOTSTRAP_SERVERS=localhost:9092
-KAFKA_INVOICE_TOPIC=invoice-events
-
-# Eureka
-EUREKA_SERVER_HOST=localhost
-EUREKA_SERVER_PORT=8761
-EUREKA_USERNAME=eureka-admin
-EUREKA_PASSWORD=password
-
-# JWT
-JWT_SECRET=your-secret-key-min-32-chars
-JWT_ISSUER=invoices-backend
-
-# Logging
-LOG_LEVEL_ROOT=INFO
-LOG_LEVEL_APP=DEBUG
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
 ```
 
-## Base de Datos
+## Ejecución
 
-### Tablas
-
-1. **invoices**: Almacena las facturas
-   - Campos: id, invoice_number, client_id, client_email, invoice_date, due_date, subtotal, tax, total, status, notes, created_at, updated_at
-   - Índices: invoice_number, client_id, invoice_date
-
-2. **invoice_items**: Almacena los items de cada factura
-   - Campos: id, invoice_id, description, quantity, unit_price, total
-   - Relación: FK a invoices con CASCADE DELETE
-
-## Validaciones
-
-### CreateInvoiceRequest
-
-- `clientId`: Obligatorio
-- `clientEmail`: Obligatorio, formato email válido
-- `invoiceDate`: Obligatorio
-- `items`: Lista no vacía con al menos un item
-
-### CreateInvoiceItemRequest
-
-- `description`: Obligatorio
-- `quantity`: Obligatorio, mínimo 1
-- `unitPrice`: Obligatorio, mínimo 0.01
-
-## Manejo de Errores
-
-El servicio maneja los siguientes errores:
-
-- **404 Not Found**: Factura o cliente no encontrado
-- **400 Bad Request**: Errores de validación
-- **500 Internal Server Error**: Errores de generación de PDF o comunicación con servicios externos
-- **503 Service Unavailable**: Servicios externos no disponibles
-
-## Swagger/OpenAPI
-
-Documentación interactiva disponible en:
-- Swagger UI: `http://localhost:8081/swagger-ui.html`
-- OpenAPI JSON: `http://localhost:8081/api-docs`
-
-## Ejemplo de Uso
-
-### Crear Factura
-
-```bash
-curl -X POST http://localhost:8081/api/invoices \
-  -H "Content-Type: application/json" \
-  -d '{
-    "clientId": 1,
-    "clientEmail": "cliente@example.com",
-    "invoiceDate": "2025-11-13",
-    "dueDate": "2025-12-13",
-    "items": [
-      {
-        "description": "Consultoría",
-        "quantity": 10,
-        "unitPrice": 100.00
-      }
-    ],
-    "notes": "Factura de consultoría"
-  }'
-```
-
-### Generar PDF
-
-```bash
-curl -X POST http://localhost:8081/api/invoices/generate-pdf \
-  -H "Content-Type: application/json" \
-  -d '{
-    "invoiceId": 1
-  }'
-```
-
-## Desarrollo
-
-### Ejecutar localmente
-
+### Con Maven
 ```bash
 # Compilar
-mvn clean install
+mvn clean install -DskipTests
 
 # Ejecutar
 mvn spring-boot:run
-
-# O con variables de entorno
-INVOICE_DB_HOST=localhost \
-KAFKA_BOOTSTRAP_SERVERS=localhost:9092 \
-mvn spring-boot:run
 ```
 
-### Tests
-
+### Con Java
 ```bash
-mvn test
+java -jar target/invoice-service-0.0.1-SNAPSHOT.jar
 ```
 
-## Docker
+## Principios Aplicados (SOLID)
 
-```bash
-# Build
-docker build -t invoice-service .
+- **S**ingle Responsibility: Cada clase una única responsabilidad
+- **O**pen/Closed: Abierto a extensión, cerrado a modificación
+- **L**iskov Substitution: Interfaces bien definidas (ports)
+- **I**nterface Segregation: Interfaces pequeñas y específicas
+- **D**ependency Inversion: Dominio no depende de infraestructura
 
-# Run
-docker run -p 8081:8081 \
-  -e INVOICE_DB_HOST=postgres \
-  -e KAFKA_BOOTSTRAP_SERVERS=kafka:9092 \
-  invoice-service
-```
+## Mejoras Futuras (Roadmap)
 
-## Observabilidad
+- [ ] Implementar CreateInvoiceUseCase
+- [ ] Implementar UpdateInvoiceUseCase
+- [ ] Agregar eventos Kafka (InvoiceCreatedEvent, InvoicePaidEvent)
+- [ ] Implementar circuit breaker (Resilience4j)
+- [ ] Agregar tests de integración (@SpringBootTest)
+- [ ] Implementar validaciones con Bean Validation
+- [ ] Agregar logs estructurados (ELK Stack)
+- [ ] Implementar cache (Redis)
 
-### Actuator Endpoints
+## Contacto
 
-- Health: `http://localhost:8081/actuator/health`
-- Info: `http://localhost:8081/actuator/info`
-- Metrics: `http://localhost:8081/actuator/metrics`
-
-## Próximas Mejoras
-
-- [ ] Implementar autenticación/autorización con JWT
-- [ ] Agregar paginación a los endpoints de listado
-- [ ] Implementar búsqueda avanzada de facturas
-- [ ] Agregar soporte para múltiples monedas
-- [ ] Implementar recordatorios de facturas vencidas
-- [ ] Agregar reportes y estadísticas
-- [ ] Mejorar diseño de PDFs con templates personalizables
-- [ ] Agregar tests unitarios e integración
-
-## Autor
-
-Invoice Service Team - invoices@example.com
-
-## Licencia
-
-MIT License
+Para dudas o contribuciones, revisa el [README principal](../README.md).
