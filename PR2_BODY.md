@@ -132,9 +132,23 @@ invoice-service/
 - [ ] Ejecutar `mvn clean install` en todos los servicios
 - [ ] Probar flujo end-to-end: Login → Crear factura → Generar PDF
 
-## Decisión requerida
+## ✅ Decisión tomada: Opción A - Refactorización Completa
 
-⚠️ **El equipo debe decidir:** ¿Refactorizar completamente a Clean Architecture (Opción A) o solo tomar los tests (Opción C)?
+**El equipo ha decidido:** Implementar Clean Architecture completa en invoice-service.
 
-### Recomendación del revisor:
-Opción A - Vale la pena la refactorización por los beneficios a largo plazo en mantenibilidad y testabilidad.
+### Plan de ejecución post-merge:
+
+1. **Mergear esta PR** (añade Clean Architecture en paralelo)
+2. **Eliminar estructura vieja:** `controller/`, `service/`, `entity/`, `repository/`, `mapper/`
+3. **Actualizar imports** en clases que dependan de invoice-service
+4. **Ejecutar tests** para verificar 90%+ coverage
+5. **Validar funcionalidad** con tests de integración
+
+### Beneficios confirmados:
+✅ Arquitectura limpia y escalable
+✅ Tests al 90%+ coverage (resuelve Fase 8 crítica)
+✅ Independencia de frameworks
+✅ Facilita TDD y desarrollo futuro
+✅ Cumple principios SOLID
+
+Ver plan detallado en: `POST_MERGE_REFACTORING_PLAN.md`

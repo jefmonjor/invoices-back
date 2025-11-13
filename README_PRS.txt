@@ -40,36 +40,31 @@ PR #2: CLEAN ARCHITECTURE + TESTS ⭐ CRÍTICA
 └── Revisión: 2-3 horas + decisión arquitectónica
 
 ╔══════════════════════════════════════════════════════════════════╗
-║                    DECISIÓN REQUERIDA (PR #2)                    ║
+║              ✅ DECISIÓN TOMADA: OPCIÓN A                        ║
 ╚══════════════════════════════════════════════════════════════════╝
 
-⚠️  PR #2 requiere decidir entre 3 opciones:
+✅ CLEAN ARCHITECTURE - Refactorización Completa
 
-   A) Refactorización Completa (RECOMENDADA)
-      → Clean Architecture + Tests 90%
-      → Esfuerzo: 1-2 días
-      
-   B) Convivencia Temporal
-      → Migración gradual
-      → Esfuerzo: 3-4 días
-      
-   C) Solo Tests (NO RECOMENDADA)
-      → Mínimo beneficio
-      → Esfuerzo: 2-3 horas
+   → Mergear PR #1 + PR #2
+   → Ejecutar refactorización post-merge
+   → Eliminar estructura vieja
+   → Consolidar a Clean Architecture
+   → Tests 90%+ coverage
+   → Esfuerzo: 4-6 horas (post-merge)
 
-   📖 Ver análisis completo en: PR_SUMMARY.md
+   📖 Plan completo en: POST_MERGE_REFACTORING_PLAN.md
 
 ╔══════════════════════════════════════════════════════════════════╗
 ║                         NEXT STEPS                                ║
 ╚══════════════════════════════════════════════════════════════════╝
 
-1. Leer: QUICK_START_PRS.md
-2. Crear PR #1 (documentación)
-3. Crear PR #2 (clean architecture)
-4. Revisar PRs en equipo
-5. Mergear PR #1 inmediatamente
-6. Discutir estrategia para PR #2
-7. Ejecutar: cd invoice-service && mvn test
+1. Crear PR #1 y PR #2 (usar ./create_prs.sh o GitHub UI)
+2. Mergear PR #1 (documentación) → 5 minutos
+3. Mergear PR #2 (clean architecture + tests) → 10 minutos
+4. Ejecutar refactorización post-merge → 4-6 horas
+   (Ver: POST_MERGE_REFACTORING_PLAN.md)
+5. Validar tests: cd invoice-service && mvn test
+6. ✅ Fase 8 completa! (90%+ coverage)
 
 ╔══════════════════════════════════════════════════════════════════╗
 

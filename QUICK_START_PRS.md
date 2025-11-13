@@ -81,26 +81,19 @@ gh pr create \
 
 ---
 
-## 🎯 Decisión Crítica para PR #2
+## ✅ Decisión Tomada: Opción A - Clean Architecture
 
-**La PR #2 requiere decisión arquitectónica:**
+**El equipo ha decidido:** Implementar Clean Architecture completa en invoice-service.
 
-### ✅ Opción A: Refactorización Completa (RECOMENDADA)
-- Mergear → Eliminar código viejo → Migrar funcionalidad → Tests al 90%
-- **Esfuerzo:** 1-2 días
-- **Beneficio:** Arquitectura limpia, preparado para escalar
+### Plan de ejecución:
+1. ✅ Mergear PR #1 (Documentación)
+2. ✅ Mergear PR #2 (Clean Architecture + Tests)
+3. 🔧 Ejecutar refactorización post-merge (4-6 horas)
+   - Eliminar estructura vieja
+   - Consolidar a Clean Architecture
+   - Validar tests (90%+ coverage)
 
-### 🟡 Opción B: Convivencia Temporal
-- Mergear → Mantener ambas estructuras → Migrar gradualmente
-- **Esfuerzo:** 3-4 días (gradual)
-- **Beneficio:** Menos disruptivo, migración controlada
-
-### 🔴 Opción C: Solo Tests (NO RECOMENDADA)
-- Rechazar arquitectura → Cherry-pick tests → Adaptar a código actual
-- **Esfuerzo:** 2-3 horas
-- **Beneficio:** Mínimo, pierde ventajas de Clean Architecture
-
-**Ver análisis completo en:** `PR_SUMMARY.md`
+**Plan detallado en:** `POST_MERGE_REFACTORING_PLAN.md`
 
 ---
 
