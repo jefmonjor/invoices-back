@@ -1,24 +1,75 @@
 server:
   port: 8082
-spring:
-  config:
-    import: "configserver:"
-  cloud:
-    config:
-      uri: http://localhost:8888
 
+spring:
   application:
     name: user-service
+
+  # Database Configuration
   datasource:
-    url: jdbc:postgresql://localhost:5432/invoicesdb
-    username: user
-    password: password
+    url: jdbc:postgresql://${USER_DB_HOST:localhost}:${USER_DB_PORT:5432}/${USER_DB_NAME:userdb}
+    username: ${USER_DB_USERNAME:user_service_user}
+    password: ${USER_DB_PASSWORD:password}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  # JPA Configuration
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
 
+  # Flyway Configuration
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+    validate-on-migrate: true
+
+# Eureka Configuration
 eureka:
   client:
     service-url:
-      defaultZone: http://localhost:8761/eureka/
+      defaultZone: http://${EUREKA_USERNAME:eureka-admin}:${EUREKA_PASSWORD:password}@${EUREKA_SERVER_HOST:localhost}:${EUREKA_SERVER_PORT:8761}/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+    lease-renewal-interval-in-seconds: 30
+
+# JWT Configuration
+jwt:
+  secret: ${JWT_SECRET:default-secret-key-change-in-production-min-32-chars}
+  expiration: ${JWT_EXPIRATION_MS:3600000}
+  issuer: ${JWT_ISSUER:invoices-backend}
+
+# Logging Configuration
+logging:
+  level:
+    root: ${LOG_LEVEL_ROOT:INFO}
+    com.invoices: ${LOG_LEVEL_APP:DEBUG}
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: ${LOG_LEVEL_ROOT:INFO}
+
+# Actuator Configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
