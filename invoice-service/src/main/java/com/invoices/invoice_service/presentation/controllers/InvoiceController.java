@@ -1,44 +1,121 @@
 package com.invoices.invoice_service.presentation.controllers;
 
-import com.invoices.api.InvoicesApi;
-import com.invoices.api.model.ErrorResponse;
-import com.invoices.api.model.InvoiceConfigDTO;
-import com.invoices.api.model.InvoiceDTO;
 import com.invoices.invoice_service.domain.entities.Invoice;
+import com.invoices.invoice_service.domain.entities.InvoiceItem;
+import com.invoices.invoice_service.domain.exceptions.InvalidInvoiceStateException;
 import com.invoices.invoice_service.domain.exceptions.InvoiceNotFoundException;
-import com.invoices.invoice_service.domain.usecases.GeneratePdfUseCase;
-import com.invoices.invoice_service.domain.usecases.GetInvoiceByIdUseCase;
+import com.invoices.invoice_service.domain.usecases.*;
+import com.invoices.invoice_service.dto.CreateInvoiceItemRequest;
+import com.invoices.invoice_service.dto.CreateInvoiceRequest;
+import com.invoices.invoice_service.dto.InvoiceDTO;
+import com.invoices.invoice_service.dto.UpdateInvoiceRequest;
+import com.invoices.invoice_service.exception.ClientNotFoundException;
 import com.invoices.invoice_service.presentation.mappers.InvoiceDtoMapper;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * REST controller for invoice operations.
  * Presentation layer - delegates to use cases.
- * Implements OpenAPI generated interface.
+ * Implements complete CRUD operations.
  */
 @RestController
-public class InvoiceController implements InvoicesApi {
+@RequestMapping("/invoices")
+public class InvoiceController {
 
     private final GetInvoiceByIdUseCase getInvoiceByIdUseCase;
+    private final GetAllInvoicesUseCase getAllInvoicesUseCase;
+    private final CreateInvoiceUseCase createInvoiceUseCase;
+    private final UpdateInvoiceUseCase updateInvoiceUseCase;
+    private final DeleteInvoiceUseCase deleteInvoiceUseCase;
     private final GeneratePdfUseCase generatePdfUseCase;
     private final InvoiceDtoMapper dtoMapper;
 
     public InvoiceController(
         GetInvoiceByIdUseCase getInvoiceByIdUseCase,
+        GetAllInvoicesUseCase getAllInvoicesUseCase,
+        CreateInvoiceUseCase createInvoiceUseCase,
+        UpdateInvoiceUseCase updateInvoiceUseCase,
+        DeleteInvoiceUseCase deleteInvoiceUseCase,
         GeneratePdfUseCase generatePdfUseCase,
         InvoiceDtoMapper dtoMapper
     ) {
         this.getInvoiceByIdUseCase = getInvoiceByIdUseCase;
+        this.getAllInvoicesUseCase = getAllInvoicesUseCase;
+        this.createInvoiceUseCase = createInvoiceUseCase;
+        this.updateInvoiceUseCase = updateInvoiceUseCase;
+        this.deleteInvoiceUseCase = deleteInvoiceUseCase;
         this.generatePdfUseCase = generatePdfUseCase;
         this.dtoMapper = dtoMapper;
     }
 
-    @Override
-    public ResponseEntity<InvoiceDTO> invoicesIdGet(Integer id) {
+    /**
+     * GET /invoices - Get all invoices
+     */
+    @GetMapping
+    public ResponseEntity<List<InvoiceDTO>> getAllInvoices() {
         try {
-            Invoice invoice = getInvoiceByIdUseCase.execute(id.longValue());
+            List<Invoice> invoices = getAllInvoicesUseCase.execute();
+            List<InvoiceDTO> dtos = invoices.stream()
+                .map(dtoMapper::toDto)
+                .collect(Collectors.toList());
+            return ResponseEntity.ok(dtos);
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
+     * POST /invoices - Create new invoice
+     */
+    @PostMapping
+    public ResponseEntity<InvoiceDTO> createInvoice(@Valid @RequestBody CreateInvoiceRequest request) {
+        try {
+            // Convert DTO items to domain InvoiceItems
+            List<InvoiceItem> items = request.getItems().stream()
+                .map(this::toDomainItem)
+                .collect(Collectors.toList());
+
+            // Execute use case
+            Invoice invoice = createInvoiceUseCase.execute(
+                request.getCompanyId(),
+                request.getClientId(),
+                request.getInvoiceNumber(),
+                request.getIrpfPercentage(),
+                request.getRePercentage(),
+                items,
+                request.getNotes()
+            );
+
+            // Convert to DTO and return
+            InvoiceDTO dto = dtoMapper.toDto(invoice);
+            return ResponseEntity.status(HttpStatus.CREATED).body(dto);
+
+        } catch (ClientNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
+     * GET /invoices/{id} - Get invoice by ID
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<InvoiceDTO> getInvoiceById(@PathVariable Long id) {
+        try {
+            Invoice invoice = getInvoiceByIdUseCase.execute(id);
             InvoiceDTO dto = dtoMapper.toDto(invoice);
             return ResponseEntity.ok(dto);
 
@@ -53,32 +130,36 @@ public class InvoiceController implements InvoicesApi {
         }
     }
 
-    @Override
-    public ResponseEntity<org.springframework.core.io.Resource> invoicesGeneratePdfPost(
-        InvoiceConfigDTO invoiceConfigDTO
+    /**
+     * PUT /invoices/{id} - Update invoice
+     */
+    @PutMapping("/{id}")
+    public ResponseEntity<InvoiceDTO> updateInvoice(
+        @PathVariable Long id,
+        @Valid @RequestBody UpdateInvoiceRequest request
     ) {
         try {
-            byte[] pdfBytes = generatePdfUseCase.execute(
-                invoiceConfigDTO.getInvoiceNumber(),
-                invoiceConfigDTO.getBaseAmount().doubleValue(),
-                invoiceConfigDTO.getIrpfPercentage() != null
-                    ? invoiceConfigDTO.getIrpfPercentage().doubleValue()
-                    : null,
-                invoiceConfigDTO.getRePercentage() != null
-                    ? invoiceConfigDTO.getRePercentage().doubleValue()
-                    : null,
-                invoiceConfigDTO.getTotalAmount().doubleValue(),
-                invoiceConfigDTO.getColor(),
-                invoiceConfigDTO.getTextStyle()
+            // Convert DTO items to domain InvoiceItems
+            List<InvoiceItem> updatedItems = null;
+            if (request.getItems() != null) {
+                updatedItems = request.getItems().stream()
+                    .map(this::toDomainItem)
+                    .collect(Collectors.toList());
+            }
+
+            // Execute use case
+            Invoice invoice = updateInvoiceUseCase.execute(
+                id,
+                updatedItems,
+                request.getNotes()
             );
 
-            org.springframework.core.io.Resource resource =
-                new org.springframework.core.io.ByteArrayResource(pdfBytes);
+            // Convert to DTO and return
+            InvoiceDTO dto = dtoMapper.toDto(invoice);
+            return ResponseEntity.ok(dto);
 
-            return ResponseEntity.ok()
-                .header("Content-Disposition", "attachment; filename=invoice.pdf")
-                .contentType(org.springframework.http.MediaType.APPLICATION_PDF)
-                .body(resource);
+        } catch (InvoiceNotFoundException e) {
+            return ResponseEntity.notFound().build();
 
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
@@ -86,5 +167,42 @@ public class InvoiceController implements InvoicesApi {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
+    }
+
+    /**
+     * DELETE /invoices/{id} - Delete invoice
+     */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteInvoice(@PathVariable Long id) {
+        try {
+            deleteInvoiceUseCase.execute(id);
+            return ResponseEntity.noContent().build();
+
+        } catch (InvoiceNotFoundException e) {
+            return ResponseEntity.notFound().build();
+
+        } catch (InvalidInvoiceStateException e) {
+            return ResponseEntity.badRequest().build();
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
+     * Helper method: Convert CreateInvoiceItemRequest to domain InvoiceItem
+     */
+    private InvoiceItem toDomainItem(CreateInvoiceItemRequest itemRequest) {
+        return new InvoiceItem(
+            null, // ID will be generated
+            null, // Invoice ID will be set by Invoice.addItem()
+            itemRequest.getDescription(),
+            itemRequest.getUnits(),
+            itemRequest.getPrice(),
+            itemRequest.getVatPercentage(),
+            itemRequest.getDiscountPercentage() != null
+                ? itemRequest.getDiscountPercentage()
+                : BigDecimal.ZERO
+        );
     }
 }

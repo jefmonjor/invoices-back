@@ -1,32 +1,39 @@
 package com.invoices.invoice_service.dto;
 
-import com.invoices.invoice_service.entity.InvoiceStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * DTO for Invoice response.
+ * Matches OpenAPI specification v2.0.
+ */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class InvoiceDTO {
     private Long id;
-    private String invoiceNumber;
+    private Long companyId;
     private Long clientId;
-    private String clientEmail;
-    private LocalDate invoiceDate;
-    private LocalDate dueDate;
-    private BigDecimal subtotal;
-    private BigDecimal tax;
-    private BigDecimal total;
-    private InvoiceStatus status;
+    private CompanyDTO company;
+    private ClientDTO client;
+    private String invoiceNumber;
+    private LocalDateTime issueDate;
+    private BigDecimal baseAmount;
+    private BigDecimal irpfPercentage;
+    private BigDecimal irpfAmount;
+    private BigDecimal rePercentage;
+    private BigDecimal reAmount;
+    private BigDecimal totalAmount;
+    private String status;
     private String notes;
-    private List<InvoiceItemDTO> items;
     private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+    private List<InvoiceItemDTO> items;
 }
