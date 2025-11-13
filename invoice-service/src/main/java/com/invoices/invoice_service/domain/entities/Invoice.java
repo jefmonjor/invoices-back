@@ -22,8 +22,10 @@ public class Invoice {
     private static final BigDecimal ONE_HUNDRED = new BigDecimal("100");
 
     private final Long id;
-    private final Long userId;
-    private final Long clientId;
+    private final Long companyId;    // ID de la empresa emisora
+    private final Long clientId;     // ID del cliente
+    private Company company;         // Datos completos del emisor (opcional, para PDFs)
+    private Client client;           // Datos completos del cliente (opcional, para PDFs)
     private final String invoiceNumber;
     private final LocalDateTime issueDate;
     private final List<InvoiceItem> items;
@@ -36,7 +38,7 @@ public class Invoice {
 
     public Invoice(
         Long id,
-        Long userId,
+        Long companyId,
         Long clientId,
         String invoiceNumber,
         LocalDateTime issueDate,
@@ -47,7 +49,7 @@ public class Invoice {
         validatePercentages(irpfPercentage, rePercentage);
 
         this.id = id;
-        this.userId = userId;
+        this.companyId = companyId;
         this.clientId = clientId;
         this.invoiceNumber = invoiceNumber;
         this.issueDate = issueDate;
@@ -171,17 +173,33 @@ public class Invoice {
         this.updatedAt = LocalDateTime.now();
     }
 
+    public void setCompany(Company company) {
+        this.company = company;
+    }
+
+    public void setClient(Client client) {
+        this.client = client;
+    }
+
     // Getters (no setters - prefer immutability)
     public Long getId() {
         return id;
     }
 
-    public Long getUserId() {
-        return userId;
+    public Long getCompanyId() {
+        return companyId;
     }
 
     public Long getClientId() {
         return clientId;
+    }
+
+    public Company getCompany() {
+        return company;
+    }
+
+    public Client getClient() {
+        return client;
     }
 
     public String getInvoiceNumber() {

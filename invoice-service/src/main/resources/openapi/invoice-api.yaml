@@ -74,18 +74,93 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 components:
   schemas:
+    CompanyDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        businessName:
+          type: string
+          example: "TRANSOLIDO S.L."
+        taxId:
+          type: string
+          example: "B91923755"
+        address:
+          type: string
+          example: "Castillo Lastrucci, 3, 3D"
+        city:
+          type: string
+          example: "DOS HERMANAS"
+        postalCode:
+          type: string
+          example: "41701"
+        province:
+          type: string
+          example: "SEVILLA"
+        phone:
+          type: string
+          example: "659889201"
+        email:
+          type: string
+          example: "contacto@transolido.es"
+        iban:
+          type: string
+          example: "ES60 0182 4840 0022 0165 7539"
+      required:
+        - id
+        - businessName
+        - taxId
+    ClientDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        businessName:
+          type: string
+          example: "SERSFRITRUCKS, S.A."
+        taxId:
+          type: string
+          example: "A50008588"
+        address:
+          type: string
+          example: "JIMÉNEZ DE LA ESPADA, 57, BAJO"
+        city:
+          type: string
+          example: "CARTAGENA"
+        postalCode:
+          type: string
+          example: "30203"
+        province:
+          type: string
+          example: "MURCIA"
+        phone:
+          type: string
+          example: "968123456"
+        email:
+          type: string
+          example: "info@sersfritrucks.com"
+      required:
+        - id
+        - businessName
+        - taxId
     InvoiceDTO:
       type: object
       properties:
         id:
           type: integer
           example: 1
-        userId:
+        companyId:
           type: integer
           example: 1
         clientId:
           type: integer
           example: 1
+        company:
+          $ref: '#/components/schemas/CompanyDTO'
+        client:
+          $ref: '#/components/schemas/ClientDTO'
         invoiceNumber:
           type: string
           example: "2025-001"
@@ -137,7 +212,7 @@ components:
             $ref: '#/components/schemas/InvoiceItemDTO'
       required:
         - id
-        - userId
+        - companyId
         - clientId
         - invoiceNumber
         - issueDate

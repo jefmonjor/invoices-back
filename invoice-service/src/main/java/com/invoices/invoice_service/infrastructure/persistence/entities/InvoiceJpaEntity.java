@@ -19,8 +19,8 @@ public class InvoiceJpaEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "user_id", nullable = false)
-    private Long userId;
+    @Column(name = "company_id", nullable = false)
+    private Long companyId;
 
     @Column(name = "client_id", nullable = false)
     private Long clientId;
@@ -88,12 +88,12 @@ public class InvoiceJpaEntity {
         this.id = id;
     }
 
-    public Long getUserId() {
-        return userId;
+    public Long getCompanyId() {
+        return companyId;
     }
 
-    public void setUserId(Long userId) {
-        this.userId = userId;
+    public void setCompanyId(Long companyId) {
+        this.companyId = companyId;
     }
 
     public Long getClientId() {
