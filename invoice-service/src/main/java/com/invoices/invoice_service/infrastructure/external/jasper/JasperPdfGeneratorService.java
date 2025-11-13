@@ -90,15 +90,59 @@ public class JasperPdfGeneratorService implements PdfGeneratorService {
 
     private Map<String, Object> buildParameters(Invoice invoice) {
         Map<String, Object> parameters = new HashMap<>();
+
+        // Invoice data
         parameters.put("invoiceNumber", invoice.getInvoiceNumber());
         parameters.put("issueDate", invoice.getIssueDate());
+
+        // Company (Emisor) data
+        if (invoice.getCompany() != null) {
+            parameters.put("companyName", invoice.getCompany().getBusinessName());
+            parameters.put("companyTaxId", invoice.getCompany().getTaxId());
+            parameters.put("companyAddress", invoice.getCompany().getFullAddress());
+            parameters.put("companyPhone", invoice.getCompany().getPhone());
+            parameters.put("iban", invoice.getCompany().getIban());
+        } else {
+            parameters.put("companyName", "");
+            parameters.put("companyTaxId", "");
+            parameters.put("companyAddress", "");
+            parameters.put("companyPhone", "");
+            parameters.put("iban", "");
+        }
+
+        // Client data
+        if (invoice.getClient() != null) {
+            parameters.put("clientName", invoice.getClient().getBusinessName());
+            parameters.put("clientTaxId", invoice.getClient().getTaxId());
+            parameters.put("clientAddress", invoice.getClient().getFullAddress());
+        } else {
+            parameters.put("clientName", "");
+            parameters.put("clientTaxId", "");
+            parameters.put("clientAddress", "");
+        }
+
+        // Amounts and totals
         parameters.put("baseAmount", invoice.calculateBaseAmount());
         parameters.put("irpfPercentage", invoice.getIrpfPercentage());
         parameters.put("irpfAmount", invoice.calculateIrpfAmount());
         parameters.put("rePercentage", invoice.getRePercentage());
         parameters.put("reAmount", invoice.calculateReAmount());
+
+        // Calculate total VAT from items
+        java.math.BigDecimal totalVat = invoice.getItems().stream()
+            .map(item -> item.calculateTotal().subtract(item.calculateSubtotal()))
+            .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
+        parameters.put("vatAmount", totalVat);
+
         parameters.put("totalAmount", invoice.calculateTotalAmount());
         parameters.put("notes", invoice.getNotes());
+
+        // Items as datasource
+        JRBeanCollectionDataSource itemsDataSource = new JRBeanCollectionDataSource(
+            invoice.getItems()
+        );
+        parameters.put("items", itemsDataSource);
+
         return parameters;
     }
 }
