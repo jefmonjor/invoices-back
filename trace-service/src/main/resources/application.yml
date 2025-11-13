@@ -58,6 +58,7 @@ eureka:
 kafka:
   topic:
     invoice-events: ${KAFKA_INVOICE_TOPIC:invoice-events}
+    invoice-events-dlq: ${KAFKA_INVOICE_DLQ_TOPIC:invoice-events-dlq}
 
 # JWT Configuration
 jwt:

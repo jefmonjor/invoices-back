@@ -14,10 +14,12 @@ import io.minio.PutObjectArgs;
 import io.minio.RemoveObjectArgs;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.tika.Tika;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.UUID;
@@ -35,6 +37,7 @@ public class DocumentService {
     private final DocumentRepository documentRepository;
     private final MinioClient minioClient;
     private final MinioConfig.MinioProperties minioProperties;
+    private final Tika tika = new Tika();
 
     public UploadDocumentResponse uploadDocument(MultipartFile file, Long invoiceId, String uploadedBy) {
         log.info("Uploading document: {} for invoice: {}", file.getOriginalFilename(), invoiceId);
@@ -163,12 +166,55 @@ public class DocumentService {
             throw new IllegalArgumentException("File cannot be empty");
         }
 
+        // Validate declared content type
         if (!ALLOWED_CONTENT_TYPE.equals(file.getContentType())) {
             throw new InvalidFileTypeException(file.getContentType());
         }
 
         if (file.getSize() > MAX_FILE_SIZE) {
             throw new IllegalArgumentException("File size exceeds maximum allowed (10MB)");
+        }
+
+        // Validate actual file content using Apache Tika
+        validateFileContent(file);
+    }
+
+    /**
+     * Validates the actual file content to detect corrupted or fake PDF files.
+     * Uses Apache Tika to detect the real MIME type based on file content, not just the extension.
+     */
+    private void validateFileContent(MultipartFile file) {
+        try {
+            // Detect actual content type based on file content
+            String detectedType = tika.detect(file.getInputStream());
+
+            log.debug("File declared type: {}, Detected type: {}", file.getContentType(), detectedType);
+
+            // Check if detected type matches expected PDF type
+            if (!ALLOWED_CONTENT_TYPE.equals(detectedType)) {
+                throw new InvalidFileTypeException(
+                        "File content does not match PDF format. Detected type: " + detectedType
+                );
+            }
+
+            // Additional validation: check for PDF signature
+            byte[] header = new byte[5];
+            InputStream inputStream = file.getInputStream();
+            int bytesRead = inputStream.read(header);
+            inputStream.close();
+
+            if (bytesRead < 5) {
+                throw new IllegalArgumentException("File is too small to be a valid PDF");
+            }
+
+            String headerString = new String(header);
+            if (!headerString.startsWith("%PDF-")) {
+                throw new IllegalArgumentException("File does not have a valid PDF signature");
+            }
+
+        } catch (IOException e) {
+            log.error("Error validating file content", e);
+            throw new IllegalArgumentException("Failed to validate file content: " + e.getMessage());
         }
     }
 

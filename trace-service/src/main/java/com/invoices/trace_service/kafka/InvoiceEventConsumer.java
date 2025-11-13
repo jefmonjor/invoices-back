@@ -24,46 +24,33 @@ public class InvoiceEventConsumer {
             groupId = "${spring.kafka.consumer.group-id}"
     )
     public void consumeInvoiceEvent(InvoiceEvent event, Acknowledgment acknowledgment) {
-        try {
-            log.info("Received invoice event: type={}, invoiceId={}, invoiceNumber={}",
-                    event.eventType(), event.invoiceId(), event.invoiceNumber());
+        log.info("Received invoice event: type={}, invoiceId={}, invoiceNumber={}",
+                event.eventType(), event.invoiceId(), event.invoiceNumber());
 
-            // Convert event to JSON string for storage
-            String eventDataJson = convertEventToJson(event);
+        // Convert event to JSON string for storage
+        String eventDataJson = convertEventToJson(event);
 
-            // Create audit log entry
-            AuditLog auditLog = AuditLog.builder()
-                    .eventType(event.eventType())
-                    .invoiceId(event.invoiceId())
-                    .invoiceNumber(event.invoiceNumber())
-                    .clientId(event.clientId())
-                    .clientEmail(event.clientEmail())
-                    .total(event.total())
-                    .status(event.status())
-                    .eventData(eventDataJson)
-                    .build();
+        // Create audit log entry
+        AuditLog auditLog = AuditLog.builder()
+                .eventType(event.eventType())
+                .invoiceId(event.invoiceId())
+                .invoiceNumber(event.invoiceNumber())
+                .clientId(event.clientId())
+                .clientEmail(event.clientEmail())
+                .total(event.total())
+                .status(event.status())
+                .eventData(eventDataJson)
+                .build();
 
-            // Save to database
-            auditLogRepository.save(auditLog);
-            log.info("Audit log saved successfully for invoice: {}", event.invoiceId());
+        // Save to database
+        // If this throws an exception, the error handler will retry with exponential backoff
+        // After max retries, the message will be sent to DLQ
+        auditLogRepository.save(auditLog);
+        log.info("Audit log saved successfully for invoice: {}", event.invoiceId());
 
-            // Manually acknowledge the message
-            acknowledgment.acknowledge();
-            log.debug("Message acknowledged for invoice: {}", event.invoiceId());
-
-        } catch (Exception e) {
-            // Log the error but don't throw exception to avoid infinite retries
-            // The message will not be acknowledged and Kafka will reprocess it based on retry configuration
-            log.error("Error processing invoice event: invoiceId={}, error={}",
-                    event.invoiceId(), e.getMessage(), e);
-
-            // In production, you might want to:
-            // 1. Send to a dead letter queue (DLQ)
-            // 2. Implement exponential backoff
-            // 3. Alert monitoring systems
-            // For now, we acknowledge to prevent infinite loop (adjust based on your requirements)
-            acknowledgment.acknowledge();
-        }
+        // Manually acknowledge the message only on success
+        acknowledgment.acknowledge();
+        log.debug("Message acknowledged for invoice: {}", event.invoiceId());
     }
 
     private String convertEventToJson(InvoiceEvent event) {
