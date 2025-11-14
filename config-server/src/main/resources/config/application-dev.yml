@@ -1,0 +1,11 @@
+# Development profile configuration
+spring:
+  profiles: dev
+
+logging:
+  level:
+    root: DEBUG
+    com.invoices: DEBUG
+
+# Development-specific settings
+debug: true
