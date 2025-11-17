@@ -259,16 +259,16 @@ Incluye configuración para:
 ## 📊 Historial de Commits
 
 ```
+* 65ced0d fix: ajustar configuración de todos los microservicios
+* 10da7d4 fix: mejorar configuración de Lombok en pom.xml
+* 380d2d2 fix: resolver constructor duplicado en UserAlreadyExistsException
+* ed169e2 fix: simplificar configuración de Maven para Lombok
+* d7fe48d fix: configurar maven-compiler-plugin con Lombok annotation processor
 * e2474fd fix: agregar -Dmaven.test.skip=true a Dockerfiles de servicios
 * b99e501 feat: agregar configuración Fly.io para user-service
 * 0c13ad4 fix: ajustar deployment para uso básico (2 usuarios)
 * 096a118 feat: configurar sistema completo con servicios gratuitos (Cloudflare R2 + Upstash Kafka)
 * d40d36c fix: ajustar deployment para uso básico (2 usuarios)
-* 26e757b feat: habilitar deployment de TODOS los servicios en Fly.io
-* b8839a8 fix: configurar script para desplegar solo servicios esenciales (free tier)
-* f65cc3f feat: agregar script para desplegar todos los microservicios en Fly.io
-* 290556a fix: deshabilitar GatewayRoutingTest.java que causa fallo en build Docker
-* 08da526 fix: saltar compilación de tests en Dockerfile con -Dmaven.test.skip=true
 ```
 
 ---
@@ -371,9 +371,14 @@ Password: admin123
 
 ## 🐛 Problemas Resueltos
 
-### 1. ✅ Errores de compilación en Docker
-**Problema:** Tests fallaban durante build de Docker por falta de anotaciones Lombok
-**Solución:** Agregado `-Dmaven.test.skip=true` a todos los Dockerfiles
+### 1. ✅ Errores de compilación de Lombok (100+ errores)
+**Problema:** Lombok no generaba código (getters, setters, builders, log)
+**Causa raíz:** Constructor duplicado en UserAlreadyExistsException bloqueaba compilación
+**Solución:**
+- Eliminado constructor duplicado en UserAlreadyExistsException
+- Eliminado constructor duplicado en InvalidFileTypeException
+- Configurado Lombok en spring-boot-maven-plugin (todos los servicios)
+- Agregado `-Dmaven.test.skip=true` a todos los Dockerfiles
 
 ### 2. ✅ GatewayRoutingTest incompatible
 **Problema:** Test usaba Gateway Reactive, proyecto usa Gateway MVC
@@ -386,6 +391,10 @@ Password: admin123
 ### 4. ✅ Line endings CRLF
 **Problema:** Scripts con CRLF no ejecutan en Linux
 **Solución:** Aplicado `sed -i 's/\r$//'`
+
+### 5. ✅ Falta de fly.toml en servicios
+**Problema:** invoice-service y document-service sin configuración Fly.io
+**Solución:** Creados fly.toml para ambos servicios
 
 ---
 

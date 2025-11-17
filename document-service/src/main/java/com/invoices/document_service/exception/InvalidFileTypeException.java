@@ -5,7 +5,7 @@ public class InvalidFileTypeException extends RuntimeException {
         super(message);
     }
 
-    public InvalidFileTypeException(String contentType) {
-        super("Invalid file type: " + contentType + ". Only PDF files are allowed.");
+    public InvalidFileTypeException(String message, Throwable cause) {
+        super(message, cause);
     }
 }

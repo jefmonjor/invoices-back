@@ -44,7 +44,7 @@ public class UserService {
         // Validate email doesn't exist
         if (userRepository.existsByEmail(request.getEmail())) {
             log.warn("Attempt to create user with existing email: {}", request.getEmail());
-            throw new UserAlreadyExistsException(request.getEmail());
+            throw new UserAlreadyExistsException("User already exists with email: " + request.getEmail());
         }
 
         // Convert DTO to entity
