@@ -41,6 +41,7 @@
 - **react-pdf** - PDF viewer
 - **recharts** - Charts y gráficas
 - **react-toastify** - Notifications
+- **decimal.js** o **currency.js** - Manejo preciso de montos (BigDecimal en Java)
 
 ---
 
@@ -172,32 +173,52 @@ export const authApi = {
 ```typescript
 import { apiClient } from './client';
 
+/**
+ * IMPORTANTE - Manejo de BigDecimal de Java:
+ *
+ * Java usa BigDecimal para montos (subtotal, taxAmount, totalAmount).
+ * Spring Boot serializa BigDecimal como number en JSON.
+ *
+ * ⚠️ PRECAUCIÓN: JavaScript tiene problemas de precisión con decimales
+ * Ejemplo: 0.1 + 0.2 = 0.30000000000000004
+ *
+ * SOLUCIONES:
+ * 1. Para VISUALIZACIÓN: usar number y formatear con Intl.NumberFormat
+ * 2. Para CÁLCULOS: NO hacer cálculos complejos en frontend, confiar en backend
+ * 3. Si necesitas cálculos: usar librería como decimal.js o currency.js
+ *
+ * En este proyecto: Los cálculos se hacen en el BACKEND (Java BigDecimal),
+ * el frontend solo visualiza y envía valores al backend.
+ */
+
 export interface InvoiceItem {
+  id?: number; // Opcional para crear nuevos items
   description: string;
   quantity: number;
-  unitPrice: number;
-  taxRate: number;
+  unitPrice: number; // BigDecimal en Java → number en TS (solo para visualizar)
+  taxRate: number;   // Porcentaje (ej: 21.0 para 21%)
+  total?: number;    // Calculado por el backend
 }
 
 export interface CreateInvoiceRequest {
   invoiceNumber: string;
   companyId: number;
   clientId: number;
-  issueDate: string;
-  dueDate: string;
+  issueDate: string;  // ISO-8601: "2025-11-17" (LocalDate en Java)
+  dueDate: string;    // ISO-8601: "2025-12-17"
   items: InvoiceItem[];
 }
 
 export interface Invoice {
-  id: number;
+  id: number;  // Long en Java - Compatible si < 9,007,199,254,740,991
   invoiceNumber: string;
   companyId: number;
   clientId: number;
-  issueDate: string;
-  dueDate: string;
-  status: 'DRAFT' | 'PENDING' | 'PAID' | 'CANCELLED';
-  subtotal: number;
-  taxAmount: number;
+  issueDate: string;      // ISO-8601: "2025-11-17T10:30:00"
+  dueDate: string;        // ISO-8601: "2025-12-17T23:59:59"
+  status: 'DRAFT' | 'PENDING' | 'PAID' | 'CANCELLED'; // Debe coincidir con Java Enum
+  subtotal: number;       // BigDecimal en Java → number en TS
+  taxAmount: number;      // BigDecimal en Java → number en TS
   totalAmount: number;
   items: InvoiceItem[];
   createdAt: string;
@@ -205,21 +226,75 @@ export interface Invoice {
 }
 
 export interface InvoiceListParams {
-  page?: number;
-  size?: number;
-  sortBy?: string;
-  sortDir?: 'asc' | 'desc';
-  status?: string;
-  clientId?: number;
+  page?: number;         // Número de página (0-based en Spring)
+  size?: number;         // Tamaño de página (default: 20)
+  sortBy?: string;       // Campo para ordenar (ej: "invoiceNumber")
+  sortDir?: 'asc' | 'desc';  // Dirección de ordenamiento
+  status?: string;       // Filtro por estado
+  clientId?: number;     // Filtro por cliente
 }
 
+/**
+ * Interfaz exacta de Spring Boot 3 - Page<T>
+ *
+ * Spring Data devuelve esta estructura al usar Pageable.
+ * Jackson serializa automáticamente con estos nombres de campos.
+ */
 export interface PagedResponse<T> {
+  content: T[];              // Array de elementos de la página actual
+  pageable: {
+    pageNumber: number;      // Número de página actual (0-based)
+    pageSize: number;        // Tamaño de página
+    offset: number;          // Offset total
+    paged: boolean;
+    unpaged: boolean;
+    sort: {
+      sorted: boolean;
+      unsorted: boolean;
+      empty: boolean;
+    };
+  };
+  totalPages: number;        // Total de páginas
+  totalElements: number;     // Total de elementos en todas las páginas
+  last: boolean;             // ¿Es la última página?
+  first: boolean;            // ¿Es la primera página?
+  size: number;              // Tamaño de página
+  number: number;            // Número de página actual (0-based)
+  numberOfElements: number;  // Número de elementos en esta página
+  empty: boolean;            // ¿Está vacía la página?
+  sort: {
+    sorted: boolean;
+    unsorted: boolean;
+    empty: boolean;
+  };
+}
+
+/**
+ * Interfaz simplificada para uso en componentes
+ * (extrae solo lo necesario de PagedResponse)
+ */
+export interface SimplePage<T> {
   content: T[];
   totalElements: number;
   totalPages: number;
+  currentPage: number;  // number (0-based de Spring)
   size: number;
-  number: number;
+  isLast: boolean;
+  isFirst: boolean;
 }
+
+/**
+ * Helper para convertir PagedResponse a SimplePage
+ */
+export const toSimplePage = <T>(page: PagedResponse<T>): SimplePage<T> => ({
+  content: page.content,
+  totalElements: page.totalElements,
+  totalPages: page.totalPages,
+  currentPage: page.number,
+  size: page.size,
+  isLast: page.last,
+  isFirst: page.first,
+});
 
 export const invoicesApi = {
   // Listar facturas
@@ -278,6 +353,352 @@ export const invoicesApi = {
     window.URL.revokeObjectURL(url);
   },
 };
+```
+
+---
+
+## 🛠️ UTILITIES - Spring Boot 3 Compatible
+
+### `/src/utils/spring-errors.ts`
+
+```typescript
+import { UseFormSetError } from 'react-hook-form';
+import { AxiosError } from 'axios';
+
+/**
+ * Estructura de error de Spring Boot 3 con Bean Validation
+ *
+ * Cuando falla @Valid en el controller, Spring devuelve esta estructura
+ */
+export interface SpringValidationError {
+  timestamp: string;
+  status: number;
+  error: string;
+  message: string;
+  path: string;
+  errors?: Array<{
+    field: string;           // Nombre del campo (ej: "items[0].quantity")
+    defaultMessage: string;  // Mensaje de error
+    objectName: string;      // Nombre del objeto (ej: "createInvoiceRequest")
+    code: string;            // Código de error (ej: "NotNull", "Min")
+    rejectedValue?: any;     // Valor rechazado
+  }>;
+}
+
+/**
+ * Alternativa: Algunos backends devuelven errores como mapa
+ */
+export interface SpringFieldErrors {
+  [fieldName: string]: string;
+}
+
+/**
+ * Helper para setear errores de Spring en React Hook Form
+ *
+ * @param error Error de Axios con respuesta de Spring
+ * @param setError Función setError de React Hook Form
+ */
+export const setSpringErrors = (
+  error: unknown,
+  setError: UseFormSetError<any>
+) => {
+  if (!(error instanceof AxiosError)) return;
+
+  const data = error.response?.data as SpringValidationError;
+
+  // Caso 1: Spring Boot con lista de errores (Bean Validation)
+  if (data?.errors && Array.isArray(data.errors)) {
+    data.errors.forEach((err) => {
+      setError(err.field, {
+        type: 'server',
+        message: err.defaultMessage,
+      });
+    });
+    return;
+  }
+
+  // Caso 2: Mapa de errores { "fieldName": "message" }
+  if (data && typeof data === 'object') {
+    Object.entries(data).forEach(([field, message]) => {
+      if (typeof message === 'string') {
+        setError(field, {
+          type: 'server',
+          message,
+        });
+      }
+    });
+  }
+};
+
+/**
+ * Helper para extraer mensaje de error general de Spring
+ */
+export const getSpringErrorMessage = (error: unknown): string => {
+  if (!(error instanceof AxiosError)) {
+    return 'Error desconocido';
+  }
+
+  const data = error.response?.data as SpringValidationError;
+
+  // Mensaje principal del error
+  if (data?.message) {
+    return data.message;
+  }
+
+  // Si hay errores de validación, mostrar el primero
+  if (data?.errors && data.errors.length > 0) {
+    return data.errors[0].defaultMessage;
+  }
+
+  return error.message || 'Error en la petición';
+};
+```
+
+### `/src/utils/formatters.ts`
+
+```typescript
+/**
+ * Formateadores para datos de Spring Boot
+ * Compatible con BigDecimal, LocalDateTime, LocalDate
+ */
+
+/**
+ * Formatea montos (BigDecimal de Java → number en TS)
+ *
+ * IMPORTANTE: Este formateador es SOLO para visualización.
+ * NO uses los valores formateados para cálculos.
+ *
+ * @param amount Monto como number
+ * @param currency Código de moneda (ISO 4217)
+ * @param locale Locale para formateo
+ */
+export const formatCurrency = (
+  amount: number,
+  currency: string = 'USD',
+  locale: string = 'es-ES'
+): string => {
+  return new Intl.NumberFormat(locale, {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount);
+};
+
+/**
+ * Formatea número con separadores de miles
+ *
+ * @param value Número a formatear
+ * @param decimals Cantidad de decimales (default: 2)
+ */
+export const formatNumber = (value: number, decimals: number = 2): string => {
+  return new Intl.NumberFormat('es-ES', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  }).format(value);
+};
+
+/**
+ * Formatea fecha ISO-8601 de Spring Boot a formato legible
+ *
+ * Spring serializa LocalDateTime como: "2025-11-17T10:30:00"
+ * Spring serializa LocalDate como: "2025-11-17"
+ *
+ * @param isoDate String ISO-8601 de Spring
+ * @param includeTime Incluir hora en el formato
+ */
+export const formatDate = (
+  isoDate: string,
+  includeTime: boolean = false
+): string => {
+  const date = new Date(isoDate);
+
+  if (includeTime) {
+    return new Intl.DateTimeFormat('es-ES', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    }).format(date);
+  }
+
+  return new Intl.DateTimeFormat('es-ES', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(date);
+};
+
+/**
+ * Convierte Date a formato ISO-8601 para enviar a Spring Boot
+ *
+ * Para LocalDateTime en Java: "2025-11-17T10:30:00"
+ * Para LocalDate en Java: "2025-11-17"
+ *
+ * @param date Objeto Date de JavaScript
+ * @param dateOnly Solo fecha (sin hora)
+ */
+export const toISODate = (date: Date, dateOnly: boolean = false): string => {
+  if (dateOnly) {
+    // LocalDate en Java: "2025-11-17"
+    return date.toISOString().split('T')[0];
+  }
+
+  // LocalDateTime en Java: "2025-11-17T10:30:00"
+  // Nota: Remover milisegundos y zona horaria
+  return date.toISOString().split('.')[0];
+};
+
+/**
+ * Formatea el estado de la factura (Enum de Java)
+ */
+export const formatInvoiceStatus = (status: string): string => {
+  const statusMap: Record<string, string> = {
+    DRAFT: 'Borrador',
+    PENDING: 'Pendiente',
+    PAID: 'Pagada',
+    CANCELLED: 'Cancelada',
+  };
+
+  return statusMap[status] || status;
+};
+
+/**
+ * Obtiene color para el estado de factura (útil para badges)
+ */
+export const getStatusColor = (
+  status: string
+): 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'error' => {
+  const colorMap: Record<string, any> = {
+    DRAFT: 'default',
+    PENDING: 'warning',
+    PAID: 'success',
+    CANCELLED: 'error',
+  };
+
+  return colorMap[status] || 'default';
+};
+```
+
+### `/src/utils/validators.ts`
+
+```typescript
+import { z } from 'zod';
+
+/**
+ * Validaciones que coinciden con Bean Validation de Spring Boot
+ *
+ * Esto asegura que las validaciones del frontend sean consistentes
+ * con las del backend (@NotNull, @Size, @Min, @Max, etc.)
+ */
+
+/**
+ * Schema de validación para Invoice Item
+ * Coincide con: @Valid InvoiceItem en Java
+ */
+export const invoiceItemSchema = z.object({
+  description: z
+    .string()
+    .min(1, 'La descripción es requerida')
+    .max(500, 'La descripción no puede exceder 500 caracteres'),
+  quantity: z
+    .number()
+    .min(1, 'La cantidad debe ser al menos 1')
+    .max(9999, 'La cantidad no puede exceder 9999'),
+  unitPrice: z
+    .number()
+    .min(0.01, 'El precio debe ser mayor a 0')
+    .max(999999.99, 'El precio es demasiado alto'),
+  taxRate: z
+    .number()
+    .min(0, 'La tasa de impuesto no puede ser negativa')
+    .max(100, 'La tasa de impuesto no puede exceder 100%'),
+});
+
+/**
+ * Schema de validación para crear Invoice
+ * Coincide con: CreateInvoiceRequest en Java
+ */
+export const createInvoiceSchema = z.object({
+  invoiceNumber: z
+    .string()
+    .min(1, 'El número de factura es requerido')
+    .max(50, 'El número de factura no puede exceder 50 caracteres')
+    .regex(/^[A-Z0-9-]+$/, 'Formato inválido (solo mayúsculas, números y guiones)'),
+  companyId: z.number().min(1, 'Debe seleccionar una empresa'),
+  clientId: z.number().min(1, 'Debe seleccionar un cliente'),
+  issueDate: z.string().min(1, 'La fecha de emisión es requerida'),
+  dueDate: z.string().min(1, 'La fecha de vencimiento es requerida'),
+  items: z
+    .array(invoiceItemSchema)
+    .min(1, 'Debe agregar al menos un ítem')
+    .max(100, 'No puede agregar más de 100 ítems'),
+});
+
+/**
+ * Type inference de Zod schemas
+ */
+export type InvoiceItemFormData = z.infer<typeof invoiceItemSchema>;
+export type CreateInvoiceFormData = z.infer<typeof createInvoiceSchema>;
+
+/**
+ * Validador personalizado para fechas
+ * Asegura que dueDate >= issueDate
+ */
+export const validateDates = (issueDate: string, dueDate: string): boolean => {
+  const issue = new Date(issueDate);
+  const due = new Date(dueDate);
+  return due >= issue;
+};
+```
+
+### `/src/utils/constants.ts`
+
+```typescript
+/**
+ * Constantes que coinciden con el backend Java
+ */
+
+/**
+ * Estados de factura (debe coincidir con InvoiceStatus enum en Java)
+ */
+export const INVOICE_STATUS = {
+  DRAFT: 'DRAFT',
+  PENDING: 'PENDING',
+  PAID: 'PAID',
+  CANCELLED: 'CANCELLED',
+} as const;
+
+export type InvoiceStatus = (typeof INVOICE_STATUS)[keyof typeof INVOICE_STATUS];
+
+/**
+ * Roles de usuario (debe coincidir con UserRole enum en Java)
+ */
+export const USER_ROLES = {
+  ADMIN: 'ROLE_ADMIN',
+  USER: 'ROLE_USER',
+  CLIENT: 'ROLE_CLIENT',
+} as const;
+
+/**
+ * Configuración de paginación (debe coincidir con defaults de Spring Boot)
+ */
+export const PAGINATION = {
+  DEFAULT_PAGE: 0,        // Spring usa 0-based
+  DEFAULT_SIZE: 20,       // Default en Spring Boot
+  MAX_SIZE: 100,          // Máximo permitido
+} as const;
+
+/**
+ * Configuración de moneda
+ */
+export const CURRENCY = {
+  CODE: 'USD',
+  SYMBOL: '$',
+  LOCALE: 'es-ES',
+} as const;
 ```
 
 ---
@@ -677,7 +1098,8 @@ export const InvoiceListPage: React.FC = () => {
     "date-fns": "^2.30.0",
     "react-toastify": "^9.1.3",
     "recharts": "^2.10.3",
-    "jwt-decode": "^4.0.0"
+    "jwt-decode": "^4.0.0",
+    "currency.js": "^2.0.4"
   },
   "devDependencies": {
     "@types/react": "^18.2.43",
@@ -882,6 +1304,274 @@ npm run dev
 
 ---
 
+## ⚠️ NOTAS IMPORTANTES - SPRING BOOT 3 + JAVA 21
+
+### 1. BigDecimal vs Number (CRÍTICO)
+
+**Problema:**
+- Java usa `BigDecimal` para montos (precisión exacta)
+- JavaScript usa `number` (IEEE 754 - punto flotante)
+- Ejemplo: `0.1 + 0.2 = 0.30000000000000004` ❌
+
+**Solución implementada:**
+```typescript
+// ✅ CORRECTO - Solo visualización en frontend
+import currency from 'currency.js';
+
+const total = currency(invoice.subtotal)
+  .add(invoice.taxAmount)
+  .format(); // "$1,500.00"
+
+// ✅ CORRECTO - Confiar en cálculos del backend
+const createInvoice = (data: CreateInvoiceRequest) => {
+  // Backend calcula subtotal, taxAmount, totalAmount
+  return invoicesApi.create(data);
+};
+
+// ❌ INCORRECTO - NO hacer cálculos complejos en frontend
+const calculateTotal = () => {
+  return items.reduce((sum, item) =>
+    sum + (item.unitPrice * item.quantity * (1 + item.taxRate/100)), 0
+  ); // Puede tener errores de precisión
+};
+```
+
+**Regla de oro:**
+- **Visualización:** Usar `number` con `Intl.NumberFormat` o `currency.js`
+- **Cálculos:** Siempre en el **backend (Java BigDecimal)**
+
+---
+
+### 2. Paginación de Spring Data (CRÍTICO)
+
+**Spring Boot 3 devuelve:**
+```json
+{
+  "content": [...],
+  "pageable": { "pageNumber": 0, "pageSize": 20, ... },
+  "totalPages": 5,
+  "totalElements": 100,
+  "number": 0,  // ← Página actual (0-based)
+  "size": 20,
+  "last": false,
+  "first": true
+}
+```
+
+**Implementación correcta:**
+```typescript
+// ✅ Usar interfaz PagedResponse exacta (ya implementada arriba)
+const { data, isLoading } = useInvoices({
+  page: 0,        // Spring usa 0-based
+  size: 20,
+  sortBy: 'invoiceNumber',
+  sortDir: 'desc'
+});
+
+// Acceder a datos
+console.log(data.content);           // Array de facturas
+console.log(data.number);            // Página actual (0-based)
+console.log(data.totalElements);     // Total de elementos
+```
+
+---
+
+### 3. Fechas ISO-8601 (IMPORTANTE)
+
+**Spring Boot serializa:**
+- `LocalDate` → `"2025-11-17"`
+- `LocalDateTime` → `"2025-11-17T10:30:00"`
+- `Instant` → `"2025-11-17T10:30:00Z"`
+
+**Enviar al backend:**
+```typescript
+import { toISODate } from '@/utils/formatters';
+
+const formData = {
+  issueDate: toISODate(new Date(), true),  // "2025-11-17"
+  dueDate: toISODate(new Date(), true),    // "2025-11-17"
+};
+```
+
+**Visualizar en frontend:**
+```typescript
+import { formatDate } from '@/utils/formatters';
+
+const displayDate = formatDate(invoice.issueDate);        // "17/11/2025"
+const displayDateTime = formatDate(invoice.createdAt, true); // "17/11/2025 10:30:00"
+```
+
+---
+
+### 4. Manejo de Errores de Bean Validation
+
+**Spring Boot lanza `MethodArgumentNotValidException`:**
+```json
+{
+  "timestamp": "2025-11-17T10:30:00",
+  "status": 400,
+  "error": "Bad Request",
+  "message": "Validation failed",
+  "errors": [
+    {
+      "field": "items[0].quantity",
+      "defaultMessage": "must be greater than or equal to 1",
+      "code": "Min"
+    }
+  ]
+}
+```
+
+**Implementación en formularios:**
+```typescript
+import { setSpringErrors } from '@/utils/spring-errors';
+import { useForm } from 'react-hook-form';
+
+const { setError } = useForm();
+
+try {
+  await createInvoice(data);
+} catch (error) {
+  // Mapear errores de Spring a React Hook Form
+  setSpringErrors(error, setError);
+
+  // Los errores aparecen automáticamente en los campos
+  // field: "items[0].quantity" → se marca el input correspondiente
+}
+```
+
+---
+
+### 5. IDs Long de Java vs Number de TS
+
+**Java Long:**
+- Rango: `-9,223,372,036,854,775,808` a `9,223,372,036,854,775,807`
+
+**JavaScript number:**
+- Precisión: `±9,007,199,254,740,991` (2^53 - 1)
+
+**Solución:**
+```typescript
+// ✅ SAFE - IDs típicos de base de datos (<9 trillones)
+interface Invoice {
+  id: number;  // Compatible con Java Long
+}
+
+// ❌ Si usas IDs muy grandes o UUIDs, usa string:
+interface Invoice {
+  id: string;  // UUID: "550e8400-e29b-41d4-a716-446655440000"
+}
+```
+
+---
+
+### 6. Enums de Java
+
+**Backend Java:**
+```java
+public enum InvoiceStatus {
+    DRAFT, PENDING, PAID, CANCELLED
+}
+```
+
+**Frontend TypeScript:**
+```typescript
+// ✅ CORRECTO - String literal types
+type InvoiceStatus = 'DRAFT' | 'PENDING' | 'PAID' | 'CANCELLED';
+
+// ✅ O usar const object
+export const INVOICE_STATUS = {
+  DRAFT: 'DRAFT',
+  PENDING: 'PENDING',
+  PAID: 'PAID',
+  CANCELLED: 'CANCELLED',
+} as const;
+
+type InvoiceStatus = (typeof INVOICE_STATUS)[keyof typeof INVOICE_STATUS];
+```
+
+---
+
+### 7. Validaciones Consistentes
+
+**Backend (Java):**
+```java
+@NotBlank(message = "Invoice number is required")
+@Size(max = 50, message = "Invoice number cannot exceed 50 characters")
+private String invoiceNumber;
+
+@Min(value = 1, message = "Quantity must be at least 1")
+private Integer quantity;
+```
+
+**Frontend (TypeScript - Zod):**
+```typescript
+const schema = z.object({
+  invoiceNumber: z
+    .string()
+    .min(1, 'Invoice number is required')
+    .max(50, 'Invoice number cannot exceed 50 characters'),
+  quantity: z
+    .number()
+    .min(1, 'Quantity must be at least 1'),
+});
+```
+
+**Ventaja:** Si el usuario pasa validaciones del frontend, también pasará las del backend.
+
+---
+
+### 8. Ejemplo Completo de Integración
+
+```typescript
+// Crear factura con manejo completo de Spring Boot 3
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { createInvoiceSchema } from '@/utils/validators';
+import { setSpringErrors, getSpringErrorMessage } from '@/utils/spring-errors';
+import { formatCurrency, toISODate } from '@/utils/formatters';
+import { toast } from 'react-toastify';
+
+const CreateInvoiceForm = () => {
+  const { register, handleSubmit, setError, formState: { errors } } = useForm({
+    resolver: zodResolver(createInvoiceSchema),
+  });
+
+  const createMutation = useCreateInvoice();
+
+  const onSubmit = async (data: any) => {
+    try {
+      // Convertir fechas a formato ISO-8601
+      const payload = {
+        ...data,
+        issueDate: toISODate(new Date(data.issueDate), true),
+        dueDate: toISODate(new Date(data.dueDate), true),
+      };
+
+      const invoice = await createMutation.mutateAsync(payload);
+
+      // Mostrar total formateado (BigDecimal → number → formatted string)
+      toast.success(`Factura creada: ${formatCurrency(invoice.totalAmount)}`);
+
+    } catch (error) {
+      // Mapear errores de Spring Boot a campos del formulario
+      setSpringErrors(error, setError);
+
+      // Mostrar mensaje de error general
+      toast.error(getSpringErrorMessage(error));
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)}>
+      {/* Inputs con errores mapeados automáticamente */}
+    </form>
+  );
+};
+```
+
+---
+
 ## 🎯 CONCLUSIÓN
 
 Esta arquitectura te proporciona:
@@ -892,5 +1582,6 @@ Esta arquitectura te proporciona:
 ✅ **Testeable** con Vitest
 ✅ **Mantenible** con Clean Code
 ✅ **Enterprise-ready** con MUI
+✅ **100% compatible con Spring Boot 3 + Java 21**
 
 **¡Listo para empezar a construir! 🚀**
