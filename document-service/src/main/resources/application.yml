@@ -5,6 +5,13 @@ spring:
   application:
     name: document-service
 
+  # Disable Spring Cloud Config (not using config server)
+  cloud:
+    config:
+      enabled: false
+      import-check:
+        enabled: false
+
   # Database Configuration
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/documentdb}

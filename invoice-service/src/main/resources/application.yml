@@ -5,6 +5,13 @@ spring:
   application:
     name: invoice-service
 
+  # Disable Spring Cloud Config (not using config server)
+  cloud:
+    config:
+      enabled: false
+      import-check:
+        enabled: false
+
   # Database Configuration
   datasource:
     url: jdbc:postgresql://${INVOICE_DB_HOST:localhost}:${INVOICE_DB_PORT:5432}/${INVOICE_DB_NAME:invoicedb}
