@@ -5,6 +5,16 @@ spring:
   application:
     name: trace-service
 
+  # Disable Spring Cloud Config (not using config server)
+  config:
+    import: optional:configserver:
+
+  cloud:
+    config:
+      enabled: false
+      import-check:
+        enabled: false
+
   # Database Configuration
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/tracedb}
