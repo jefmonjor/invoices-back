@@ -6,6 +6,9 @@ spring:
     name: invoice-service
 
   # Disable Spring Cloud Config (not using config server)
+  config:
+    import: optional:configserver:
+
   cloud:
     config:
       enabled: false
