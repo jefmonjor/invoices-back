@@ -7,9 +7,7 @@ spring:
 
   # Database Configuration
   datasource:
-    url: jdbc:postgresql://${TRACE_DB_HOST:localhost}:${TRACE_DB_PORT:5432}/${TRACE_DB_NAME:tracedb}
-    username: ${TRACE_DB_USERNAME:trace_service_user}
-    password: ${TRACE_DB_PASSWORD:password}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/tracedb}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 10
@@ -46,6 +44,10 @@ spring:
         max.poll.interval.ms: 300000
         session.timeout.ms: 30000
         heartbeat.interval.ms: 10000
+        # Upstash Kafka SASL authentication (optional, set via env vars)
+        security.protocol: ${KAFKA_SECURITY_PROTOCOL:PLAINTEXT}
+        sasl.mechanism: ${KAFKA_SASL_MECHANISM:PLAIN}
+        sasl.jaas.config: ${KAFKA_SASL_JAAS_CONFIG:}
     listener:
       ack-mode: manual
       # Concurrency for parallel processing
@@ -56,14 +58,20 @@ spring:
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
       acks: all
       retries: 3
+      properties:
+        # Upstash Kafka SASL authentication (optional, set via env vars)
+        security.protocol: ${KAFKA_SECURITY_PROTOCOL:PLAINTEXT}
+        sasl.mechanism: ${KAFKA_SASL_MECHANISM:PLAIN}
+        sasl.jaas.config: ${KAFKA_SASL_JAAS_CONFIG:}
 
 # Eureka Configuration
 eureka:
   client:
+    enabled: ${EUREKA_CLIENT_ENABLED:true}
     service-url:
       defaultZone: http://${EUREKA_USERNAME:eureka-admin}:${EUREKA_PASSWORD:password}@${EUREKA_SERVER_HOST:localhost}:${EUREKA_SERVER_PORT:8761}/eureka/
-    register-with-eureka: true
-    fetch-registry: true
+    register-with-eureka: ${EUREKA_CLIENT_ENABLED:true}
+    fetch-registry: ${EUREKA_CLIENT_ENABLED:true}
   instance:
     prefer-ip-address: true
 
