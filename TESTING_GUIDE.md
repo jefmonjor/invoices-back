@@ -7,8 +7,8 @@ Esta guía explica cómo ejecutar los tests y verificar la cobertura de código 
 | Servicio | JaCoCo Coverage | Tests | Tipo |
 |----------|-----------------|-------|------|
 | **Document Service** | 80% | 17 | Unit + Integration (Testcontainers) |
-| **Trace Service** | 70% | 26 | Unit + Integration (EmbeddedKafka) |
-| **Gateway Service** | 70% | 15 | Unit (JWT, Security) |
+| **Trace Service** | 70% | 26 | Unit + Integration (EmbeddedKafka + DLQ) |
+| **Gateway Service** | 90%+ | 51 | Unit (JWT, Routing, CORS) |
 | **Config Server** | N/A | - | Configuración |
 
 ---
@@ -137,23 +137,77 @@ mvn jacoco:check
 - ✅ Custom sorting
 - ✅ 404 error handling
 
+**Dead Letter Queue (DLQ):**
+- ✅ Retry logic con exponential backoff (3 intentos: 1s, 2s, 4s)
+- ✅ Envío a DLQ topic después de fallos
+- ✅ Monitoreo y logging de mensajes en DLQ
+- ✅ Preservación de mensajes originales para análisis
+
 **Ubicación:** `trace-service/src/test/java/com/invoices/trace_service/`
 
 ### Gateway Service
 
-**JWT Validation Tests:**
-- ✅ Validate valid tokens
-- ✅ Extract username from token
-- ✅ Extract all claims from token
-- ✅ Reject expired tokens
-- ✅ Reject tokens with invalid signature
-- ✅ Reject malformed tokens
-- ✅ Reject null/empty tokens
-- ✅ Handle tokens with multiple claims
-- ✅ Validate multiple tokens concurrently
-- ✅ Reject tokens with invalid format
+**JWT Authentication Filter Tests (17 tests):**
+- ✅ Authenticate with valid token
+- ✅ Allow public routes without token (/auth/**, /actuator/**)
+- ✅ Reject requests without Authorization header
+- ✅ Reject malformed Authorization header
+- ✅ Reject expired tokens (401)
+- ✅ Reject invalid tokens (401)
+- ✅ Extract username and set SecurityContext
+- ✅ Continue filter chain for valid tokens
+- ✅ Handle tokens with "Bearer " prefix
+- ✅ Validate token expiration
+- ✅ Multiple concurrent requests
+- ✅ Token refresh scenarios
+- ✅ Handle edge cases (null, empty, spaces)
+- ✅ Verify SecurityContextHolder cleanup
+- ✅ Test filter ordering
+- ✅ Validate authentication object
+- ✅ Error response format
 
-**Ubicación:** `gateway-service/src/test/java/com/invoices/gateway_service/security/`
+**Gateway Routing Tests (15 tests):**
+- ✅ Verify all 5 microservice routes configured
+- ✅ Invoice Service route (lb://invoice-service)
+- ✅ Client Service route (lb://client-service)
+- ✅ Document Service route (lb://document-service)
+- ✅ Trace Service route (lb://trace-service)
+- ✅ User Service route (lb://user-service)
+- ✅ Path predicates correct (/api/invoices/**, etc.)
+- ✅ Load balancing enabled (lb://)
+- ✅ Route IDs unique
+- ✅ No duplicate paths
+- ✅ Route priority order
+- ✅ StripPrefix filter configured
+- ✅ RewritePath filter working
+- ✅ All routes reachable
+- ✅ Route metadata validation
+
+**CORS Configuration Tests (19 tests):**
+- ✅ Allow CORS preflight requests (OPTIONS)
+- ✅ Allow localhost:3000 origin
+- ✅ Allow localhost:5173 origin (Vite dev)
+- ✅ Allow all HTTP methods (GET, POST, PUT, DELETE, PATCH)
+- ✅ Allow Authorization header
+- ✅ Allow Content-Type header
+- ✅ Allow custom headers
+- ✅ Credentials enabled (Access-Control-Allow-Credentials: true)
+- ✅ Max age 3600 seconds
+- ✅ Reject unauthorized origins
+- ✅ CORS headers in actual requests
+- ✅ Multiple origins support
+- ✅ Wildcard path matching (/**)
+- ✅ CORS on all endpoints
+- ✅ Preflight cache duration
+- ✅ Exposed headers configuration
+- ✅ CORS error handling
+- ✅ OPTIONS request returns 200
+- ✅ CORS integration with security filters
+
+**Ubicación:** `gateway-service/src/test/java/com/invoices/gateway_service/`
+- `security/JwtAuthenticationFilterTest.java`
+- `routing/GatewayRoutingTest.java`
+- `cors/CorsConfigurationTest.java`
 
 ---
 
