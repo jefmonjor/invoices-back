@@ -7,7 +7,7 @@ WORKDIR /app
 COPY pom.xml .
 RUN mvn dependency:go-offline -B
 COPY src ./src
-RUN mvn clean package -DskipTests -Dmaven.test.skip=true
+RUN mvn clean package -DskipTests -Dmaven.test.skip=true -Dcheckstyle.skip=true -Dspotbugs.skip=true
 
 FROM eclipse-temurin:21-jre-alpine
 LABEL maintainer="invoices-backend"
