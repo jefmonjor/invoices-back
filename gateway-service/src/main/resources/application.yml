@@ -59,10 +59,11 @@ spring:
 # Eureka Configuration
 eureka:
   client:
+    enabled: ${EUREKA_CLIENT_ENABLED:true}
     service-url:
       defaultZone: http://${EUREKA_USERNAME:eureka-admin}:${EUREKA_PASSWORD:password}@${EUREKA_SERVER_HOST:localhost}:${EUREKA_SERVER_PORT:8761}/eureka/
-    register-with-eureka: true
-    fetch-registry: true
+    register-with-eureka: ${EUREKA_CLIENT_ENABLED:true}
+    fetch-registry: ${EUREKA_CLIENT_ENABLED:true}
   instance:
     prefer-ip-address: true
 
