@@ -16,6 +16,8 @@ public interface InvoiceRepository {
 
     List<Invoice> findByUserId(Long userId);
 
+    List<Invoice> findAll();
+
     Invoice save(Invoice invoice);
 
     void deleteById(Long id);

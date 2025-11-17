@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
 public class MinioConfig {
 
     @Component
-    @ConfigurationProperties(prefix = "minio")
+    @ConfigurationProperties(prefix = "storage.s3")
     @Data
     public static class MinioProperties {
         private String endpoint;
@@ -24,6 +24,7 @@ public class MinioConfig {
         private String secretKey;
         private String bucketName;
         private String region;
+        private boolean pathStyleAccess;
     }
 
     @Bean

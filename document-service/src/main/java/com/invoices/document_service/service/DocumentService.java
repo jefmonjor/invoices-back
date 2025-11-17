@@ -95,17 +95,13 @@ public class DocumentService {
         Document document = documentRepository.findById(documentId)
                 .orElseThrow(() -> new DocumentNotFoundException(documentId));
 
-        try {
-            InputStream stream = minioClient.getObject(
-                    GetObjectArgs.builder()
-                            .bucket(minioProperties.getBucketName())
-                            .object(document.getMinioObjectName())
-                            .build()
-            );
-
+        try (InputStream stream = minioClient.getObject(
+                GetObjectArgs.builder()
+                        .bucket(minioProperties.getBucketName())
+                        .object(document.getMinioObjectName())
+                        .build()
+        )) {
             byte[] content = stream.readAllBytes();
-            stream.close();
-
             log.info("Document downloaded successfully: {}", documentId);
             return content;
 
@@ -186,7 +182,10 @@ public class DocumentService {
     private void validateFileContent(MultipartFile file) {
         try {
             // Detect actual content type based on file content
-            String detectedType = tika.detect(file.getInputStream());
+            String detectedType;
+            try (InputStream inputStream = file.getInputStream()) {
+                detectedType = tika.detect(inputStream);
+            }
 
             log.debug("File declared type: {}, Detected type: {}", file.getContentType(), detectedType);
 
@@ -199,9 +198,10 @@ public class DocumentService {
 
             // Additional validation: check for PDF signature
             byte[] header = new byte[5];
-            InputStream inputStream = file.getInputStream();
-            int bytesRead = inputStream.read(header);
-            inputStream.close();
+            int bytesRead;
+            try (InputStream inputStream = file.getInputStream()) {
+                bytesRead = inputStream.read(header);
+            }
 
             if (bytesRead < 5) {
                 throw new IllegalArgumentException("File is too small to be a valid PDF");

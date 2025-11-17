@@ -40,6 +40,13 @@ public class InvoiceRepositoryImpl implements InvoiceRepository {
     }
 
     @Override
+    public List<Invoice> findAll() {
+        return jpaRepository.findAll().stream()
+            .map(mapper::toDomainEntity)
+            .collect(Collectors.toList());
+    }
+
+    @Override
     public Invoice save(Invoice invoice) {
         InvoiceJpaEntity jpaEntity = mapper.toJpaEntity(invoice);
         InvoiceJpaEntity savedEntity = jpaRepository.save(jpaEntity);
