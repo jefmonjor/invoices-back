@@ -38,41 +38,24 @@ spring:
     baseline-on-migrate: true
     locations: classpath:db/migration
 
-  # Kafka Consumer Configuration
-  kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
-    consumer:
-      group-id: ${KAFKA_TRACE_GROUP_ID:trace-group}
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
-      auto-offset-reset: earliest
-      enable-auto-commit: false
-      properties:
-        spring.json.trusted.packages: "*"
-        # Consumer reliability settings
-        max.poll.records: 10
-        max.poll.interval.ms: 300000
-        session.timeout.ms: 30000
-        heartbeat.interval.ms: 10000
-        # Upstash Kafka SASL authentication (optional, set via env vars)
-        security.protocol: ${KAFKA_SECURITY_PROTOCOL:PLAINTEXT}
-        sasl.mechanism: ${KAFKA_SASL_MECHANISM:PLAIN}
-        sasl.jaas.config: ${KAFKA_SASL_JAAS_CONFIG:}
-    listener:
-      ack-mode: manual
-      # Concurrency for parallel processing
-      concurrency: 3
-    # Producer configuration for DLQ
-    producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
-      acks: all
-      retries: 3
-      properties:
-        # Upstash Kafka SASL authentication (optional, set via env vars)
-        security.protocol: ${KAFKA_SECURITY_PROTOCOL:PLAINTEXT}
-        sasl.mechanism: ${KAFKA_SASL_MECHANISM:PLAIN}
-        sasl.jaas.config: ${KAFKA_SASL_JAAS_CONFIG:}
+  # Redis Configuration (replaces Kafka for event streaming)
+  redis:
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD:}
+    ssl: ${REDIS_SSL:false}
+    timeout: 60000
+    lettuce:
+      pool:
+        max-active: 8
+        max-idle: 8
+        min-idle: 2
+        max-wait: -1ms
+    stream:
+      invoice-events: ${REDIS_STREAM_INVOICE_EVENTS:invoice-events}
+      invoice-events-dlq: ${REDIS_STREAM_INVOICE_DLQ:invoice-events-dlq}
+      consumer-group: ${REDIS_CONSUMER_GROUP:trace-group}
+      consumer-name: ${REDIS_CONSUMER_NAME:trace-consumer}
 
 # Eureka Configuration
 eureka:
@@ -85,11 +68,6 @@ eureka:
   instance:
     prefer-ip-address: true
 
-# Kafka Topics
-kafka:
-  topic:
-    invoice-events: ${KAFKA_INVOICE_TOPIC:invoice-events}
-    invoice-events-dlq: ${KAFKA_INVOICE_DLQ_TOPIC:invoice-events-dlq}
 
 # JWT Configuration
 jwt:
@@ -101,7 +79,8 @@ logging:
   level:
     root: ${LOG_LEVEL_ROOT:INFO}
     com.invoices: ${LOG_LEVEL_APP:DEBUG}
-    org.apache.kafka: INFO
+    io.lettuce: INFO
+    org.springframework.data.redis: INFO
 
 # Actuator
 management:

@@ -26,54 +26,26 @@ services:
       timeout: 5s
       retries: 5
 
-  # Zookeeper (para Kafka)
-  zookeeper:
-    image: confluentinc/cp-zookeeper:7.5.0
-    container_name: invoices-zookeeper
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
+  # Redis (reemplaza Kafka para event streaming)
+  # En producción, usar Redis gratuito: Upstash Redis o Redis Cloud
+  redis:
+    image: redis:7-alpine
+    container_name: invoices-redis
+    command: redis-server --appendonly yes
     volumes:
-      - zookeeper-data:/var/lib/zookeeper/data
-      - zookeeper-logs:/var/lib/zookeeper/log
+      - redis-data:/data
     ports:
-      - "2181:2181"
+      - "6379:6379"
     networks:
       - invoices-network
     healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "2181"]
+      test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  # Kafka
-  kafka:
-    image: confluentinc/cp-kafka:7.5.0
-    container_name: invoices-kafka
-    depends_on:
-      zookeeper:
-        condition: service_healthy
-    environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
-    volumes:
-      - kafka-data:/var/lib/kafka/data
-    ports:
-      - "9092:9092"
-    networks:
-      - invoices-network
-    healthcheck:
-      test: ["CMD", "kafka-topics", "--bootstrap-server", "localhost:9092", "--list"]
-      interval: 10s
-      timeout: 10s
-      retries: 5
-
-  # MinIO (almacenamiento de PDFs)
+  # MinIO (almacenamiento S3-compatible local)
+  # En producción, usar Cloudflare R2 (gratis hasta 10GB)
   minio:
     image: minio/minio:latest
     container_name: invoices-minio
@@ -197,8 +169,10 @@ services:
       - INVOICE_DB_PASSWORD=${INVOICE_DB_PASSWORD:-invoice_pass_2025}
       - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-min-32-chars-base64-encoded-change-in-production}
       - JWT_ISSUER=${JWT_ISSUER:-invoices-backend}
-      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
-      - KAFKA_INVOICE_TOPIC=${KAFKA_INVOICE_TOPIC:-invoice-events}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_STREAM_INVOICE_EVENTS=${REDIS_STREAM_INVOICE_EVENTS:-invoice-events}
+      - EUREKA_CLIENT_ENABLED=false
       - EUREKA_SERVER_HOST=eureka-server
       - EUREKA_SERVER_PORT=8761
       - EUREKA_USERNAME=${EUREKA_USERNAME:-eureka-admin}
@@ -208,9 +182,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      kafka:
-        condition: service_healthy
-      eureka-server:
+      redis:
         condition: service_healthy
       user-service:
         condition: service_healthy
@@ -237,10 +209,11 @@ services:
       - DOCUMENT_DB_PASSWORD=${DOCUMENT_DB_PASSWORD:-document_pass_2025}
       - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-min-32-chars-base64-encoded-change-in-production}
       - JWT_ISSUER=${JWT_ISSUER:-invoices-backend}
-      - MINIO_ENDPOINT=http://minio:9000
-      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY:-minioadmin}
-      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY:-minioadmin123}
-      - MINIO_BUCKET_NAME=${MINIO_BUCKET_NAME:-invoices-pdfs}
+      - S3_ENDPOINT=http://minio:9000
+      - S3_ACCESS_KEY=${MINIO_ACCESS_KEY:-minioadmin}
+      - S3_SECRET_KEY=${MINIO_SECRET_KEY:-minioadmin123}
+      - S3_BUCKET_NAME=${MINIO_BUCKET_NAME:-invoices-documents}
+      - EUREKA_CLIENT_ENABLED=false
       - EUREKA_SERVER_HOST=eureka-server
       - EUREKA_SERVER_PORT=8761
       - EUREKA_USERNAME=${EUREKA_USERNAME:-eureka-admin}
@@ -251,8 +224,6 @@ services:
       postgres:
         condition: service_healthy
       minio:
-        condition: service_healthy
-      eureka-server:
         condition: service_healthy
     networks:
       - invoices-network
@@ -277,9 +248,11 @@ services:
       - TRACE_DB_PASSWORD=${TRACE_DB_PASSWORD:-trace_pass_2025}
       - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-min-32-chars-base64-encoded-change-in-production}
       - JWT_ISSUER=${JWT_ISSUER:-invoices-backend}
-      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
-      - KAFKA_INVOICE_TOPIC=${KAFKA_INVOICE_TOPIC:-invoice-events}
-      - KAFKA_TRACE_GROUP_ID=${KAFKA_TRACE_GROUP_ID:-trace-group}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_STREAM_INVOICE_EVENTS=${REDIS_STREAM_INVOICE_EVENTS:-invoice-events}
+      - REDIS_CONSUMER_GROUP=${REDIS_CONSUMER_GROUP:-trace-group}
+      - EUREKA_CLIENT_ENABLED=false
       - EUREKA_SERVER_HOST=eureka-server
       - EUREKA_SERVER_PORT=8761
       - EUREKA_USERNAME=${EUREKA_USERNAME:-eureka-admin}
@@ -289,9 +262,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      kafka:
-        condition: service_healthy
-      eureka-server:
+      redis:
         condition: service_healthy
     networks:
       - invoices-network
@@ -311,6 +282,7 @@ services:
       - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
       - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-min-32-chars-base64-encoded-change-in-production}
       - JWT_ISSUER=${JWT_ISSUER:-invoices-backend}
+      - EUREKA_CLIENT_ENABLED=false
       - EUREKA_SERVER_HOST=eureka-server
       - EUREKA_SERVER_PORT=8761
       - EUREKA_USERNAME=${EUREKA_USERNAME:-eureka-admin}
@@ -321,8 +293,6 @@ services:
     ports:
       - "8080:8080"
     depends_on:
-      eureka-server:
-        condition: service_healthy
       user-service:
         condition: service_healthy
       invoice-service:
@@ -353,11 +323,7 @@ networks:
 volumes:
   postgres-data:
     name: invoices-postgres-data
-  zookeeper-data:
-    name: invoices-zookeeper-data
-  zookeeper-logs:
-    name: invoices-zookeeper-logs
-  kafka-data:
-    name: invoices-kafka-data
+  redis-data:
+    name: invoices-redis-data
   minio-data:
     name: invoices-minio-data
