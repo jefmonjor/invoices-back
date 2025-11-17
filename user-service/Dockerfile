@@ -21,7 +21,7 @@ RUN mvn dependency:go-offline -B
 COPY src ./src
 
 # Compilar y empaquetar (skip tests para build más rápido)
-RUN mvn clean package -DskipTests
+RUN mvn clean package -DskipTests -Dmaven.test.skip=true
 
 # =================================================================
 # STAGE 2: RUNTIME
