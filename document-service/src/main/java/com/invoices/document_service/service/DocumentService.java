@@ -168,7 +168,7 @@ public class DocumentService {
 
         // Validate declared content type
         if (!ALLOWED_CONTENT_TYPE.equals(file.getContentType())) {
-            throw new InvalidFileTypeException(file.getContentType());
+            throw new InvalidFileTypeException("Invalid file type: " + file.getContentType() + ". Only PDF files are allowed.");
         }
 
         if (file.getSize() > MAX_FILE_SIZE) {
