@@ -259,14 +259,13 @@ Incluye configuración para:
 ## 📊 Historial de Commits
 
 ```
+* 9cca97b fix: agregar método findAll() a InvoiceRepository
+* 01d83df docs: actualizar PULL_REQUEST.md con fix de Checkstyle
 * 93f350c fix: deshabilitar Checkstyle y SpotBugs en build de Docker
 * e283fb2 docs: actualizar PULL_REQUEST.md con fixes de Lombok y fly.toml
 * 65ced0d fix: ajustar configuración de todos los microservicios
 * 10da7d4 fix: mejorar configuración de Lombok en pom.xml
 * 380d2d2 fix: resolver constructor duplicado en UserAlreadyExistsException
-* ed169e2 fix: simplificar configuración de Maven para Lombok
-* d7fe48d fix: configurar maven-compiler-plugin con Lombok annotation processor
-* e2474fd fix: agregar -Dmaven.test.skip=true a Dockerfiles de servicios
 ```
 
 ---
@@ -398,6 +397,11 @@ Password: admin123
 **Problema:** Build fallaba por violaciones de estilo de código
 **Causa raíz:** Google Checkstyle requiere 2 espacios, código usa 4 espacios
 **Solución:** Agregado `-Dcheckstyle.skip=true -Dspotbugs.skip=true` a todos los Dockerfiles
+
+### 7. ✅ Método findAll() faltante en InvoiceRepository
+**Problema:** Compilación fallaba con "cannot find symbol: method findAll()"
+**Causa raíz:** GetAllInvoicesUseCase usaba findAll() pero no estaba en la interfaz
+**Solución:** Agregado método `List<Invoice> findAll()` a InvoiceRepository
 
 ---
 
