@@ -108,8 +108,8 @@ EOF
         echo -e "${GREEN}✓${NC} App '$app_name' ya existe"
     fi
 
-    # Configurar secrets
-    echo -e "${YELLOW}→${NC} Configurando secrets..."
+    # Configurar secrets base
+    echo -e "${YELLOW}→${NC} Configurando secrets base..."
 
     fly secrets set \
         SPRING_PROFILES_ACTIVE=prod \
@@ -118,6 +118,36 @@ EOF
         EUREKA_CLIENT_ENABLED=false \
         SPRING_DATASOURCE_URL="${!db_url_var}" \
         -a "$app_name"
+
+    # Configurar secrets específicos por servicio
+    if [ "$service_name" == "document-service" ]; then
+        echo -e "${YELLOW}→${NC} Configurando Cloudflare R2 para Document Service..."
+        fly secrets set \
+            S3_ENDPOINT="$R2_ENDPOINT" \
+            S3_ACCESS_KEY="$R2_ACCESS_KEY_ID" \
+            S3_SECRET_KEY="$R2_SECRET_ACCESS_KEY" \
+            S3_BUCKET_NAME="$R2_BUCKET_NAME" \
+            S3_REGION="$R2_REGION" \
+            S3_PATH_STYLE_ACCESS=true \
+            -a "$app_name"
+    fi
+
+    if [ "$service_name" == "trace-service" ]; then
+        echo -e "${YELLOW}→${NC} Configurando Upstash Kafka para Trace Service..."
+
+        # Crear JAAS config para SASL authentication
+        JAAS_CONFIG="org.apache.kafka.common.security.scram.ScramLoginModule required username='$KAFKA_USERNAME' password='$KAFKA_PASSWORD';"
+
+        fly secrets set \
+            KAFKA_BOOTSTRAP_SERVERS="$KAFKA_BOOTSTRAP_SERVERS" \
+            KAFKA_SECURITY_PROTOCOL="$KAFKA_SECURITY_PROTOCOL" \
+            KAFKA_SASL_MECHANISM="$KAFKA_SASL_MECHANISM" \
+            KAFKA_SASL_JAAS_CONFIG="$JAAS_CONFIG" \
+            KAFKA_TOPIC_INVOICE_EVENTS="$KAFKA_TOPIC_INVOICE_EVENTS" \
+            KAFKA_TOPIC_USER_EVENTS="$KAFKA_TOPIC_USER_EVENTS" \
+            KAFKA_TOPIC_AUDIT_TRAIL="$KAFKA_TOPIC_AUDIT_TRAIL" \
+            -a "$app_name"
+    fi
 
     # Desplegar
     echo -e "${YELLOW}→${NC} Desplegando..."
@@ -129,8 +159,8 @@ EOF
 }
 
 # Desplegar servicios
-echo -e "${YELLOW}Desplegando servicios esenciales (uso básico - 2 usuarios)...${NC}"
-echo -e "${YELLOW}Esto tomará aproximadamente 8-10 minutos${NC}"
+echo -e "${YELLOW}Desplegando TODOS los microservicios (5 servicios)...${NC}"
+echo -e "${YELLOW}Esto tomará aproximadamente 15-20 minutos${NC}"
 echo ""
 
 # 1. User Service (ESENCIAL - Autenticación y usuarios)
@@ -139,17 +169,15 @@ deploy_service "user-service" "invoices-user-service" "8082" "USER_DB_URL"
 # 2. Invoice Service (ESENCIAL - Core business: crear/ver/editar facturas)
 deploy_service "invoice-service" "invoices-invoice-service" "8081" "INVOICE_DB_URL"
 
-# 3. Document Service (OPCIONAL - Descomenta si necesitas almacenar PDFs permanentemente)
-# Con Gateway + User + Invoice puedes generar PDFs pero se descargan directamente
-# deploy_service "document-service" "invoices-document-service" "8083" "DOCUMENT_DB_URL"
+# 3. Document Service (Almacenamiento de PDFs en Cloudflare R2)
+deploy_service "document-service" "invoices-document-service" "8083" "DOCUMENT_DB_URL"
 
-# 4. Trace Service (OPCIONAL - Descomenta si necesitas auditoría completa)
-# Con 2 usuarios básicos, no es crítico. Los logs están disponibles vía 'fly logs'
-# deploy_service "trace-service" "invoices-trace-service" "8084" "TRACE_DB_URL"
+# 4. Trace Service (Auditoría completa con Upstash Kafka)
+deploy_service "trace-service" "invoices-trace-service" "8084" "TRACE_DB_URL"
 
 echo ""
 echo -e "${BLUE}=========================================${NC}"
-echo -e "${GREEN}✓ SERVICIOS ESENCIALES DESPLEGADOS${NC}"
+echo -e "${GREEN}✓ TODOS LOS SERVICIOS DESPLEGADOS${NC}"
 echo -e "${BLUE}=========================================${NC}"
 echo ""
 
@@ -157,20 +185,25 @@ echo -e "${GREEN}URLs de tus servicios:${NC}"
 echo "Gateway:  https://invoices-backend.fly.dev (punto de entrada único)"
 echo "User:     https://invoices-user-service.fly.dev (autenticación)"
 echo "Invoice:  https://invoices-invoice-service.fly.dev (facturas)"
+echo "Document: https://invoices-document-service.fly.dev (almacenamiento PDFs)"
+echo "Trace:    https://invoices-trace-service.fly.dev (auditoría)"
 echo ""
 
-echo -e "${YELLOW}Servicios NO desplegados (optimizado para bajo uso):${NC}"
-echo "Document: Almacenamiento permanente de PDFs (los PDFs se generan y descargan directamente)"
-echo "Trace:    Auditoría completa (logs disponibles vía 'fly logs')"
+echo -e "${GREEN}Servicios externos integrados:${NC}"
+echo "Cloudflare R2: Almacenamiento de PDFs (10 GB gratis)"
+echo "Upstash Kafka: Sistema de eventos (10K mensajes/día gratis)"
+echo "Neon PostgreSQL: 4 bases de datos (2 GB gratis)"
 echo ""
 
 echo -e "${GREEN}Verificar health checks:${NC}"
 echo "curl https://invoices-user-service.fly.dev/actuator/health"
 echo "curl https://invoices-invoice-service.fly.dev/actuator/health"
+echo "curl https://invoices-document-service.fly.dev/actuator/health"
+echo "curl https://invoices-trace-service.fly.dev/actuator/health"
 echo ""
 
 echo -e "${GREEN}Test de login (usuario admin creado automáticamente):${NC}"
-echo 'curl -X POST https://invoices-user-service.fly.dev/api/auth/login \'
+echo 'curl -X POST https://invoices-backend.fly.dev/api/auth/login \'
 echo '  -H "Content-Type: application/json" \'
 echo '  -d '"'"'{"email":"admin@invoices.com","password":"admin123"}'"'"
 echo ""
@@ -179,7 +212,7 @@ echo -e "${YELLOW}Nota:${NC} Las migraciones de Flyway se ejecutaron automática
 echo "Usuario admin creado: admin@invoices.com / admin123"
 echo ""
 
-echo -e "${BLUE}Total de VMs desplegadas: 3 (Gateway, User, Invoice)${NC}"
-echo -e "${BLUE}Consumo estimado: Muy bajo (2 usuarios básicos)${NC}"
-echo -e "${BLUE}Modelo: Fly.io allowance mensual - Dentro del free tier${NC}"
-echo "✅ Sistema básico listo para 2 usuarios"
+echo -e "${BLUE}Total de VMs desplegadas: 5 (Gateway, User, Invoice, Document, Trace)${NC}"
+echo -e "${BLUE}Consumo estimado: Bajo (consumo por uso)${NC}"
+echo -e "${BLUE}Modelo: Fly.io consumo + Cloudflare R2 + Upstash Kafka (todo gratis)${NC}"
+echo "✅ Sistema completo listo con almacenamiento y auditoría"

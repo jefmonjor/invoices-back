@@ -7,9 +7,7 @@ spring:
 
   # Database Configuration
   datasource:
-    url: jdbc:postgresql://${DOCUMENT_DB_HOST:localhost}:${DOCUMENT_DB_PORT:5432}/${DOCUMENT_DB_NAME:documentdb}
-    username: ${DOCUMENT_DB_USERNAME:document_service_user}
-    password: ${DOCUMENT_DB_PASSWORD:password}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/documentdb}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 10
@@ -40,20 +38,24 @@ spring:
 # Eureka Configuration
 eureka:
   client:
+    enabled: ${EUREKA_CLIENT_ENABLED:true}
     service-url:
       defaultZone: http://${EUREKA_USERNAME:eureka-admin}:${EUREKA_PASSWORD:password}@${EUREKA_SERVER_HOST:localhost}:${EUREKA_SERVER_PORT:8761}/eureka/
-    register-with-eureka: true
-    fetch-registry: true
+    register-with-eureka: ${EUREKA_CLIENT_ENABLED:true}
+    fetch-registry: ${EUREKA_CLIENT_ENABLED:true}
   instance:
     prefer-ip-address: true
 
-# MinIO Configuration
-minio:
-  endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
-  access-key: ${MINIO_ACCESS_KEY:minioadmin}
-  secret-key: ${MINIO_SECRET_KEY:minioadmin}
-  bucket-name: ${MINIO_BUCKET_NAME:invoices-pdfs}
-  region: ${MINIO_REGION:us-east-1}
+# Object Storage Configuration (S3-compatible: MinIO, Cloudflare R2, AWS S3)
+storage:
+  s3:
+    endpoint: ${S3_ENDPOINT:http://localhost:9000}
+    access-key: ${S3_ACCESS_KEY:minioadmin}
+    secret-key: ${S3_SECRET_KEY:minioadmin}
+    bucket-name: ${S3_BUCKET_NAME:invoices-pdfs}
+    region: ${S3_REGION:auto}
+    # Set to true for Cloudflare R2, false for MinIO/AWS S3
+    path-style-access: ${S3_PATH_STYLE_ACCESS:true}
 
 # JWT Configuration
 jwt:
