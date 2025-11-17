@@ -129,25 +129,27 @@ EOF
 }
 
 # Desplegar servicios
-echo -e "${YELLOW}Desplegando TODOS los microservicios...${NC}"
-echo -e "${YELLOW}Esto tomará aproximadamente 15-20 minutos${NC}"
+echo -e "${YELLOW}Desplegando servicios esenciales (uso básico - 2 usuarios)...${NC}"
+echo -e "${YELLOW}Esto tomará aproximadamente 8-10 minutos${NC}"
 echo ""
 
 # 1. User Service (ESENCIAL - Autenticación y usuarios)
 deploy_service "user-service" "invoices-user-service" "8082" "USER_DB_URL"
 
-# 2. Invoice Service (ESENCIAL - Core business)
+# 2. Invoice Service (ESENCIAL - Core business: crear/ver/editar facturas)
 deploy_service "invoice-service" "invoices-invoice-service" "8081" "INVOICE_DB_URL"
 
-# 3. Document Service (Almacenamiento de archivos/PDFs)
-deploy_service "document-service" "invoices-document-service" "8083" "DOCUMENT_DB_URL"
+# 3. Document Service (OPCIONAL - Descomenta si necesitas almacenar PDFs permanentemente)
+# Con Gateway + User + Invoice puedes generar PDFs pero se descargan directamente
+# deploy_service "document-service" "invoices-document-service" "8083" "DOCUMENT_DB_URL"
 
-# 4. Trace Service (Auditoría y trazabilidad)
-deploy_service "trace-service" "invoices-trace-service" "8084" "TRACE_DB_URL"
+# 4. Trace Service (OPCIONAL - Descomenta si necesitas auditoría completa)
+# Con 2 usuarios básicos, no es crítico. Los logs están disponibles vía 'fly logs'
+# deploy_service "trace-service" "invoices-trace-service" "8084" "TRACE_DB_URL"
 
 echo ""
 echo -e "${BLUE}=========================================${NC}"
-echo -e "${GREEN}✓ TODOS LOS SERVICIOS DESPLEGADOS${NC}"
+echo -e "${GREEN}✓ SERVICIOS ESENCIALES DESPLEGADOS${NC}"
 echo -e "${BLUE}=========================================${NC}"
 echo ""
 
@@ -155,15 +157,16 @@ echo -e "${GREEN}URLs de tus servicios:${NC}"
 echo "Gateway:  https://invoices-backend.fly.dev (punto de entrada único)"
 echo "User:     https://invoices-user-service.fly.dev (autenticación)"
 echo "Invoice:  https://invoices-invoice-service.fly.dev (facturas)"
-echo "Document: https://invoices-document-service.fly.dev (almacenamiento)"
-echo "Trace:    https://invoices-trace-service.fly.dev (auditoría)"
+echo ""
+
+echo -e "${YELLOW}Servicios NO desplegados (optimizado para bajo uso):${NC}"
+echo "Document: Almacenamiento permanente de PDFs (los PDFs se generan y descargan directamente)"
+echo "Trace:    Auditoría completa (logs disponibles vía 'fly logs')"
 echo ""
 
 echo -e "${GREEN}Verificar health checks:${NC}"
 echo "curl https://invoices-user-service.fly.dev/actuator/health"
 echo "curl https://invoices-invoice-service.fly.dev/actuator/health"
-echo "curl https://invoices-document-service.fly.dev/actuator/health"
-echo "curl https://invoices-trace-service.fly.dev/actuator/health"
 echo ""
 
 echo -e "${GREEN}Test de login (usuario admin creado automáticamente):${NC}"
@@ -176,6 +179,7 @@ echo -e "${YELLOW}Nota:${NC} Las migraciones de Flyway se ejecutaron automática
 echo "Usuario admin creado: admin@invoices.com / admin123"
 echo ""
 
-echo -e "${BLUE}Total de VMs desplegadas: 5 (Gateway, User, Invoice, Document, Trace)${NC}"
-echo -e "${BLUE}Modelo: Fly.io allowance mensual (basado en consumo)${NC}"
-echo "✅ Sistema completo desplegado"
+echo -e "${BLUE}Total de VMs desplegadas: 3 (Gateway, User, Invoice)${NC}"
+echo -e "${BLUE}Consumo estimado: Muy bajo (2 usuarios básicos)${NC}"
+echo -e "${BLUE}Modelo: Fly.io allowance mensual - Dentro del free tier${NC}"
+echo "✅ Sistema básico listo para 2 usuarios"
