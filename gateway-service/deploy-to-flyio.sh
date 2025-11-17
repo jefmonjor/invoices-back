@@ -56,7 +56,7 @@ if [ "$APP_EXISTS" -eq "0" ]; then
     # Crear la app
     fly launch \
         --name invoices-backend \
-        --region mad \
+        --region ams \
         --no-deploy \
         --copy-config \
         --yes

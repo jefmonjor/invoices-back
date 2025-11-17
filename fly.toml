@@ -2,7 +2,7 @@
 # Deployment: flyctl deploy
 
 app = "invoices-backend"
-primary_region = "mia" # Miami (closest to US East)
+primary_region = "ams" # Amsterdam (Netherlands) - Europa
 
 [build]
   # Build de todas las aplicaciones Spring Boot
