@@ -1,6 +1,6 @@
 # Fly.io configuration for Gateway Service
 app = "invoices-backend"
-primary_region = "mad"  # Madrid (Spain) - cambia a "mia" si prefieres Miami
+primary_region = "ams"  # Amsterdam (Netherlands) - Europa
 
 [build]
   dockerfile = "Dockerfile"
