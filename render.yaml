@@ -1,0 +1,64 @@
+# Render.com Blueprint para Invoice Backend
+# Documentación: https://render.com/docs/blueprint-spec
+
+services:
+  # Gateway Service - Punto de entrada único
+  - type: web
+    name: invoices-gateway
+    env: docker
+    dockerfilePath: ./gateway-service/Dockerfile
+    dockerContext: ./gateway-service
+    plan: free  # Free tier
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: SERVER_PORT
+        value: 8080
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false  # Usuario debe configurar manualmente
+      - key: JWT_SECRET
+        generateValue: true  # Genera automáticamente
+      - key: JWT_ISSUER
+        value: invoices-backend
+      - key: EUREKA_SERVER_HOST
+        value: localhost  # Para versión simplificada sin Eureka
+      - key: DATABASE_URL
+        sync: false  # Usuario debe configurar Neon URL
+
+  # User Service (Opcional - si quieres desplegarlo por separado)
+  - type: web
+    name: invoices-user-service
+    env: docker
+    dockerfilePath: ./user-service/Dockerfile
+    dockerContext: ./user-service
+    plan: free
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: SERVER_PORT
+        value: 8082
+      - key: DATABASE_URL
+        sync: false
+
+  # Invoice Service (Opcional)
+  - type: web
+    name: invoices-invoice-service
+    env: docker
+    dockerfilePath: ./invoice-service/Dockerfile
+    dockerContext: ./invoice-service
+    plan: free
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: SERVER_PORT
+        value: 8081
+      - key: DATABASE_URL
+        sync: false
+
+# Nota: Render free tier limitations:
+# - Servicios se duermen después de 15 min de inactividad
+# - Primera request después de dormir tarda 30-60 segundos
+# - 750 horas gratis por mes por servicio
