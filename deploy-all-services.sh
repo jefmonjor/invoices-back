@@ -129,8 +129,8 @@ EOF
 }
 
 # Desplegar servicios
-echo -e "${YELLOW}Desplegando 2 microservicios esenciales (100% gratis)...${NC}"
-echo -e "${YELLOW}Esto tomará aproximadamente 8-10 minutos${NC}"
+echo -e "${YELLOW}Desplegando TODOS los microservicios...${NC}"
+echo -e "${YELLOW}Esto tomará aproximadamente 15-20 minutos${NC}"
 echo ""
 
 # 1. User Service (ESENCIAL - Autenticación y usuarios)
@@ -139,15 +139,15 @@ deploy_service "user-service" "invoices-user-service" "8082" "USER_DB_URL"
 # 2. Invoice Service (ESENCIAL - Core business)
 deploy_service "invoice-service" "invoices-invoice-service" "8081" "INVOICE_DB_URL"
 
-# 3. Document Service (OPCIONAL - Descomentado si quieres almacenamiento de archivos)
-# deploy_service "document-service" "invoices-document-service" "8083" "DOCUMENT_DB_URL"
+# 3. Document Service (Almacenamiento de archivos/PDFs)
+deploy_service "document-service" "invoices-document-service" "8083" "DOCUMENT_DB_URL"
 
-# 4. Trace Service (OPCIONAL - Descomentado si quieres auditoría)
-# deploy_service "trace-service" "invoices-trace-service" "8084" "TRACE_DB_URL"
+# 4. Trace Service (Auditoría y trazabilidad)
+deploy_service "trace-service" "invoices-trace-service" "8084" "TRACE_DB_URL"
 
 echo ""
 echo -e "${BLUE}=========================================${NC}"
-echo -e "${GREEN}✓ SERVICIOS ESENCIALES DESPLEGADOS${NC}"
+echo -e "${GREEN}✓ TODOS LOS SERVICIOS DESPLEGADOS${NC}"
 echo -e "${BLUE}=========================================${NC}"
 echo ""
 
@@ -155,16 +155,15 @@ echo -e "${GREEN}URLs de tus servicios:${NC}"
 echo "Gateway:  https://invoices-backend.fly.dev (punto de entrada único)"
 echo "User:     https://invoices-user-service.fly.dev (autenticación)"
 echo "Invoice:  https://invoices-invoice-service.fly.dev (facturas)"
-echo ""
-
-echo -e "${YELLOW}Servicios NO desplegados (para mantener free tier):${NC}"
-echo "Document: (almacenamiento de archivos/PDFs)"
-echo "Trace:    (auditoría y trazabilidad)"
+echo "Document: https://invoices-document-service.fly.dev (almacenamiento)"
+echo "Trace:    https://invoices-trace-service.fly.dev (auditoría)"
 echo ""
 
 echo -e "${GREEN}Verificar health checks:${NC}"
 echo "curl https://invoices-user-service.fly.dev/actuator/health"
 echo "curl https://invoices-invoice-service.fly.dev/actuator/health"
+echo "curl https://invoices-document-service.fly.dev/actuator/health"
+echo "curl https://invoices-trace-service.fly.dev/actuator/health"
 echo ""
 
 echo -e "${GREEN}Test de login (usuario admin creado automáticamente):${NC}"
@@ -177,5 +176,6 @@ echo -e "${YELLOW}Nota:${NC} Las migraciones de Flyway se ejecutaron automática
 echo "Usuario admin creado: admin@invoices.com / admin123"
 echo ""
 
-echo -e "${BLUE}Total de VMs en Fly.io: 3/3 (FREE TIER)${NC}"
-echo "✅ 100% Gratis - Sin cargos"
+echo -e "${BLUE}Total de VMs desplegadas: 5 (Gateway, User, Invoice, Document, Trace)${NC}"
+echo -e "${BLUE}Modelo: Fly.io allowance mensual (basado en consumo)${NC}"
+echo "✅ Sistema completo desplegado"
