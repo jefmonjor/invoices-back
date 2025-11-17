@@ -7,7 +7,7 @@ spring:
 
   # Disable Spring Cloud Config (not using config server)
   config:
-    import: optional:configserver:
+    import: "optional:configserver:"
 
   cloud:
     config:
