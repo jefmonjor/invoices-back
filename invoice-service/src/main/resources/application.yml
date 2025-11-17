@@ -16,8 +16,10 @@ spring:
         enabled: false
 
   # Database Configuration
+  # Para Neon DB, usar SPRING_DATASOURCE_URL completo:
+  # postgresql://user:pass@host.neon.tech/invoicedb?sslmode=require
   datasource:
-    url: jdbc:postgresql://${INVOICE_DB_HOST:localhost}:${INVOICE_DB_PORT:5432}/${INVOICE_DB_NAME:invoicedb}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://${INVOICE_DB_HOST:localhost}:${INVOICE_DB_PORT:5432}/${INVOICE_DB_NAME:invoicedb}}
     username: ${INVOICE_DB_USERNAME:invoice_service_user}
     password: ${INVOICE_DB_PASSWORD:password}
     driver-class-name: org.postgresql.Driver
@@ -43,26 +45,30 @@ spring:
     locations: classpath:db/migration
     validate-on-migrate: true
 
-  # Kafka Configuration
-  kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
-    producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
-      properties:
-        spring.json.add.type.headers: false
-    template:
-      default-topic: ${KAFKA_INVOICE_TOPIC:invoice-events}
-    topic:
-      invoice-events: ${KAFKA_INVOICE_TOPIC:invoice-events}
+  # Redis Configuration (replaces Kafka for event streaming)
+  redis:
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD:}
+    ssl: ${REDIS_SSL:false}
+    timeout: 60000
+    lettuce:
+      pool:
+        max-active: 8
+        max-idle: 8
+        min-idle: 2
+        max-wait: -1ms
+    stream:
+      invoice-events: ${REDIS_STREAM_INVOICE_EVENTS:invoice-events}
 
-# Eureka Configuration
+# Eureka Configuration (deshabilitado por defecto para cloud deployment)
 eureka:
   client:
+    enabled: ${EUREKA_CLIENT_ENABLED:false}
     service-url:
       defaultZone: http://${EUREKA_USERNAME:eureka-admin}:${EUREKA_PASSWORD:password}@${EUREKA_SERVER_HOST:localhost}:${EUREKA_SERVER_PORT:8761}/eureka/
-    register-with-eureka: true
-    fetch-registry: true
+    register-with-eureka: ${EUREKA_CLIENT_ENABLED:false}
+    fetch-registry: ${EUREKA_CLIENT_ENABLED:false}
   instance:
     prefer-ip-address: true
 
@@ -83,7 +89,8 @@ logging:
   level:
     root: ${LOG_LEVEL_ROOT:INFO}
     com.invoices: ${LOG_LEVEL_APP:DEBUG}
-    org.apache.kafka: INFO
+    io.lettuce: INFO
+    org.springframework.data.redis: INFO
 
 # Actuator
 management:

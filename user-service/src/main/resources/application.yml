@@ -16,8 +16,10 @@ spring:
         enabled: false
 
   # Database Configuration
+  # Para Neon DB, usar SPRING_DATASOURCE_URL completo:
+  # postgresql://user:pass@host.neon.tech/userdb?sslmode=require
   datasource:
-    url: jdbc:postgresql://${USER_DB_HOST:localhost}:${USER_DB_PORT:5432}/${USER_DB_NAME:userdb}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://${USER_DB_HOST:localhost}:${USER_DB_PORT:5432}/${USER_DB_NAME:userdb}}
     username: ${USER_DB_USERNAME:user_service_user}
     password: ${USER_DB_PASSWORD:password}
     driver-class-name: org.postgresql.Driver
@@ -49,13 +51,14 @@ spring:
     locations: classpath:db/migration
     validate-on-migrate: true
 
-# Eureka Configuration
+# Eureka Configuration (deshabilitado por defecto para cloud deployment)
 eureka:
   client:
+    enabled: ${EUREKA_CLIENT_ENABLED:false}
     service-url:
       defaultZone: http://${EUREKA_USERNAME:eureka-admin}:${EUREKA_PASSWORD:password}@${EUREKA_SERVER_HOST:localhost}:${EUREKA_SERVER_PORT:8761}/eureka/
-    register-with-eureka: true
-    fetch-registry: true
+    register-with-eureka: ${EUREKA_CLIENT_ENABLED:false}
+    fetch-registry: ${EUREKA_CLIENT_ENABLED:false}
   instance:
     prefer-ip-address: true
     lease-renewal-interval-in-seconds: 30
