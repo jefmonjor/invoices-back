@@ -100,3 +100,6 @@ credentials/
 fly.toml.local
 .render/
 .vercel/
+
+# Archived microservices
+archive/
