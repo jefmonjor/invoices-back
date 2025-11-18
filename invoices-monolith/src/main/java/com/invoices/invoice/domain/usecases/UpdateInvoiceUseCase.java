@@ -7,7 +7,7 @@ import com.invoices.invoice.domain.exceptions.InvoiceNotFoundException;
 import com.invoices.invoice.domain.ports.ClientRepository;
 import com.invoices.invoice.domain.ports.InvoiceEventPublisher;
 import com.invoices.invoice.domain.ports.InvoiceRepository;
-import com.invoices.invoice.exception.ClientNotFoundException;
+import com.invoices.invoice.domain.exceptions.ClientNotFoundException;
 
 import java.util.List;
 

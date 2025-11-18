@@ -1,11 +1,28 @@
 package com.invoices.exception;
 
 import com.invoices.user.presentation.dto.ErrorResponse;
-import com.invoices.user.exception.*;
-import com.invoices.invoice.exception.*;
-import com.invoices.invoice.domain.exceptions.*;
-import com.invoices.document.exception.*;
-import com.invoices.trace.exception.*;
+
+// USER MODULE EXCEPTIONS
+import com.invoices.user.exception.UserNotFoundException;
+import com.invoices.user.exception.UserAlreadyExistsException;
+import com.invoices.user.exception.InvalidCredentialsException;
+import com.invoices.user.exception.InvalidTokenException;
+import com.invoices.user.exception.TokenExpiredException;
+
+// INVOICE MODULE EXCEPTIONS
+import com.invoices.invoice.exception.PdfGenerationException;
+import com.invoices.invoice.domain.exceptions.InvoiceNotFoundException;
+import com.invoices.invoice.domain.exceptions.ClientNotFoundException;
+import com.invoices.invoice.domain.exceptions.InvalidInvoiceStateException;
+import com.invoices.invoice.domain.exceptions.InvalidInvoiceNumberFormatException;
+
+// DOCUMENT MODULE EXCEPTIONS
+import com.invoices.document.exception.DocumentNotFoundException;
+import com.invoices.document.exception.FileUploadException;
+import com.invoices.document.exception.InvalidFileTypeException;
+
+// TRACE MODULE EXCEPTIONS
+import com.invoices.trace.exception.AuditLogNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
