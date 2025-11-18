@@ -12,12 +12,12 @@ import org.springframework.context.annotation.Configuration;
 import java.util.List;
 
 /**
- * Configuración de OpenAPI/Swagger para el servicio de facturas
+ * Configuración de OpenAPI/Swagger para la aplicación monolítica
  */
 @Configuration
 public class OpenApiConfig {
 
-    @Value("${server.port:8082}")
+    @Value("${server.port:8080}")
     private String serverPort;
 
     @Bean
@@ -26,27 +26,27 @@ public class OpenApiConfig {
         localServer.setUrl("http://localhost:" + serverPort);
         localServer.setDescription("Servidor local de desarrollo");
 
-        Server gatewayServer = new Server();
-        gatewayServer.setUrl("http://localhost:8080");
-        gatewayServer.setDescription("API Gateway");
+        Server productionServer = new Server();
+        productionServer.setUrl("https://invoices-app.fly.dev");
+        productionServer.setDescription("Servidor de producción (Fly.io)");
 
         Contact contact = new Contact();
         contact.setEmail("invoices@example.com");
-        contact.setName("Invoice Service Team");
+        contact.setName("Invoices Team");
 
         License license = new License()
                 .name("MIT License")
                 .url("https://opensource.org/licenses/MIT");
 
         Info info = new Info()
-                .title("Invoice Service API")
+                .title("Invoices Monolith API")
                 .version("1.0.0")
                 .contact(contact)
-                .description("API REST para gestionar facturas, items y generar PDFs con JasperReports")
+                .description("API REST monolítica para gestionar usuarios, facturas, documentos y auditoría")
                 .license(license);
 
         return new OpenAPI()
                 .info(info)
-                .servers(List.of(localServer, gatewayServer));
+                .servers(List.of(localServer, productionServer));
     }
 }

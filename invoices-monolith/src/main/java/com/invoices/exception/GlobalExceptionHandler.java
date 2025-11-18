@@ -5,7 +5,6 @@ import com.invoices.user.exception.*;
 import com.invoices.invoice.exception.*;
 import com.invoices.document.exception.*;
 import com.invoices.trace.exception.*;
-import feign.FeignException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -384,35 +383,7 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
     }
 
-    /**
-     * Handles Feign Client exceptions (communication with external services).
-     */
-    @ExceptionHandler(FeignException.class)
-    public ResponseEntity<ErrorResponse> handleFeignException(
-            FeignException ex,
-            HttpServletRequest request) {
-
-        log.error("Feign client error: {}", ex.getMessage());
-
-        HttpStatus status = HttpStatus.valueOf(ex.status());
-        String message = "Error communicating with external service";
-
-        if (ex.status() == 404) {
-            message = "Resource not found in external service";
-        } else if (ex.status() == 503) {
-            message = "External service temporarily unavailable";
-        }
-
-        ErrorResponse errorResponse = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now())
-                .status(status.value())
-                .error(status.getReasonPhrase())
-                .message(message)
-                .path(request.getRequestURI())
-                .build();
-
-        return ResponseEntity.status(status).body(errorResponse);
-    }
+    // ==================== GENERIC EXCEPTION HANDLER ====================
 
     /**
      * Handles all other exceptions (500 Internal Server Error).

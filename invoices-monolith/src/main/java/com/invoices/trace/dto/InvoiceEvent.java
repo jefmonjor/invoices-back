@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * Record representing an invoice event received from Kafka
+ * Record representing an invoice event received from Redis Streams
  */
 public record InvoiceEvent(
         String eventType,
