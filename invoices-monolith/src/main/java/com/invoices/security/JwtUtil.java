@@ -65,6 +65,27 @@ public class JwtUtil {
     }
 
     /**
+     * Generates a JWT token for the given email and roles.
+     * This is useful when you have email and roles but not a complete UserDetails object.
+     *
+     * @param email the user's email
+     * @param roles the user's roles
+     * @return the generated JWT token
+     */
+    public String generateToken(String email, java.util.Set<String> roles) {
+        Map<String, Object> claims = new HashMap<>();
+
+        // Add roles to claims
+        String rolesString = String.join(",", roles);
+        claims.put("roles", rolesString);
+
+        String token = createToken(claims, email);
+        log.info("Generated JWT token for user: {}", email);
+
+        return token;
+    }
+
+    /**
      * Creates a JWT token with the specified claims and subject.
      *
      * @param claims the claims to include in the token
@@ -130,6 +151,7 @@ public class JwtUtil {
         try {
             return Jwts.parserBuilder()
                     .setSigningKey(getSigningKey())
+                    .requireIssuer(issuer)  // Validate issuer to prevent tokens from other systems
                     .build()
                     .parseClaimsJws(token)
                     .getBody();

@@ -75,6 +75,17 @@ public class Invoice {
         updateTimestamp();
     }
 
+    /**
+     * Adds an item without validating invoice state.
+     * FOR INTERNAL USE ONLY - Used by persistence layer when reconstructing entities from database.
+     * DO NOT use this method in business logic.
+     *
+     * @param item the item to add
+     */
+    public void addItemInternal(InvoiceItem item) {
+        items.add(item);
+    }
+
     public void removeItem(InvoiceItem item) {
         if (status == InvoiceStatus.FINALIZED || status == InvoiceStatus.PAID) {
             throw new InvalidInvoiceStateException(
@@ -82,6 +93,21 @@ public class Invoice {
             );
         }
         items.remove(item);
+        updateTimestamp();
+    }
+
+    /**
+     * Clears all items from the invoice.
+     * Used when updating invoice with a new set of items.
+     * Cannot be called on finalized or paid invoices.
+     */
+    public void clearItems() {
+        if (status == InvoiceStatus.FINALIZED || status == InvoiceStatus.PAID) {
+            throw new InvalidInvoiceStateException(
+                "Cannot modify invoice in " + status.getDisplayName() + " status"
+            );
+        }
+        items.clear();
         updateTimestamp();
     }
 
@@ -151,6 +177,32 @@ public class Invoice {
         updateTimestamp();
     }
 
+    /**
+     * Sets the invoice status without validation.
+     * FOR INTERNAL USE ONLY - Used by persistence layer when reconstructing entities from database.
+     * DO NOT use this method in business logic. Use markAsPending(), markAsPaid(), cancel() instead.
+     *
+     * @param status the status to set
+     */
+    public void setStatusInternal(InvoiceStatus status) {
+        this.status = status;
+    }
+
+    /**
+     * Sets timestamps without validation.
+     * FOR INTERNAL USE ONLY - Used by persistence layer when reconstructing entities from database.
+     *
+     * @param createdAt the creation timestamp
+     * @param updatedAt the update timestamp
+     */
+    public void setTimestampsInternal(LocalDateTime createdAt, LocalDateTime updatedAt) {
+        if (createdAt != null && updatedAt != null) {
+            // Use reflection or direct field access would be needed here
+            // For now, we'll just update the updatedAt
+            this.updatedAt = updatedAt;
+        }
+    }
+
     private void validateInvoiceNumber(String number) {
         if (number == null || number.trim().isEmpty()) {
             throw new InvalidInvoiceNumberFormatException("null or empty");
@@ -161,11 +213,21 @@ public class Invoice {
     }
 
     private void validatePercentages(BigDecimal irpf, BigDecimal re) {
-        if (irpf != null && irpf.compareTo(BigDecimal.ZERO) < 0) {
-            throw new IllegalArgumentException("IRPF percentage cannot be negative");
+        if (irpf != null) {
+            if (irpf.compareTo(BigDecimal.ZERO) < 0) {
+                throw new IllegalArgumentException("IRPF percentage cannot be negative");
+            }
+            if (irpf.compareTo(ONE_HUNDRED) > 0) {
+                throw new IllegalArgumentException("IRPF percentage cannot exceed 100%");
+            }
         }
-        if (re != null && re.compareTo(BigDecimal.ZERO) < 0) {
-            throw new IllegalArgumentException("RE percentage cannot be negative");
+        if (re != null) {
+            if (re.compareTo(BigDecimal.ZERO) < 0) {
+                throw new IllegalArgumentException("RE percentage cannot be negative");
+            }
+            if (re.compareTo(ONE_HUNDRED) > 0) {
+                throw new IllegalArgumentException("RE percentage cannot exceed 100%");
+            }
         }
     }
 

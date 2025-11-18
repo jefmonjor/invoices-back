@@ -101,13 +101,15 @@ public class SecurityConfig {
 
     /**
      * Creates a BCrypt password encoder bean.
+     * Strength 12 provides better security against brute force attacks
+     * while maintaining acceptable performance.
      *
      * @return the password encoder
      */
     @Bean
     public PasswordEncoder passwordEncoder() {
-        log.debug("Creating BCrypt password encoder with strength 10");
-        return new BCryptPasswordEncoder(10);
+        log.debug("Creating BCrypt password encoder with strength 12");
+        return new BCryptPasswordEncoder(12);
     }
 
     /**

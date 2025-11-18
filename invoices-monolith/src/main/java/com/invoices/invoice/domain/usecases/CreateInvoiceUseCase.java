@@ -1,9 +1,11 @@
 package com.invoices.invoice.domain.usecases;
 
+import com.invoices.invoice.domain.entities.Client;
 import com.invoices.invoice.domain.entities.Invoice;
 import com.invoices.invoice.domain.entities.InvoiceItem;
 import com.invoices.invoice.domain.ports.ClientRepository;
 import com.invoices.invoice.domain.ports.CompanyRepository;
+import com.invoices.invoice.domain.ports.InvoiceEventPublisher;
 import com.invoices.invoice.domain.ports.InvoiceRepository;
 import com.invoices.invoice.exception.ClientNotFoundException;
 
@@ -20,15 +22,18 @@ public class CreateInvoiceUseCase {
     private final InvoiceRepository invoiceRepository;
     private final CompanyRepository companyRepository;
     private final ClientRepository clientRepository;
+    private final InvoiceEventPublisher eventPublisher;
 
     public CreateInvoiceUseCase(
         InvoiceRepository invoiceRepository,
         CompanyRepository companyRepository,
-        ClientRepository clientRepository
+        ClientRepository clientRepository,
+        InvoiceEventPublisher eventPublisher
     ) {
         this.invoiceRepository = invoiceRepository;
         this.companyRepository = companyRepository;
         this.clientRepository = clientRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     public Invoice execute(
@@ -71,6 +76,15 @@ public class CreateInvoiceUseCase {
         }
 
         // Save invoice
-        return invoiceRepository.save(invoice);
+        Invoice savedInvoice = invoiceRepository.save(invoice);
+
+        // Get client email for event
+        Client client = clientRepository.findById(clientId)
+                .orElseThrow(() -> new ClientNotFoundException(clientId));
+
+        // Publish invoice created event
+        eventPublisher.publishInvoiceCreated(savedInvoice, client.getEmail());
+
+        return savedInvoice;
     }
 }
