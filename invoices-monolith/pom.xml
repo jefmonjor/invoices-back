@@ -97,6 +97,13 @@
 			<version>${aws-java-sdk.version}</version>
 		</dependency>
 
+		<!-- MinIO Client (S3 compatible, works with Cloudflare R2) -->
+		<dependency>
+			<groupId>io.minio</groupId>
+			<artifactId>minio</artifactId>
+			<version>8.5.7</version>
+		</dependency>
+
 		<!-- JasperReports for PDF generation -->
 		<dependency>
 			<groupId>net.sf.jasperreports</groupId>
