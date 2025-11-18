@@ -1,6 +1,6 @@
 package com.invoices.trace.config;
 
-import com.invoices.trace.events.InvoiceEventConsumer;
+import com.invoices.trace.infrastructure.events.RedisInvoiceEventConsumer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,7 +24,7 @@ import java.time.Duration;
 @RequiredArgsConstructor
 public class RedisStreamConfig {
 
-    private final InvoiceEventConsumer invoiceEventConsumer;
+    private final RedisInvoiceEventConsumer invoiceEventConsumer;
 
     @Value("${spring.redis.stream.invoice-events:invoice-events}")
     private String invoiceEventsStream;

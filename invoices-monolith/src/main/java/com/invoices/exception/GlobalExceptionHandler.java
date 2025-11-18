@@ -1,6 +1,6 @@
 package com.invoices.exception;
 
-import com.invoices.user.dto.ErrorResponse;
+import com.invoices.user.presentation.dto.ErrorResponse;
 import com.invoices.user.exception.*;
 import com.invoices.invoice.exception.*;
 import com.invoices.invoice.domain.exceptions.*;
