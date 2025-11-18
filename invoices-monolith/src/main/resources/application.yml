@@ -142,6 +142,15 @@ resilience4j:
         waitDurationInOpenState: 60s
         failureRateThreshold: 50
         eventConsumerBufferSize: 10
+      minio:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 60s
+        failureRateThreshold: 50
+        eventConsumerBufferSize: 10
 
 # Rate Limiting Configuration
 bucket4j:

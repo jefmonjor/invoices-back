@@ -3,6 +3,7 @@ package com.invoices.exception;
 import com.invoices.user.dto.ErrorResponse;
 import com.invoices.user.exception.*;
 import com.invoices.invoice.exception.*;
+import com.invoices.invoice.domain.exceptions.*;
 import com.invoices.document.exception.*;
 import com.invoices.trace.exception.*;
 import jakarta.servlet.http.HttpServletRequest;

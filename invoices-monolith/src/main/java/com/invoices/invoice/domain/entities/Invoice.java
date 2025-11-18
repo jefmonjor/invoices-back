@@ -33,7 +33,7 @@ public class Invoice {
     private final BigDecimal rePercentage;
     private InvoiceStatus status;
     private String notes;
-    private final LocalDateTime createdAt;
+    private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
     public Invoice(
@@ -79,6 +79,7 @@ public class Invoice {
      * Adds an item without validating invoice state.
      * FOR INTERNAL USE ONLY - Used by persistence layer when reconstructing entities from database.
      * DO NOT use this method in business logic.
+     * WARNING: Bypasses all state validations. Only use in mapper/reconstruction context.
      *
      * @param item the item to add
      */
@@ -208,6 +209,7 @@ public class Invoice {
      * Sets the invoice status without validation.
      * FOR INTERNAL USE ONLY - Used by persistence layer when reconstructing entities from database.
      * DO NOT use this method in business logic. Use markAsPending(), markAsPaid(), cancel() instead.
+     * WARNING: Bypasses all state transition validations. Only use in mapper/reconstruction context.
      *
      * @param status the status to set
      */
@@ -218,16 +220,27 @@ public class Invoice {
     /**
      * Sets timestamps without validation.
      * FOR INTERNAL USE ONLY - Used by persistence layer when reconstructing entities from database.
+     * WARNING: Directly sets timestamps from database. Only use in mapper/reconstruction context.
      *
      * @param createdAt the creation timestamp
      * @param updatedAt the update timestamp
      */
     public void setTimestampsInternal(LocalDateTime createdAt, LocalDateTime updatedAt) {
         if (createdAt != null && updatedAt != null) {
-            // Use reflection or direct field access would be needed here
-            // For now, we'll just update the updatedAt
+            this.createdAt = createdAt;
             this.updatedAt = updatedAt;
         }
+    }
+
+    /**
+     * Sets notes without updating timestamp.
+     * FOR INTERNAL USE ONLY - Used by persistence layer when reconstructing entities from database.
+     * WARNING: Does not update timestamp. Only use in mapper/reconstruction context.
+     *
+     * @param notes the notes to set
+     */
+    public void setNotesInternal(String notes) {
+        this.notes = notes;
     }
 
     private void validateInvoiceNumber(String number) {
