@@ -5,7 +5,7 @@ import com.invoices.invoice.domain.entities.InvoiceItem;
 import com.invoices.invoice.domain.ports.ClientRepository;
 import com.invoices.invoice.domain.ports.CompanyRepository;
 import com.invoices.invoice.domain.ports.InvoiceRepository;
-import com.invoices.invoice.exception.ClientNotFoundException;
+import com.invoices.invoice.domain.exceptions.ClientNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

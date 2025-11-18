@@ -1,11 +1,14 @@
 package com.invoices.document.controller;
 
-import com.invoices.document.dto.DocumentDTO;
-import com.invoices.document.dto.UploadDocumentResponse;
+import com.invoices.document.domain.entities.Document;
+import com.invoices.document.domain.usecases.*;
+import com.invoices.document.presentation.dto.DocumentDTO;
+import com.invoices.document.presentation.dto.UploadDocumentResponse;
+import com.invoices.document.presentation.mappers.DocumentDtoMapper;
+import com.invoices.document.presentation.controllers.DocumentController;
 import com.invoices.document.exception.DocumentNotFoundException;
 import com.invoices.document.exception.FileUploadException;
 import com.invoices.document.exception.InvalidFileTypeException;
-import com.invoices.document.service.DocumentService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -43,16 +46,43 @@ class DocumentControllerTest {
     private MockMvc mockMvc;
 
     @MockBean
-    private DocumentService documentService;
+    private UploadDocumentUseCase uploadDocumentUseCase;
+
+    @MockBean
+    private DownloadDocumentUseCase downloadDocumentUseCase;
+
+    @MockBean
+    private GetDocumentByIdUseCase getDocumentByIdUseCase;
+
+    @MockBean
+    private GetDocumentsByInvoiceUseCase getDocumentsByInvoiceUseCase;
+
+    @MockBean
+    private DeleteDocumentUseCase deleteDocumentUseCase;
+
+    @MockBean
+    private DocumentDtoMapper mapper;
 
     private DocumentDTO testDocumentDTO;
     private UploadDocumentResponse uploadResponse;
+    private Document testDocument;
     private static final Long DOCUMENT_ID = 1L;
     private static final Long INVOICE_ID = 100L;
     private static final String UPLOADED_BY = "test-user";
 
     @BeforeEach
     void setUp() {
+        testDocument = Document.builder()
+                .id(DOCUMENT_ID)
+                .filename("unique-file.pdf")
+                .originalFilename("test-document.pdf")
+                .contentType("application/pdf")
+                .fileSize(1024L)
+                .invoiceId(INVOICE_ID)
+                .uploadedBy(UPLOADED_BY)
+                .createdAt(LocalDateTime.now())
+                .build();
+
         testDocumentDTO = DocumentDTO.builder()
                 .id(DOCUMENT_ID)
                 .filename("unique-file.pdf")
@@ -88,7 +118,9 @@ class DocumentControllerTest {
                     "test content".getBytes()
             );
 
-            when(documentService.uploadDocument(any(), eq(INVOICE_ID), eq(UPLOADED_BY)))
+            when(uploadDocumentUseCase.execute(any(), eq("test.pdf"), eq(INVOICE_ID), eq(UPLOADED_BY)))
+                    .thenReturn(testDocument);
+            when(mapper.toUploadResponse(any(Document.class)))
                     .thenReturn(uploadResponse);
 
             // Act & Assert
@@ -103,7 +135,7 @@ class DocumentControllerTest {
                     .andExpect(jsonPath("$.filename", is("test-document.pdf")))
                     .andExpect(jsonPath("$.downloadUrl", notNullValue()));
 
-            verify(documentService).uploadDocument(any(), eq(INVOICE_ID), eq(UPLOADED_BY));
+            verify(uploadDocumentUseCase).execute(any(), eq("test.pdf"), eq(INVOICE_ID), eq(UPLOADED_BY));
         }
 
         @Test
@@ -117,7 +149,9 @@ class DocumentControllerTest {
                     "test content".getBytes()
             );
 
-            when(documentService.uploadDocument(any(), eq(null), eq("system")))
+            when(uploadDocumentUseCase.execute(any(), anyString(), eq(null), eq("system")))
+                    .thenReturn(testDocument);
+            when(mapper.toUploadResponse(any(Document.class)))
                     .thenReturn(uploadResponse);
 
             // Act & Assert
@@ -126,7 +160,7 @@ class DocumentControllerTest {
                     .andDo(print())
                     .andExpect(status().isCreated());
 
-            verify(documentService).uploadDocument(any(), eq(null), eq("system"));
+            verify(uploadDocumentUseCase).execute(any(), anyString(), eq(null), eq("system"));
         }
 
         @Test
@@ -140,7 +174,7 @@ class DocumentControllerTest {
                     "test content".getBytes()
             );
 
-            when(documentService.uploadDocument(any(), any(), anyString()))
+            when(uploadDocumentUseCase.execute(any(), anyString(), any(), anyString()))
                     .thenThrow(new InvalidFileTypeException("text/plain"));
 
             // Act & Assert
@@ -149,7 +183,7 @@ class DocumentControllerTest {
                     .andDo(print())
                     .andExpect(status().isBadRequest());
 
-            verify(documentService).uploadDocument(any(), any(), anyString());
+            verify(uploadDocumentUseCase).execute(any(), anyString(), any(), anyString());
         }
 
         @Test
@@ -163,7 +197,7 @@ class DocumentControllerTest {
                     "test content".getBytes()
             );
 
-            when(documentService.uploadDocument(any(), any(), anyString()))
+            when(uploadDocumentUseCase.execute(any(), anyString(), any(), anyString()))
                     .thenThrow(new FileUploadException("Upload failed"));
 
             // Act & Assert
@@ -182,7 +216,8 @@ class DocumentControllerTest {
         @DisplayName("Should get document metadata successfully")
         void shouldGetDocumentMetadata() throws Exception {
             // Arrange
-            when(documentService.getDocumentById(DOCUMENT_ID)).thenReturn(testDocumentDTO);
+            when(getDocumentByIdUseCase.execute(DOCUMENT_ID)).thenReturn(testDocument);
+            when(mapper.toDTO(any(Document.class))).thenReturn(testDocumentDTO);
 
             // Act & Assert
             mockMvc.perform(get("/api/documents/{id}", DOCUMENT_ID))
@@ -194,14 +229,14 @@ class DocumentControllerTest {
                     .andExpect(jsonPath("$.contentType", is("application/pdf")))
                     .andExpect(jsonPath("$.invoiceId", is(INVOICE_ID.intValue())));
 
-            verify(documentService).getDocumentById(DOCUMENT_ID);
+            verify(getDocumentByIdUseCase).execute(DOCUMENT_ID);
         }
 
         @Test
         @DisplayName("Should return 404 when document not found")
         void shouldReturn404WhenNotFound() throws Exception {
             // Arrange
-            when(documentService.getDocumentById(999L))
+            when(getDocumentByIdUseCase.execute(999L))
                     .thenThrow(new DocumentNotFoundException(999L));
 
             // Act & Assert
@@ -209,7 +244,7 @@ class DocumentControllerTest {
                     .andDo(print())
                     .andExpect(status().isNotFound());
 
-            verify(documentService).getDocumentById(999L);
+            verify(getDocumentByIdUseCase).execute(999L);
         }
     }
 
@@ -222,8 +257,8 @@ class DocumentControllerTest {
         void shouldDownloadDocument() throws Exception {
             // Arrange
             byte[] content = "test pdf content".getBytes();
-            when(documentService.getDocumentById(DOCUMENT_ID)).thenReturn(testDocumentDTO);
-            when(documentService.downloadDocument(DOCUMENT_ID)).thenReturn(content);
+            when(downloadDocumentUseCase.getDocumentMetadata(DOCUMENT_ID)).thenReturn(testDocument);
+            when(downloadDocumentUseCase.execute(DOCUMENT_ID)).thenReturn(new java.io.ByteArrayInputStream(content));
 
             // Act & Assert
             mockMvc.perform(get("/api/documents/{id}/download", DOCUMENT_ID))
@@ -236,15 +271,15 @@ class DocumentControllerTest {
                             containsString("test-document.pdf")))
                     .andExpect(content().bytes(content));
 
-            verify(documentService).getDocumentById(DOCUMENT_ID);
-            verify(documentService).downloadDocument(DOCUMENT_ID);
+            verify(downloadDocumentUseCase).getDocumentMetadata(DOCUMENT_ID);
+            verify(downloadDocumentUseCase).execute(DOCUMENT_ID);
         }
 
         @Test
         @DisplayName("Should return 404 when downloading non-existent document")
         void shouldReturn404WhenDownloadingNonExistent() throws Exception {
             // Arrange
-            when(documentService.getDocumentById(999L))
+            when(downloadDocumentUseCase.getDocumentMetadata(999L))
                     .thenThrow(new DocumentNotFoundException(999L));
 
             // Act & Assert
@@ -252,15 +287,15 @@ class DocumentControllerTest {
                     .andDo(print())
                     .andExpect(status().isNotFound());
 
-            verify(documentService, never()).downloadDocument(any());
+            verify(downloadDocumentUseCase, never()).execute(any());
         }
 
         @Test
         @DisplayName("Should return 500 when download fails")
         void shouldReturn500WhenDownloadFails() throws Exception {
             // Arrange
-            when(documentService.getDocumentById(DOCUMENT_ID)).thenReturn(testDocumentDTO);
-            when(documentService.downloadDocument(DOCUMENT_ID))
+            when(downloadDocumentUseCase.getDocumentMetadata(DOCUMENT_ID)).thenReturn(testDocument);
+            when(downloadDocumentUseCase.execute(DOCUMENT_ID))
                     .thenThrow(new FileUploadException("Download failed"));
 
             // Act & Assert
@@ -278,7 +313,18 @@ class DocumentControllerTest {
         @DisplayName("Should get documents by invoice ID successfully")
         void shouldGetDocumentsByInvoiceId() throws Exception {
             // Arrange
-            DocumentDTO doc2 = DocumentDTO.builder()
+            Document doc2 = Document.builder()
+                    .id(2L)
+                    .filename("unique-file-2.pdf")
+                    .originalFilename("document-2.pdf")
+                    .contentType("application/pdf")
+                    .fileSize(2048L)
+                    .invoiceId(INVOICE_ID)
+                    .uploadedBy(UPLOADED_BY)
+                    .createdAt(LocalDateTime.now())
+                    .build();
+
+            DocumentDTO doc2DTO = DocumentDTO.builder()
                     .id(2L)
                     .filename("unique-file-2.pdf")
                     .originalFilename("document-2.pdf")
@@ -290,8 +336,10 @@ class DocumentControllerTest {
                     .downloadUrl("/api/documents/2/download")
                     .build();
 
-            when(documentService.getDocumentsByInvoiceId(INVOICE_ID))
-                    .thenReturn(List.of(testDocumentDTO, doc2));
+            when(getDocumentsByInvoiceUseCase.execute(INVOICE_ID))
+                    .thenReturn(List.of(testDocument, doc2));
+            when(mapper.toDTO(testDocument)).thenReturn(testDocumentDTO);
+            when(mapper.toDTO(doc2)).thenReturn(doc2DTO);
 
             // Act & Assert
             mockMvc.perform(get("/api/documents")
@@ -303,14 +351,14 @@ class DocumentControllerTest {
                     .andExpect(jsonPath("$[0].id", is(DOCUMENT_ID.intValue())))
                     .andExpect(jsonPath("$[1].id", is(2)));
 
-            verify(documentService).getDocumentsByInvoiceId(INVOICE_ID);
+            verify(getDocumentsByInvoiceUseCase).execute(INVOICE_ID);
         }
 
         @Test
         @DisplayName("Should return empty list when no documents for invoice")
         void shouldReturnEmptyListWhenNoDocuments() throws Exception {
             // Arrange
-            when(documentService.getDocumentsByInvoiceId(999L)).thenReturn(List.of());
+            when(getDocumentsByInvoiceUseCase.execute(999L)).thenReturn(List.of());
 
             // Act & Assert
             mockMvc.perform(get("/api/documents")
@@ -330,14 +378,14 @@ class DocumentControllerTest {
         @DisplayName("Should delete document successfully")
         void shouldDeleteDocument() throws Exception {
             // Arrange
-            doNothing().when(documentService).deleteDocument(DOCUMENT_ID);
+            doNothing().when(deleteDocumentUseCase).execute(DOCUMENT_ID);
 
             // Act & Assert
             mockMvc.perform(delete("/api/documents/{id}", DOCUMENT_ID))
                     .andDo(print())
                     .andExpect(status().isNoContent());
 
-            verify(documentService).deleteDocument(DOCUMENT_ID);
+            verify(deleteDocumentUseCase).execute(DOCUMENT_ID);
         }
 
         @Test
@@ -345,14 +393,14 @@ class DocumentControllerTest {
         void shouldReturn404WhenDeletingNonExistent() throws Exception {
             // Arrange
             doThrow(new DocumentNotFoundException(999L))
-                    .when(documentService).deleteDocument(999L);
+                    .when(deleteDocumentUseCase).execute(999L);
 
             // Act & Assert
             mockMvc.perform(delete("/api/documents/{id}", 999L))
                     .andDo(print())
                     .andExpect(status().isNotFound());
 
-            verify(documentService).deleteDocument(999L);
+            verify(deleteDocumentUseCase).execute(999L);
         }
 
         @Test
@@ -360,7 +408,7 @@ class DocumentControllerTest {
         void shouldReturn500WhenDeleteFails() throws Exception {
             // Arrange
             doThrow(new FileUploadException("Delete failed"))
-                    .when(documentService).deleteDocument(DOCUMENT_ID);
+                    .when(deleteDocumentUseCase).execute(DOCUMENT_ID);
 
             // Act & Assert
             mockMvc.perform(delete("/api/documents/{id}", DOCUMENT_ID))
