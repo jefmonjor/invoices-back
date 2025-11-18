@@ -1,9 +1,11 @@
-package com.invoices.user.controller;
+package com.invoices.user.presentation.controllers;
 
-import com.invoices.user.dto.CreateUserRequest;
-import com.invoices.user.dto.UpdateUserRequest;
-import com.invoices.user.dto.UserDTO;
-import com.invoices.user.service.UserService;
+import com.invoices.user.domain.entities.User;
+import com.invoices.user.domain.usecases.*;
+import com.invoices.user.presentation.dto.CreateUserRequest;
+import com.invoices.user.presentation.dto.UpdateUserRequest;
+import com.invoices.user.presentation.dto.UserDTO;
+import com.invoices.user.presentation.mappers.UserDtoMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -22,20 +24,15 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
- * REST controller for user management operations.
+ * REST controller for user management operations (Clean Architecture).
  * All endpoints require authentication.
+ * Uses Use Cases from domain layer instead of service layer.
  */
 @RestController
 @RequestMapping("/api/users")
@@ -47,14 +44,13 @@ import java.util.List;
 @Tag(name = "Users", description = "Endpoints for user management")
 public class UserController {
 
-    private final UserService userService;
+    private final CreateUserUseCase createUserUseCase;
+    private final GetAllUsersUseCase getAllUsersUseCase;
+    private final GetUserByIdUseCase getUserByIdUseCase;
+    private final UpdateUserUseCase updateUserUseCase;
+    private final DeleteUserUseCase deleteUserUseCase;
+    private final UserDtoMapper mapper;
 
-    /**
-     * Retrieves all users.
-     * Only accessible by ADMIN role.
-     *
-     * @return list of all users
-     */
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(
@@ -81,19 +77,15 @@ public class UserController {
     public ResponseEntity<List<UserDTO>> getAllUsers() {
         log.info("GET /api/users - Fetching all users");
 
-        List<UserDTO> users = userService.getAllUsers();
+        List<User> users = getAllUsersUseCase.execute();
+        List<UserDTO> userDTOs = users.stream()
+                .map(mapper::toDTO)
+                .collect(Collectors.toList());
 
-        log.info("Retrieved {} users", users.size());
-        return ResponseEntity.ok(users);
+        log.info("Retrieved {} users", userDTOs.size());
+        return ResponseEntity.ok(userDTOs);
     }
 
-    /**
-     * Retrieves a user by ID.
-     * Accessible by ADMIN or the user themselves.
-     *
-     * @param id the user ID
-     * @return the user DTO
-     */
     @GetMapping("/{id}")
     @Operation(
             summary = "Get user by ID",
@@ -105,42 +97,23 @@ public class UserController {
                     description = "User retrieved successfully",
                     content = @Content(schema = @Schema(implementation = UserDTO.class))
             ),
-            @ApiResponse(
-                    responseCode = "401",
-                    description = "Unauthorized - Invalid or missing token",
-                    content = @Content
-            ),
-            @ApiResponse(
-                    responseCode = "403",
-                    description = "Forbidden - Cannot access other users' profiles",
-                    content = @Content
-            ),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "User not found",
-                    content = @Content
-            )
+            @ApiResponse(responseCode = "404", description = "User not found", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Forbidden - Insufficient permissions", content = @Content)
     })
     public ResponseEntity<UserDTO> getUserById(@PathVariable Long id) {
-        log.info("GET /api/users/{} - Fetching user", id);
+        log.info("GET /api/users/{} - Fetching user by ID", id);
 
-        // Get the user first
-        UserDTO user = userService.getUserById(id);
+        User user = getUserByIdUseCase.execute(id);
 
         // Check authorization: must be ADMIN or the user themselves
         checkUserAccess(user.getEmail());
 
-        log.info("Retrieved user with id: {}", id);
-        return ResponseEntity.ok(user);
+        UserDTO userDTO = mapper.toDTO(user);
+
+        log.info("User {} retrieved successfully", id);
+        return ResponseEntity.ok(userDTO);
     }
 
-    /**
-     * Creates a new user.
-     * Only accessible by ADMIN role.
-     *
-     * @param request the create user request
-     * @return the created user DTO
-     */
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(
@@ -153,49 +126,30 @@ public class UserController {
                     description = "User created successfully",
                     content = @Content(schema = @Schema(implementation = UserDTO.class))
             ),
-            @ApiResponse(
-                    responseCode = "400",
-                    description = "Validation error",
-                    content = @Content
-            ),
-            @ApiResponse(
-                    responseCode = "401",
-                    description = "Unauthorized - Invalid or missing token",
-                    content = @Content
-            ),
-            @ApiResponse(
-                    responseCode = "403",
-                    description = "Forbidden - Insufficient permissions",
-                    content = @Content
-            ),
-            @ApiResponse(
-                    responseCode = "409",
-                    description = "User already exists",
-                    content = @Content
-            )
+            @ApiResponse(responseCode = "400", description = "Invalid request data", content = @Content),
+            @ApiResponse(responseCode = "409", description = "User with this email already exists", content = @Content)
     })
     public ResponseEntity<UserDTO> createUser(@Valid @RequestBody CreateUserRequest request) {
-        log.info("POST /api/users - Creating new user: {}", request.getEmail());
+        log.info("POST /api/users - Creating new user with email: {}", request.getEmail());
 
-        UserDTO user = userService.createUser(request);
+        User createdUser = createUserUseCase.execute(
+                request.getEmail(),
+                request.getPassword(),
+                request.getFirstName(),
+                request.getLastName(),
+                request.getRoles()
+        );
 
-        log.info("User created with id: {}", user.getId());
-        return ResponseEntity.status(HttpStatus.CREATED).body(user);
+        UserDTO userDTO = mapper.toDTO(createdUser);
+
+        log.info("User created successfully with ID: {}", createdUser.getId());
+        return ResponseEntity.status(HttpStatus.CREATED).body(userDTO);
     }
 
-    /**
-     * Updates an existing user.
-     * Accessible by ADMIN or the user themselves.
-     * Only ADMIN can modify roles.
-     *
-     * @param id the user ID to update
-     * @param request the update request
-     * @return the updated user DTO
-     */
     @PutMapping("/{id}")
     @Operation(
             summary = "Update a user",
-            description = "Updates a user. Users can update their own profile, but only ADMIN can modify roles."
+            description = "Updates an existing user. Users can only update their own profile unless they have ADMIN role."
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -203,35 +157,16 @@ public class UserController {
                     description = "User updated successfully",
                     content = @Content(schema = @Schema(implementation = UserDTO.class))
             ),
-            @ApiResponse(
-                    responseCode = "400",
-                    description = "Validation error",
-                    content = @Content
-            ),
-            @ApiResponse(
-                    responseCode = "401",
-                    description = "Unauthorized - Invalid or missing token",
-                    content = @Content
-            ),
-            @ApiResponse(
-                    responseCode = "403",
-                    description = "Forbidden - Cannot update other users or modify roles without ADMIN",
-                    content = @Content
-            ),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "User not found",
-                    content = @Content
-            )
+            @ApiResponse(responseCode = "404", description = "User not found", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Forbidden - Insufficient permissions", content = @Content)
     })
     public ResponseEntity<UserDTO> updateUser(
             @PathVariable Long id,
             @Valid @RequestBody UpdateUserRequest request) {
-
         log.info("PUT /api/users/{} - Updating user", id);
 
-        // Get the user first to check authorization
-        UserDTO existingUser = userService.getUserById(id);
+        // Get user first to check authorization
+        User existingUser = getUserByIdUseCase.execute(id);
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         boolean isAdmin = auth.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_ADMIN"));
 
@@ -245,65 +180,46 @@ public class UserController {
             throw new AccessDeniedException("Only administrators can modify user roles");
         }
 
-        UserDTO updatedUser = userService.updateUser(id, request);
+        User updatedUser = updateUserUseCase.execute(
+                id,
+                request.getFirstName(),
+                request.getLastName(),
+                request.getPassword(),
+                request.getRoles(),
+                request.getEnabled()
+        );
 
-        log.info("User updated with id: {}", id);
-        return ResponseEntity.ok(updatedUser);
+        UserDTO userDTO = mapper.toDTO(updatedUser);
+
+        log.info("User {} updated successfully", id);
+        return ResponseEntity.ok(userDTO);
     }
 
-    /**
-     * Deletes a user by ID.
-     * Only accessible by ADMIN role.
-     * Performs soft delete (disables the user).
-     *
-     * @param id the user ID to delete
-     * @return no content
-     */
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(
             summary = "Delete a user",
-            description = "Soft deletes a user by disabling their account. Requires ADMIN role."
+            description = "Deletes a user by ID. Requires ADMIN role."
     )
     @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "204",
-                    description = "User deleted successfully",
-                    content = @Content
-            ),
-            @ApiResponse(
-                    responseCode = "401",
-                    description = "Unauthorized - Invalid or missing token",
-                    content = @Content
-            ),
-            @ApiResponse(
-                    responseCode = "403",
-                    description = "Forbidden - Insufficient permissions",
-                    content = @Content
-            ),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "User not found",
-                    content = @Content
-            )
+            @ApiResponse(responseCode = "204", description = "User deleted successfully", content = @Content),
+            @ApiResponse(responseCode = "404", description = "User not found", content = @Content),
+            @ApiResponse(responseCode = "403", description = "Forbidden - Insufficient permissions", content = @Content)
     })
     public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
         log.info("DELETE /api/users/{} - Deleting user", id);
 
-        userService.deleteUser(id);
+        deleteUserUseCase.execute(id);
 
-        log.info("User deleted with id: {}", id);
+        log.info("User {} deleted successfully", id);
         return ResponseEntity.noContent().build();
     }
 
     /**
-     * Checks if the current authenticated user can access the specified user's data.
+     * Check if the current authenticated user can access the specified user's data.
      * Access is granted if:
      * - The user is an ADMIN
      * - The user is accessing their own data
-     *
-     * @param targetUserEmail the email of the user being accessed
-     * @throws AccessDeniedException if access is denied
      */
     private void checkUserAccess(String targetUserEmail) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();

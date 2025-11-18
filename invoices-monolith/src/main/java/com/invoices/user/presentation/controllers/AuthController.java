@@ -1,9 +1,13 @@
-package com.invoices.user.controller;
+package com.invoices.user.presentation.controllers;
 
-import com.invoices.user.dto.AuthResponse;
-import com.invoices.user.dto.CreateUserRequest;
-import com.invoices.user.dto.LoginRequest;
-import com.invoices.user.service.AuthService;
+import com.invoices.security.JwtUtil;
+import com.invoices.user.domain.entities.User;
+import com.invoices.user.domain.usecases.AuthenticateUserUseCase;
+import com.invoices.user.domain.usecases.CreateUserUseCase;
+import com.invoices.user.domain.usecases.UpdateUserLastLoginUseCase;
+import com.invoices.user.presentation.dto.AuthResponse;
+import com.invoices.user.presentation.dto.CreateUserRequest;
+import com.invoices.user.presentation.dto.LoginRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -22,8 +26,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * REST controller for authentication operations.
- * Handles user registration and login.
+ * REST controller for authentication operations (Clean Architecture).
+ * Handles user registration and login using domain Use Cases.
  */
 @RestController
 @RequestMapping("/api/auth")
@@ -33,7 +37,10 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Authentication", description = "Endpoints for user authentication and registration")
 public class AuthController {
 
-    private final AuthService authService;
+    private final CreateUserUseCase createUserUseCase;
+    private final AuthenticateUserUseCase authenticateUserUseCase;
+    private final UpdateUserLastLoginUseCase updateUserLastLoginUseCase;
+    private final JwtUtil jwtUtil;
 
     /**
      * Registers a new user and returns authentication token.
@@ -66,7 +73,26 @@ public class AuthController {
     public ResponseEntity<AuthResponse> register(@Valid @RequestBody CreateUserRequest request) {
         log.info("POST /api/auth/register - Registering new user: {}", request.getEmail());
 
-        AuthResponse response = authService.register(request);
+        // Default role for new users
+        java.util.Set<String> roles = new java.util.HashSet<>();
+        roles.add("ROLE_USER");
+
+        // Create user using domain use case
+        User createdUser = createUserUseCase.execute(
+                request.getEmail(),
+                request.getPassword(),
+                request.getFirstName(),
+                request.getLastName(),
+                roles
+        );
+
+        // Generate JWT token
+        String token = jwtUtil.generateToken(createdUser.getEmail());
+
+        AuthResponse response = AuthResponse.builder()
+                .token(token)
+                .email(createdUser.getEmail())
+                .build();
 
         log.info("User registered successfully: {}", request.getEmail());
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -103,7 +129,22 @@ public class AuthController {
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         log.info("POST /api/auth/login - Login attempt for user: {}", request.getEmail());
 
-        AuthResponse response = authService.login(request);
+        // Authenticate user using domain use case
+        User authenticatedUser = authenticateUserUseCase.execute(
+                request.getEmail(),
+                request.getPassword()
+        );
+
+        // Update last login timestamp
+        updateUserLastLoginUseCase.execute(authenticatedUser.getId());
+
+        // Generate JWT token
+        String token = jwtUtil.generateToken(authenticatedUser.getEmail());
+
+        AuthResponse response = AuthResponse.builder()
+                .token(token)
+                .email(authenticatedUser.getEmail())
+                .build();
 
         log.info("User logged in successfully: {}", request.getEmail());
         return ResponseEntity.ok(response);
