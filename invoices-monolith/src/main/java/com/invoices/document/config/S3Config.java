@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 /**
@@ -46,6 +47,7 @@ public class S3Config {
 
     @Component
     @Slf4j
+    @Profile("!test")  // Don't run in test profile
     public static class S3BucketInitializer {
 
         private final MinioClient s3Client;

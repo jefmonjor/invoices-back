@@ -123,5 +123,7 @@ echo -e "${BLUE}📋 Lista de secrets configurados:${NC}\n"
 fly secrets list -a $APP_NAME
 
 echo -e "\n${GREEN}🎉 ¡Listo! Ahora puedes hacer el deploy:${NC}"
-echo -e "${BLUE}cd /home/user/invoices-back${NC}"
-echo -e "${BLUE}fly deploy -c invoices-monolith/fly.toml -a $APP_NAME${NC}\n"
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+echo -e "${BLUE}cd ${SCRIPT_DIR}${NC}"
+echo -e "${BLUE}./deploy.sh${NC}"
+echo -e "${BLUE}# O manualmente: fly deploy -c invoices-monolith/fly.toml -a $APP_NAME${NC}\n"
