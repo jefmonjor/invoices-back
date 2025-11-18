@@ -111,7 +111,16 @@ public class Invoice {
         updateTimestamp();
     }
 
+    /**
+     * Marks invoice as pending.
+     * Valid transition: DRAFT → PENDING
+     */
     public void markAsPending() {
+        if (status != InvoiceStatus.DRAFT) {
+            throw new InvalidInvoiceStateException(
+                "Can only mark draft invoices as pending. Current status: " + status.getDisplayName()
+            );
+        }
         if (items.isEmpty()) {
             throw new InvalidInvoiceStateException(
                 "Cannot mark invoice as pending without items"
@@ -121,10 +130,28 @@ public class Invoice {
         updateTimestamp();
     }
 
-    public void markAsPaid() {
+    /**
+     * Marks invoice as finalized.
+     * Valid transition: PENDING → FINALIZED
+     */
+    public void markAsFinalized() {
         if (status != InvoiceStatus.PENDING) {
             throw new InvalidInvoiceStateException(
-                "Can only mark pending invoices as paid"
+                "Can only finalize pending invoices. Current status: " + status.getDisplayName()
+            );
+        }
+        this.status = InvoiceStatus.FINALIZED;
+        updateTimestamp();
+    }
+
+    /**
+     * Marks invoice as paid.
+     * Valid transitions: PENDING → PAID or FINALIZED → PAID
+     */
+    public void markAsPaid() {
+        if (status != InvoiceStatus.PENDING && status != InvoiceStatus.FINALIZED) {
+            throw new InvalidInvoiceStateException(
+                "Can only mark pending or finalized invoices as paid. Current status: " + status.getDisplayName()
             );
         }
         this.status = InvoiceStatus.PAID;

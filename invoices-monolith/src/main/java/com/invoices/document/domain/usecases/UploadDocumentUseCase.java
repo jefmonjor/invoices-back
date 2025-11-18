@@ -6,6 +6,7 @@ import com.invoices.document.domain.ports.DocumentRepository;
 import com.invoices.document.domain.ports.FileStorageService;
 import com.invoices.document.domain.validation.PdfValidator;
 
+import java.nio.file.Paths;
 import java.util.UUID;
 
 /**
@@ -69,12 +70,39 @@ public class UploadDocumentUseCase {
     }
 
     /**
-     * Extracts the file extension from a filename.
+     * Extracts and validates the file extension from a filename.
+     * Sanitizes the filename to prevent path traversal attacks.
+     * Only allows .pdf extension.
+     *
+     * @param filename the original filename
+     * @return the sanitized .pdf extension
+     * @throws IllegalArgumentException if filename is invalid or extension is not .pdf
      */
     private String extractFileExtension(String filename) {
-        if (filename == null || !filename.contains(".")) {
-            return ".pdf";
+        if (filename == null || filename.trim().isEmpty()) {
+            throw new IllegalArgumentException("Filename cannot be null or empty");
         }
-        return filename.substring(filename.lastIndexOf("."));
+
+        // Sanitize filename - remove any path components to prevent path traversal
+        // This prevents filenames like "../../etc/passwd" or "C:\Windows\system32\file.pdf"
+        String sanitizedFilename = Paths.get(filename).getFileName().toString();
+
+        // Remove any remaining dangerous characters
+        sanitizedFilename = sanitizedFilename.replaceAll("[^a-zA-Z0-9._-]", "_");
+
+        // Extract extension
+        int lastDot = sanitizedFilename.lastIndexOf('.');
+        if (lastDot == -1 || lastDot == sanitizedFilename.length() - 1) {
+            throw new IllegalArgumentException("Filename must have a valid .pdf extension");
+        }
+
+        String extension = sanitizedFilename.substring(lastDot).toLowerCase();
+
+        // Validate that extension is .pdf
+        if (!".pdf".equals(extension)) {
+            throw new IllegalArgumentException("Only PDF files are allowed. Found extension: " + extension);
+        }
+
+        return extension;
     }
 }

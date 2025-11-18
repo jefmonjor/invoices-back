@@ -214,8 +214,8 @@ public class GlobalExceptionHandler {
         ErrorResponse errorResponse = ErrorResponse.builder()
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
-                .error("Internal Server Error")
-                .message("Error al generar el PDF de la factura: " + ex.getMessage())
+                .error("Error Interno del Servidor")
+                .message("Error al generar el PDF de la factura. Por favor, inténtelo de nuevo más tarde.")
                 .path(request.getRequestURI())
                 .build();
 
@@ -377,6 +377,51 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.BAD_REQUEST.value())
                 .error("Bad Request")
                 .message(ex.getMessage())
+                .path(request.getRequestURI())
+                .build();
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+    }
+
+    /**
+     * Handles InvalidInvoiceStateException (400 Bad Request).
+     * Thrown when trying to perform an invalid operation on an invoice
+     * based on its current state (e.g., deleting a paid invoice).
+     */
+    @ExceptionHandler(InvalidInvoiceStateException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidInvoiceStateException(
+            InvalidInvoiceStateException ex,
+            HttpServletRequest request) {
+
+        log.warn("Invalid invoice state operation: {}", ex.getMessage());
+
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error("Bad Request")
+                .message(ex.getMessage())
+                .path(request.getRequestURI())
+                .build();
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+    }
+
+    /**
+     * Handles InvalidInvoiceNumberFormatException (400 Bad Request).
+     * Thrown when the invoice number doesn't match the required format (YYYY-XXX).
+     */
+    @ExceptionHandler(InvalidInvoiceNumberFormatException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidInvoiceNumberFormatException(
+            InvalidInvoiceNumberFormatException ex,
+            HttpServletRequest request) {
+
+        log.warn("Invalid invoice number format: {}", ex.getMessage());
+
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error("Bad Request")
+                .message("Invalid invoice number format. Expected format: YYYY-XXX (e.g., 2024-001)")
                 .path(request.getRequestURI())
                 .build();
 

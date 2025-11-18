@@ -3,6 +3,7 @@ package com.invoices.document.domain.validation;
 import com.invoices.document.domain.entities.FileContent;
 import org.apache.tika.Tika;
 
+import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -75,19 +76,21 @@ public class PdfValidator {
      */
     private void validateActualContentType(FileContent fileContent) {
         try {
-            InputStream inputStream = fileContent.getInputStream();
+            InputStream originalStream = fileContent.getInputStream();
 
-            // Mark the stream so we can reset it after detection
-            if (inputStream.markSupported()) {
-                inputStream.mark(Integer.MAX_VALUE);
-            }
+            // Wrap in BufferedInputStream to guarantee mark/reset support
+            // BufferedInputStream provides efficient mark/reset functionality
+            BufferedInputStream bufferedStream = new BufferedInputStream(originalStream);
 
-            String detectedType = tika.detect(inputStream);
+            // Mark the stream with reasonable limit (enough for Tika detection)
+            // Use file size or a reasonable default (1MB) instead of Integer.MAX_VALUE
+            int markLimit = (int) Math.min(fileContent.getSize(), 1024 * 1024);
+            bufferedStream.mark(markLimit);
 
-            // Reset stream if possible
-            if (inputStream.markSupported()) {
-                inputStream.reset();
-            }
+            String detectedType = tika.detect(bufferedStream);
+
+            // Reset stream to beginning for subsequent validations
+            bufferedStream.reset();
 
             if (!ALLOWED_CONTENT_TYPE.equals(detectedType)) {
                 throw new IllegalArgumentException(
@@ -106,20 +109,19 @@ public class PdfValidator {
      */
     private void validatePdfSignature(FileContent fileContent) {
         try {
-            InputStream inputStream = fileContent.getInputStream();
+            InputStream originalStream = fileContent.getInputStream();
+
+            // Wrap in BufferedInputStream to guarantee mark/reset support
+            BufferedInputStream bufferedStream = new BufferedInputStream(originalStream);
 
             // Mark the stream so we can reset it after reading header
-            if (inputStream.markSupported()) {
-                inputStream.mark(PDF_HEADER_SIZE);
-            }
+            bufferedStream.mark(PDF_HEADER_SIZE);
 
             byte[] header = new byte[PDF_HEADER_SIZE];
-            int bytesRead = inputStream.read(header);
+            int bytesRead = bufferedStream.read(header);
 
-            // Reset stream if possible
-            if (inputStream.markSupported()) {
-                inputStream.reset();
-            }
+            // Reset stream to beginning
+            bufferedStream.reset();
 
             if (bytesRead < PDF_HEADER_SIZE) {
                 throw new IllegalArgumentException("File is too small to be a valid PDF");
