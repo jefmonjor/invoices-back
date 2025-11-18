@@ -9,7 +9,7 @@ import com.invoices.invoice.dto.CreateInvoiceItemRequest;
 import com.invoices.invoice.dto.CreateInvoiceRequest;
 import com.invoices.invoice.dto.InvoiceDTO;
 import com.invoices.invoice.dto.UpdateInvoiceRequest;
-import com.invoices.invoice.exception.ClientNotFoundException;
+import com.invoices.invoice.domain.exceptions.ClientNotFoundException;
 import com.invoices.invoice.presentation.mappers.InvoiceDtoMapper;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
