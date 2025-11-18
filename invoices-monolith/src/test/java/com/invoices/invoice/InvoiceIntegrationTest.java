@@ -19,13 +19,13 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.*;
 
 /**
- * Integration test for Invoice Service.
- * Tests the complete flow from repository to database using H2.
+ * Integration test for Invoice module.
+ * Tests the complete flow from repository to database.
  */
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
-class InvoiceServiceIntegrationTest {
+class InvoiceIntegrationTest {
 
     @Autowired
     private InvoiceRepository invoiceRepository;
