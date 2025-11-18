@@ -1,4 +1,4 @@
-package com.invoices.trace.entity;
+package com.invoices.trace.infrastructure.persistence.entities;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -10,13 +10,23 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+/**
+ * JPA Entity for audit log persistence.
+ * This is the infrastructure representation of an AuditLog,
+ * separate from the domain entity to maintain clean architecture.
+ */
 @Entity
-@Table(name = "audit_logs")
+@Table(name = "audit_logs", indexes = {
+        @Index(name = "idx_audit_log_invoice_id", columnList = "invoice_id"),
+        @Index(name = "idx_audit_log_client_id", columnList = "client_id"),
+        @Index(name = "idx_audit_log_event_type", columnList = "event_type"),
+        @Index(name = "idx_audit_log_created_at", columnList = "created_at")
+})
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class AuditLog {
+public class AuditLogJpaEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

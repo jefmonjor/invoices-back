@@ -1,7 +1,9 @@
-package com.invoices.trace.controller;
+package com.invoices.trace.presentation.controllers;
 
-import com.invoices.trace.dto.AuditLogDTO;
-import com.invoices.trace.service.AuditLogService;
+import com.invoices.trace.domain.entities.AuditLog;
+import com.invoices.trace.domain.usecases.*;
+import com.invoices.trace.presentation.dto.AuditLogDTO;
+import com.invoices.trace.presentation.mappers.AuditLogDtoMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -19,7 +21,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
+/**
+ * REST controller for audit log management operations (Clean Architecture).
+ * Uses Use Cases from domain layer instead of service layer.
+ */
 @RestController
 @RequestMapping("/api/traces")
 @RequiredArgsConstructor
@@ -27,7 +34,12 @@ import java.util.List;
 @Tag(name = "Trace Service", description = "Audit log management API for tracking invoice events")
 public class AuditLogController {
 
-    private final AuditLogService auditLogService;
+    private final GetAuditLogByIdUseCase getAuditLogByIdUseCase;
+    private final GetAuditLogsByInvoiceUseCase getAuditLogsByInvoiceUseCase;
+    private final GetAuditLogsByClientUseCase getAuditLogsByClientUseCase;
+    private final GetAuditLogsByEventTypeUseCase getAuditLogsByEventTypeUseCase;
+    private final GetAllAuditLogsUseCase getAllAuditLogsUseCase;
+    private final AuditLogDtoMapper mapper;
 
     @GetMapping
     @Operation(summary = "Get audit logs", description = "Retrieve audit logs with optional filters and pagination")
@@ -60,27 +72,44 @@ public class AuditLogController {
         log.info("GET /api/traces - invoiceId={}, clientId={}, eventType={}, page={}, size={}",
                 invoiceId, clientId, eventType, page, size);
 
-        // If specific filters are provided, return a list
+        // If specific filters are provided, return a list (use cases handle filtering)
         if (invoiceId != null) {
-            List<AuditLogDTO> logs = auditLogService.getLogsByInvoiceId(invoiceId);
-            return ResponseEntity.ok(logs);
+            List<AuditLog> logs = getAuditLogsByInvoiceUseCase.execute(invoiceId);
+            List<AuditLogDTO> logDTOs = logs.stream()
+                    .map(mapper::toDTO)
+                    .collect(Collectors.toList());
+            log.info("Retrieved {} audit logs for invoice {}", logDTOs.size(), invoiceId);
+            return ResponseEntity.ok(logDTOs);
         }
 
         if (clientId != null) {
-            List<AuditLogDTO> logs = auditLogService.getLogsByClientId(clientId);
-            return ResponseEntity.ok(logs);
+            List<AuditLog> logs = getAuditLogsByClientUseCase.execute(clientId);
+            List<AuditLogDTO> logDTOs = logs.stream()
+                    .map(mapper::toDTO)
+                    .collect(Collectors.toList());
+            log.info("Retrieved {} audit logs for client {}", logDTOs.size(), clientId);
+            return ResponseEntity.ok(logDTOs);
         }
 
         if (eventType != null) {
-            List<AuditLogDTO> logs = auditLogService.getLogsByEventType(eventType);
-            return ResponseEntity.ok(logs);
+            List<AuditLog> logs = getAuditLogsByEventTypeUseCase.execute(eventType);
+            List<AuditLogDTO> logDTOs = logs.stream()
+                    .map(mapper::toDTO)
+                    .collect(Collectors.toList());
+            log.info("Retrieved {} audit logs for event type '{}'", logDTOs.size(), eventType);
+            return ResponseEntity.ok(logDTOs);
         }
 
-        // Otherwise, return paginated results
+        // Otherwise, return paginated results using GetAllAuditLogsUseCase
         Sort.Direction direction = sortDir.equalsIgnoreCase("ASC") ? Sort.Direction.ASC : Sort.Direction.DESC;
         Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
-        Page<AuditLogDTO> logsPage = auditLogService.getAllLogs(pageable);
-        return ResponseEntity.ok(logsPage);
+
+        Page<AuditLog> logsPage = getAllAuditLogsUseCase.execute(pageable);
+        Page<AuditLogDTO> logDTOsPage = logsPage.map(mapper::toDTO);
+
+        log.info("Retrieved {} total audit logs (page {}/{})",
+                logsPage.getTotalElements(), page, logsPage.getTotalPages());
+        return ResponseEntity.ok(logDTOsPage);
     }
 
     @GetMapping("/{id}")
@@ -95,7 +124,11 @@ public class AuditLogController {
             @PathVariable Long id
     ) {
         log.info("GET /api/traces/{} - Fetching audit log", id);
-        AuditLogDTO auditLog = auditLogService.getLogById(id);
-        return ResponseEntity.ok(auditLog);
+
+        AuditLog auditLog = getAuditLogByIdUseCase.execute(id);
+        AuditLogDTO auditLogDTO = mapper.toDTO(auditLog);
+
+        log.info("Audit log {} retrieved successfully", id);
+        return ResponseEntity.ok(auditLogDTO);
     }
 }
