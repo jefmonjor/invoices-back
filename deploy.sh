@@ -107,7 +107,9 @@ echo -e "${CYAN}═════════════════════�
 echo -e "${YELLOW}⏳ Esto tomará aproximadamente 5-10 minutos...${NC}"
 echo -e "${CYAN}════════════════════════════════════════════${NC}\n"
 
-cd /home/user/invoices-back
+# Get script directory (works on Mac and Linux)
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd "$SCRIPT_DIR"
 
 # Run deployment
 if fly deploy -c invoices-monolith/fly.toml -a $APP_NAME; then
