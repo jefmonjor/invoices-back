@@ -50,10 +50,10 @@ public class UserDetailsServiceImpl implements UserDetailsService {
                 .username(user.getEmail())
                 .password(user.getPassword())
                 .authorities(getAuthorities(user))
-                .accountExpired(!user.getAccountNonExpired())
-                .accountLocked(!user.getAccountNonLocked())
-                .credentialsExpired(!user.getCredentialsNonExpired())
-                .disabled(!user.getEnabled())
+                .accountExpired(!user.isAccountNonExpired())
+                .accountLocked(!user.isAccountNonLocked())
+                .credentialsExpired(!user.isCredentialsNonExpired())
+                .disabled(!user.isEnabled())
                 .build();
     }
 

@@ -8,7 +8,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.stream.Consumer;
-import org.springframework.data.redis.connection.stream.ObjectRecord;
+import org.springframework.data.redis.connection.stream.MapRecord;
 import org.springframework.data.redis.connection.stream.ReadOffset;
 import org.springframework.data.redis.connection.stream.StreamOffset;
 import org.springframework.data.redis.stream.StreamMessageListenerContainer;
@@ -39,14 +39,13 @@ public class RedisStreamConfig {
      * Container que escucha los streams de Redis
      */
     @Bean
-    public StreamMessageListenerContainer<String, ObjectRecord<String, String>> streamMessageListenerContainer(
+    public StreamMessageListenerContainer<String, MapRecord<String, String, String>> streamMessageListenerContainer(
             RedisConnectionFactory connectionFactory) {
 
         var options = StreamMessageListenerContainer
                 .StreamMessageListenerContainerOptions
                 .builder()
                 .pollTimeout(Duration.ofSeconds(2))
-                .targetStreamType(StreamMessageListenerContainer.StreamMessageListenerContainerOptions.TargetType.VALUE)
                 .build();
 
         var container = StreamMessageListenerContainer.create(connectionFactory, options);
@@ -62,7 +61,7 @@ public class RedisStreamConfig {
      */
     @Bean
     public Subscription invoiceEventsSubscription(
-            StreamMessageListenerContainer<String, ObjectRecord<String, String>> container) {
+            StreamMessageListenerContainer<String, MapRecord<String, String, String>> container) {
 
         try {
             // Crear consumer group si no existe

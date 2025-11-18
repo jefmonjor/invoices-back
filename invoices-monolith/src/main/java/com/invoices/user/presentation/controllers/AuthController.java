@@ -8,6 +8,7 @@ import com.invoices.user.domain.usecases.UpdateUserLastLoginUseCase;
 import com.invoices.user.presentation.dto.AuthResponse;
 import com.invoices.user.presentation.dto.CreateUserRequest;
 import com.invoices.user.presentation.dto.LoginRequest;
+import com.invoices.user.presentation.mappers.UserDtoMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -41,6 +42,7 @@ public class AuthController {
     private final AuthenticateUserUseCase authenticateUserUseCase;
     private final UpdateUserLastLoginUseCase updateUserLastLoginUseCase;
     private final JwtUtil jwtUtil;
+    private final UserDtoMapper userDtoMapper;
 
     /**
      * Registers a new user and returns authentication token.
@@ -91,7 +93,8 @@ public class AuthController {
 
         AuthResponse response = AuthResponse.builder()
                 .token(token)
-                .email(createdUser.getEmail())
+                .expiresIn(jwtUtil.getExpirationTime())
+                .user(userDtoMapper.toDTO(createdUser))
                 .build();
 
         log.info("User registered successfully: {}", request.getEmail());
@@ -143,7 +146,8 @@ public class AuthController {
 
         AuthResponse response = AuthResponse.builder()
                 .token(token)
-                .email(authenticatedUser.getEmail())
+                .expiresIn(jwtUtil.getExpirationTime())
+                .user(userDtoMapper.toDTO(authenticatedUser))
                 .build();
 
         log.info("User logged in successfully: {}", request.getEmail());
