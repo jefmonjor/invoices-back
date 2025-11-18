@@ -1,240 +1,241 @@
-# 🔧 Guía de Variables de Entorno
+# Variables de Entorno - Invoices Monolith
 
-Documentación completa de todas las variables de entorno configurables en cada microservicio.
+Documentación completa de las variables de entorno para el monolito de gestión de facturas.
 
 ---
 
-## 🚀 Config Server (Puerto 8888)
+## 📋 Índice
 
-### Variables Principales
+- [Variables Principales](#-variables-principales)
+- [Base de Datos](#-base-de-datos)
+- [Redis (Event Streaming)](#-redis-event-streaming)
+- [S3/MinIO (Storage)](#-s3minio-storage)
+- [JWT Security](#-jwt-security)
+- [CORS](#-cors)
+- [Logging](#-logging)
+- [Ejemplo .env](#-ejemplo-env)
 
-| Variable | Descripción | Valores | Default |
-|----------|-------------|---------|---------|
-| `CONFIG_PROFILE` | Profile activo | `native`, `git` | `native` |
-| `CONFIG_GIT_URI` | URI del repositorio Git | URL | `https://github.com/jefmonjor/invoices-back-config.git` |
-| `CONFIG_GIT_BRANCH` | Branch de Git | String | `main` |
-| `CONFIG_NATIVE_PATH` | Path para configuraciones nativas | Path | `classpath:/config` |
-| `CONFIG_SERVER_USERNAME` | Usuario para basic auth (opcional) | String | `config-admin` |
-| `CONFIG_SERVER_PASSWORD` | Password para basic auth (opcional) | String | `config-password` |
-| `LOG_LEVEL_ROOT` | Log level root | `DEBUG`, `INFO`, `WARN`, `ERROR` | `INFO` |
-| `LOG_LEVEL_CONFIG` | Log level config server | `DEBUG`, `INFO`, `WARN`, `ERROR` | `DEBUG` |
+---
 
-### Configurar Profile
+## 🔧 Variables Principales
 
-```bash
-# Development (logging DEBUG)
-export CONFIG_PROFILE=dev
+### Servidor
 
-# Test (logging INFO)
-export CONFIG_PROFILE=test
+| Variable | Descripción | Requerida | Valor por Defecto |
+|----------|-------------|-----------|-------------------|
+| `SERVER_PORT` | Puerto de la aplicación | No | `8080` |
+| `SPRING_PROFILES_ACTIVE` | Perfil de Spring (dev/prod) | No | `dev` |
 
-# Production (logging WARN)
-export CONFIG_PROFILE=prod
+---
+
+## 💾 Base de Datos
+
+El monolito usa una **única base de datos PostgreSQL** con todas las tablas consolidadas.
+
+| Variable | Descripción | Requerida | Valor por Defecto | Ejemplo |
+|----------|-------------|-----------|-------------------|---------|
+| `SPRING_DATASOURCE_URL` | URL de conexión PostgreSQL | **Sí** | `jdbc:postgresql://localhost:5432/invoices` | `jdbc:postgresql://db.example.com:5432/invoices` |
+| `DB_USERNAME` | Usuario de la base de datos | **Sí** | `postgres` | `invoices_user` |
+| `DB_PASSWORD` | Contraseña de la base de datos | **Sí** | `postgres` | `my_secure_password` |
+
+### Tablas en la Base de Datos
+
+```sql
+invoices (database)
+├── users              # Usuarios y autenticación
+├── user_roles         # Roles de usuarios
+├── companies          # Empresas emisoras
+├── clients            # Clientes receptores
+├── invoices           # Facturas
+├── invoice_items      # Ítems de facturas
+├── documents          # Documentos PDF
+└── audit_logs         # Logs de auditoría
 ```
 
-### Ejemplo: Usar Git Backend
+### Servicios PostgreSQL Gratuitos
+
+- **[Neon](https://neon.tech)** - 0.5 GB gratis, serverless ⭐
+- **[Supabase](https://supabase.com)** - 500 MB gratis
+- **[Fly Postgres](https://fly.io/docs/postgres/)** - 3 GB gratis
+
+---
+
+## 📡 Redis (Event Streaming)
+
+El monolito usa **Redis Streams** para eventos asíncronos.
+
+| Variable | Descripción | Requerida | Valor por Defecto | Ejemplo |
+|----------|-------------|-----------|-------------------|---------|
+| `REDIS_HOST` | Host de Redis | **Sí** | `localhost` | `redis.upstash.io` |
+| `REDIS_PORT` | Puerto de Redis | No | `6379` | `6379` |
+| `REDIS_PASSWORD` | Contraseña de Redis | No | _(vacío)_ | `my_redis_password` |
+| `REDIS_SSL` | Usar SSL/TLS | No | `false` | `true` |
+| `REDIS_STREAM_INVOICE_EVENTS` | Nombre del stream de eventos | No | `invoice-events` | `invoice-events` |
+| `REDIS_STREAM_INVOICE_DLQ` | Stream de Dead Letter Queue | No | `invoice-events-dlq` | `invoice-events-dlq` |
+| `REDIS_CONSUMER_GROUP` | Grupo de consumidores | No | `trace-group` | `trace-group` |
+| `REDIS_CONSUMER_NAME` | Nombre del consumidor | No | `trace-consumer` | `trace-consumer` |
+
+### Eventos Redis
+
+El módulo **Trace** consume eventos del módulo **Invoice**:
+- `INVOICE_CREATED` - Factura creada
+- `INVOICE_UPDATED` - Factura actualizada
+- `INVOICE_DELETED` - Factura eliminada
+- `INVOICE_PAID` - Factura pagada
+
+### Servicios Redis Gratuitos
+
+- **[Upstash Redis](https://upstash.com)** - 10,000 comandos/día gratis ⭐
+- **[Redis Cloud](https://redis.com/try-free/)** - 30 MB gratis
+- **[Fly Redis](https://fly.io/docs/reference/redis/)** - 256 MB gratis
+
+---
+
+## 📦 S3/MinIO (Storage)
+
+Almacenamiento de documentos PDF en S3-compatible storage.
+
+| Variable | Descripción | Requerida | Valor por Defecto | Ejemplo |
+|----------|-------------|-----------|-------------------|---------|
+| `S3_ENDPOINT` | Endpoint del servicio S3 | **Sí** | `http://localhost:9000` | `https://xxxxx.r2.cloudflarestorage.com` |
+| `S3_ACCESS_KEY` | Access Key de S3 | **Sí** | `minioadmin` | `your_access_key` |
+| `S3_SECRET_KEY` | Secret Key de S3 | **Sí** | `minioadmin123` | `your_secret_key` |
+| `S3_BUCKET_NAME` | Nombre del bucket | **Sí** | `invoices-documents` | `my-invoices-bucket` |
+| `S3_REGION` | Región de S3 | No | `auto` | `us-east-1` |
+| `S3_PATH_STYLE_ACCESS` | Usar path-style access | No | `true` | `false` |
+
+### Servicios S3 Gratuitos
+
+- **[Cloudflare R2](https://www.cloudflare.com/products/r2/)** - 10 GB gratis ⭐
+- **MinIO** - Self-hosted (desarrollo local)
+- **[Backblaze B2](https://www.backblaze.com/b2/cloud-storage.html)** - 10 GB gratis
+
+---
+
+## 🔐 JWT Security
+
+Configuración de tokens JWT para autenticación.
+
+| Variable | Descripción | Requerida | Valor por Defecto | Ejemplo |
+|----------|-------------|-----------|-------------------|---------|
+| `JWT_SECRET` | Clave secreta para firmar tokens | **Sí** | ⚠️ _cambiar en producción_ | `your-super-secret-jwt-key-min-32-chars-base64` |
+| `JWT_EXPIRATION_MS` | Tiempo de expiración del token (ms) | No | `3600000` (1 hora) | `7200000` (2 horas) |
+| `JWT_ISSUER` | Emisor del token | No | `invoices-backend` | `my-company` |
+
+### Generar JWT_SECRET Seguro
 
 ```bash
-export CONFIG_PROFILE=git
-export CONFIG_GIT_URI=https://github.com/tu-org/config-repo.git
-export CONFIG_GIT_BRANCH=main
-export CONFIG_SERVER_USERNAME=admin
-export CONFIG_SERVER_PASSWORD=secure-password
+# Opción 1: OpenSSL
+openssl rand -base64 32
+
+# Opción 2: Node.js
+node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+
+# Opción 3: Python
+python3 -c "import secrets; print(secrets.token_urlsafe(32))"
 ```
 
----
-
-## 📨 Trace Service (Puerto 8084)
-
-### Variables de Kafka
-
-| Variable | Descripción | Default |
-|----------|-------------|---------|
-| `KAFKA_BOOTSTRAP_SERVERS` | Servidores Kafka | `localhost:9092` |
-| `KAFKA_TRACE_GROUP_ID` | Consumer group ID | `trace-group` |
-| `KAFKA_INVOICE_TOPIC` | Topic principal | `invoice-events` |
-| `KAFKA_INVOICE_DLQ_TOPIC` | **Dead Letter Queue topic** | `invoice-events-dlq` |
-
-### Variables de Base de Datos
-
-| Variable | Descripción | Default |
-|----------|-------------|---------|
-| `TRACE_DB_HOST` | Host PostgreSQL | `localhost` |
-| `TRACE_DB_PORT` | Puerto PostgreSQL | `5432` |
-| `TRACE_DB_NAME` | Nombre de BD | `tracedb` |
-| `TRACE_DB_USERNAME` | Usuario BD | `trace_service_user` |
-| `TRACE_DB_PASSWORD` | Password BD | `password` |
-
-### Variables de JWT
-
-| Variable | Descripción | Default |
-|----------|-------------|---------|
-| `JWT_SECRET` | Secret key JWT (min 32 chars) | `default-secret-key...` |
-| `JWT_ISSUER` | Emisor del JWT | `invoices-backend` |
-
-### Configurar DLQ (CRÍTICO)
-
-```bash
-# Configurar Dead Letter Queue
-export KAFKA_INVOICE_DLQ_TOPIC=invoice-events-dlq
-
-# Configurar Kafka servers (producción)
-export KAFKA_BOOTSTRAP_SERVERS=kafka1:9092,kafka2:9092,kafka3:9092
-
-# Configurar consumer group
-export KAFKA_TRACE_GROUP_ID=trace-group-prod
-```
-
-### Logging
-
-| Variable | Descripción | Default |
-|----------|-------------|---------|
-| `LOG_LEVEL_ROOT` | Log level root | `INFO` |
-| `LOG_LEVEL_APP` | Log level aplicación | `DEBUG` |
+⚠️ **IMPORTANTE:** El `JWT_SECRET` debe tener al menos 32 caracteres y ser único por entorno.
 
 ---
 
-## 🔒 Gateway Service (Puerto 8080)
+## 🌐 CORS
 
-### Variables de JWT
+Configuración de CORS para conectar con frontend.
 
-| Variable | Descripción | Default |
-|----------|-------------|---------|
-| `JWT_SECRET` | Secret key JWT (min 32 chars) | `default-secret-key...` |
-| `JWT_ISSUER` | Emisor del JWT | `invoices-backend` |
-
-### Variables de Eureka
-
-| Variable | Descripción | Default |
-|----------|-------------|---------|
-| `EUREKA_SERVER_HOST` | Host Eureka | `localhost` |
-| `EUREKA_SERVER_PORT` | Puerto Eureka | `8761` |
-| `EUREKA_USERNAME` | Usuario Eureka | `eureka-admin` |
-| `EUREKA_PASSWORD` | Password Eureka | `password` |
-
-### Rate Limiting (Hardcoded)
-
-El Rate Limiting está configurado en código:
-- **Límite**: 100 requests/minuto por IP
-- **Algoritmo**: Token Bucket
-- **Excludes**: `/actuator/*`, `/health`
-
-Para modificar, editar: `gateway-service/src/main/java/com/invoices/gateway_service/filter/RateLimitingFilter.java`
-
-### Circuit Breaker (Hardcoded)
-
-Configuración en código:
-- **Failure threshold**: 50%
-- **Wait duration**: 60 segundos
-- **Sliding window**: 10 requests
-- **Min calls**: 5
-
-Para modificar, editar: `gateway-service/src/main/java/com/invoices/gateway_service/config/ResilienceConfig.java`
+| Variable | Descripción | Requerida | Valor por Defecto | Ejemplo |
+|----------|-------------|-----------|-------------------|---------|
+| `CORS_ALLOWED_ORIGINS` | Orígenes permitidos (separados por coma) | No | `http://localhost:3000,http://localhost:5173` | `https://myapp.vercel.app` |
+| `CORS_ALLOWED_METHODS` | Métodos HTTP permitidos | No | `GET,POST,PUT,DELETE,OPTIONS` | `GET,POST,PUT,DELETE,PATCH,OPTIONS` |
+| `CORS_ALLOWED_HEADERS` | Headers permitidos | No | `*` | `Content-Type,Authorization` |
+| `CORS_EXPOSED_HEADERS` | Headers expuestos | No | `Authorization` | `Authorization,X-Total-Count` |
+| `CORS_ALLOW_CREDENTIALS` | Permitir credenciales | No | `true` | `true` |
+| `CORS_MAX_AGE` | Tiempo de caché de preflight (segundos) | No | `3600` | `7200` |
 
 ---
 
-## 📄 Document Service (Puerto 8083)
+## 📝 Logging
 
-### Variables de MinIO
+Configuración de niveles de logging.
 
-| Variable | Descripción | Default |
-|----------|-------------|---------|
-| `MINIO_ENDPOINT` | Endpoint MinIO | `http://localhost:9000` |
-| `MINIO_ACCESS_KEY` | Access key | `minioadmin` |
-| `MINIO_SECRET_KEY` | Secret key | `minioadmin` |
-| `MINIO_BUCKET_NAME` | Nombre del bucket | `invoices` |
-| `MINIO_REGION` | Región | `us-east-1` |
-
-### Variables de Base de Datos
-
-| Variable | Descripción | Default |
-|----------|-------------|---------|
-| `DOCUMENT_DB_HOST` | Host PostgreSQL | `localhost` |
-| `DOCUMENT_DB_PORT` | Puerto PostgreSQL | `5432` |
-| `DOCUMENT_DB_NAME` | Nombre de BD | `documentdb` |
-| `DOCUMENT_DB_USERNAME` | Usuario BD | `document_service_user` |
-| `DOCUMENT_DB_PASSWORD` | Password BD | `password` |
-
-### Configurar MinIO
-
-```bash
-# Desarrollo (local)
-export MINIO_ENDPOINT=http://localhost:9000
-export MINIO_ACCESS_KEY=minioadmin
-export MINIO_SECRET_KEY=minioadmin
-export MINIO_BUCKET_NAME=invoices-dev
-
-# Producción (S3-compatible)
-export MINIO_ENDPOINT=https://s3.amazonaws.com
-export MINIO_ACCESS_KEY=AKIA...
-export MINIO_SECRET_KEY=...
-export MINIO_BUCKET_NAME=invoices-prod
-export MINIO_REGION=us-east-1
-```
+| Variable | Descripción | Valor por Defecto | Opciones |
+|----------|-------------|-------------------|----------|
+| `LOG_LEVEL_ROOT` | Nivel de log raíz | `INFO` | `TRACE, DEBUG, INFO, WARN, ERROR` |
+| `LOG_LEVEL_APP` | Nivel de log de la app | `DEBUG` | `TRACE, DEBUG, INFO, WARN, ERROR` |
 
 ---
 
-## 🗂️ Archivos de Configuración
+## 📄 Ejemplo .env
 
-### .env para Docker Compose
+### Desarrollo Local
 
-Crear archivo `.env` en la raíz:
+```env
+# Server
+SERVER_PORT=8080
+SPRING_PROFILES_ACTIVE=dev
 
-```bash
-# Config Server
-CONFIG_PROFILE=native
-CONFIG_SERVER_PORT=8888
+# Database
+SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/invoices
+DB_USERNAME=postgres
+DB_PASSWORD=postgres
 
-# Trace Service
-KAFKA_BOOTSTRAP_SERVERS=kafka:9092
-KAFKA_INVOICE_DLQ_TOPIC=invoice-events-dlq
-TRACE_DB_HOST=postgres-trace
-TRACE_DB_PASSWORD=secure-password
+# Redis
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=
 
-# Document Service
-MINIO_ENDPOINT=http://minio:9000
-MINIO_ACCESS_KEY=minioadmin
-MINIO_SECRET_KEY=minioadmin
-DOCUMENT_DB_HOST=postgres-document
-DOCUMENT_DB_PASSWORD=secure-password
+# S3/MinIO (Local)
+S3_ENDPOINT=http://localhost:9000
+S3_ACCESS_KEY=minioadmin
+S3_SECRET_KEY=minioadmin123
+S3_BUCKET_NAME=invoices-documents
+S3_REGION=us-east-1
 
-# Gateway Service
-JWT_SECRET=your-super-secret-jwt-key-min-32-characters-long
-EUREKA_SERVER_HOST=eureka-server
-EUREKA_PASSWORD=secure-password
+# JWT
+JWT_SECRET=your-super-secret-jwt-key-min-32-chars-base64-encoded-change-in-production
+JWT_EXPIRATION_MS=3600000
+JWT_ISSUER=invoices-backend
+
+# CORS
+CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
 
 # Logging
 LOG_LEVEL_ROOT=INFO
 LOG_LEVEL_APP=DEBUG
 ```
 
-### .env.production para Producción
+### Producción (Fly.io)
 
-```bash
-# Config Server
-CONFIG_PROFILE=git
-CONFIG_GIT_URI=https://github.com/tu-org/config-repo.git
-CONFIG_SERVER_USERNAME=admin
-CONFIG_SERVER_PASSWORD=<SECURE_PASSWORD>
+```env
+# Server
+SERVER_PORT=8080
+SPRING_PROFILES_ACTIVE=prod
 
-# Trace Service
-KAFKA_BOOTSTRAP_SERVERS=kafka1:9092,kafka2:9092,kafka3:9092
-KAFKA_INVOICE_DLQ_TOPIC=invoice-events-dlq
-TRACE_DB_HOST=prod-postgres-trace.rds.amazonaws.com
-TRACE_DB_PASSWORD=<SECURE_PASSWORD>
+# Database (Neon)
+SPRING_DATASOURCE_URL=jdbc:postgresql://ep-xxxx.us-east-1.aws.neon.tech/invoices?sslmode=require
+DB_USERNAME=your_neon_user
+DB_PASSWORD=your_neon_password
 
-# Document Service
-MINIO_ENDPOINT=https://s3.amazonaws.com
-MINIO_ACCESS_KEY=<AWS_ACCESS_KEY>
-MINIO_SECRET_KEY=<AWS_SECRET_KEY>
-MINIO_BUCKET_NAME=invoices-prod
-DOCUMENT_DB_HOST=prod-postgres-document.rds.amazonaws.com
-DOCUMENT_DB_PASSWORD=<SECURE_PASSWORD>
+# Redis (Upstash)
+REDIS_HOST=usw1-xxxx.upstash.io
+REDIS_PORT=6379
+REDIS_PASSWORD=your_upstash_password
+REDIS_SSL=true
 
-# Gateway Service
-JWT_SECRET=<SECURE_JWT_SECRET_MIN_32_CHARS>
-EUREKA_SERVER_HOST=eureka.prod.example.com
-EUREKA_PASSWORD=<SECURE_PASSWORD>
+# S3 (Cloudflare R2)
+S3_ENDPOINT=https://xxxxx.r2.cloudflarestorage.com
+S3_ACCESS_KEY=your_r2_access_key
+S3_SECRET_KEY=your_r2_secret_key
+S3_BUCKET_NAME=invoices-prod
+S3_REGION=auto
+
+# JWT (GENERAR NUEVO!)
+JWT_SECRET=production-secret-key-min-32-chars-unique-per-environment
+JWT_EXPIRATION_MS=3600000
+JWT_ISSUER=invoices-production
+
+# CORS
+CORS_ALLOWED_ORIGINS=https://myapp.vercel.app,https://www.myapp.com
 
 # Logging
 LOG_LEVEL_ROOT=WARN
@@ -243,91 +244,48 @@ LOG_LEVEL_APP=INFO
 
 ---
 
-## 🐳 Docker Compose
+## 🔒 Seguridad
 
-Usar variables de entorno en `docker-compose.yml`:
+### Variables Secretas
 
-```yaml
-version: '3.8'
+Estas variables **NUNCA** deben commitearse a Git:
 
-services:
-  config-server:
-    image: config-server:latest
-    environment:
-      - CONFIG_PROFILE=${CONFIG_PROFILE:-native}
-      - LOG_LEVEL_ROOT=${LOG_LEVEL_ROOT:-INFO}
-    ports:
-      - "8888:8888"
+- ✅ `DB_PASSWORD`
+- ✅ `REDIS_PASSWORD`
+- ✅ `S3_SECRET_KEY`
+- ✅ `JWT_SECRET`
 
-  trace-service:
-    image: trace-service:latest
-    environment:
-      - KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS}
-      - KAFKA_INVOICE_DLQ_TOPIC=${KAFKA_INVOICE_DLQ_TOPIC}
-      - TRACE_DB_HOST=${TRACE_DB_HOST}
-      - TRACE_DB_PASSWORD=${TRACE_DB_PASSWORD}
-      - JWT_SECRET=${JWT_SECRET}
-    depends_on:
-      - kafka
-      - postgres-trace
-    ports:
-      - "8084:8084"
+### Configurar Secrets en Fly.io
 
-  # ... otros servicios
+```bash
+fly secrets set JWT_SECRET="your-secret-key"
+fly secrets set DB_PASSWORD="your-db-password"
+fly secrets set REDIS_PASSWORD="your-redis-password"
+fly secrets set S3_SECRET_KEY="your-s3-secret"
 ```
 
 ---
 
-## ✅ Validación de Variables
+## ✅ Validación
 
-### Script de Validación
-
-Crear `validate-env.sh`:
+Para validar que todas las variables están configuradas correctamente:
 
 ```bash
-#!/bin/bash
+# Ejecutar health check
+curl http://localhost:8080/actuator/health
 
-echo "🔍 Validando variables de entorno..."
+# Verificar logs
+docker logs invoices-monolith
 
-# Validar JWT Secret (min 32 caracteres)
-if [ ${#JWT_SECRET} -lt 32 ]; then
-    echo "❌ ERROR: JWT_SECRET debe tener al menos 32 caracteres"
-    exit 1
-fi
-
-# Validar que DLQ topic esté configurado
-if [ -z "$KAFKA_INVOICE_DLQ_TOPIC" ]; then
-    echo "⚠️  WARNING: KAFKA_INVOICE_DLQ_TOPIC no está configurado"
-fi
-
-# Validar Config Profile
-if [[ ! "$CONFIG_PROFILE" =~ ^(dev|test|prod|native|git)$ ]]; then
-    echo "⚠️  WARNING: CONFIG_PROFILE tiene valor inválido: $CONFIG_PROFILE"
-fi
-
-echo "✅ Validación completada"
+# Probar conexión a DB
+docker exec -it invoices-monolith \
+  psql -h postgres -U postgres -d invoices -c "SELECT 1;"
 ```
-
-```bash
-chmod +x validate-env.sh
-./validate-env.sh
-```
-
----
-
-## 🔐 Mejores Prácticas
-
-1. **NUNCA** commitear `.env` al repositorio
-2. **Usar** `.env.example` como template
-3. **Rotar** secrets regularmente en producción
-4. **Usar** gestores de secrets (AWS Secrets Manager, HashiCorp Vault)
-5. **Validar** variables antes de deployment
-6. **Documentar** cambios en este archivo
 
 ---
 
 ## 📚 Referencias
 
-- [Spring Boot Externalized Configuration](https://docs.spring.io/spring-boot/docs/current/reference/html/features.html#features.external-config)
-- [Docker Environment Variables](https://docs.docker.com/compose/environment-variables/)
-- [12 Factor App: Config](https://12factor.net/config)
+- [Spring Boot Externalized Configuration](https://docs.spring.io/spring-boot/reference/features/external-config.html)
+- [Neon Database Setup](./NEON_DATABASE_SETUP.md)
+- [Free Services Setup](./FREE_SERVICES_SETUP.md)

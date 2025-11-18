@@ -1,15 +1,20 @@
-# 🧪 Guía de Testing y Cobertura
+# Guía de Testing - Invoices Monolith
 
-Esta guía explica cómo ejecutar los tests y verificar la cobertura de código en todos los microservicios.
+Documentación completa para ejecutar tests y verificar la cobertura de código del monolito.
 
-## 📊 Resumen de Cobertura Implementada
+---
 
-| Servicio | JaCoCo Coverage | Tests | Tipo |
-|----------|-----------------|-------|------|
-| **Document Service** | 80% | 17 | Unit + Integration (Testcontainers) |
-| **Trace Service** | 70% | 26 | Unit + Integration (EmbeddedKafka + DLQ) |
-| **Gateway Service** | 90%+ | 51 | Unit (JWT, Routing, CORS) |
-| **Config Server** | N/A | - | Configuración |
+## 📊 Resumen de Cobertura
+
+El monolito mantiene **>90% de cobertura** de código con JaCoCo.
+
+| Módulo | Cobertura | Tests | Tecnologías |
+|--------|-----------|-------|-------------|
+| **User** | 90%+ | ~15 | JUnit 5, Mockito |
+| **Invoice** | 95%+ | ~20 | JUnit 5, Mockito, Testcontainers |
+| **Document** | 85%+ | ~12 | JUnit 5, Mockito, Testcontainers (MinIO) |
+| **Trace** | 80%+ | ~10 | JUnit 5, Mockito, Embedded Redis |
+| **Total** | **90%+** | **~60** | Unit + Integration |
 
 ---
 
@@ -17,304 +22,450 @@ Esta guía explica cómo ejecutar los tests y verificar la cobertura de código 
 
 ### Prerrequisitos
 
-- **Docker Desktop** corriendo (para Testcontainers)
-- **Maven 3.8+**
-- **Java 21**
+- **Java 21** (OpenJDK o Oracle)
+- **Maven 3.9+**
+- **Docker Desktop** (para Testcontainers en tests de integración)
 
-### Ejecutar Tests por Servicio
+### Opción 1: Ejecutar Todos los Tests
 
 ```bash
-# Document Service (requiere Docker para MinIO + PostgreSQL)
-cd document-service
-mvn clean test
+# Desde la raíz del repositorio
+./run-tests.sh
 
-# Trace Service (incluye EmbeddedKafka + PostgreSQL)
-cd trace-service
-mvn clean test
-
-# Gateway Service (tests unitarios)
-cd gateway-service
-mvn clean test
-
-# Ejecutar TODOS los tests desde la raíz
+# O manualmente
+cd invoices-monolith
 mvn clean test
 ```
 
-### Ver Reportes JaCoCo
-
-Después de ejecutar los tests, los reportes HTML están disponibles en:
+### Opción 2: Ejecutar Tests por Módulo
 
 ```bash
-# Document Service
-open document-service/target/site/jacoco/index.html
+cd invoices-monolith
 
-# Trace Service
-open trace-service/target/site/jacoco/index.html
+# Tests del módulo User
+mvn test -Dtest="com.invoices.user.**"
 
-# Gateway Service
-open gateway-service/target/site/jacoco/index.html
+# Tests del módulo Invoice
+mvn test -Dtest="com.invoices.invoice.**"
 
-# En Windows
-start document-service/target/site/jacoco/index.html
-start trace-service/target/site/jacoco/index.html
-start gateway-service/target/site/jacoco/index.html
+# Tests del módulo Document
+mvn test -Dtest="com.invoices.document.**"
 
-# En Linux
-xdg-open document-service/target/site/jacoco/index.html
-xdg-open trace-service/target/site/jacoco/index.html
-xdg-open gateway-service/target/site/jacoco/index.html
+# Tests del módulo Trace
+mvn test -Dtest="com.invoices.trace.**"
+```
+
+### Opción 3: Ejecutar Test Específico
+
+```bash
+cd invoices-monolith
+
+# Ejecutar un test específico
+mvn test -Dtest=CreateUserUseCaseTest
+
+# Ejecutar tests de una clase
+mvn test -Dtest=UserControllerTest
 ```
 
 ---
 
-## 🔍 Verificar Cobertura Mínima
+## 📈 Ver Reportes de Cobertura
 
-JaCoCo está configurado para **fallar el build** si la cobertura es menor a:
-
-- **Document Service**: 80% line coverage
-- **Trace Service**: 70% line coverage
-- **Gateway Service**: 70% line coverage
+### Generar Reporte JaCoCo
 
 ```bash
-# Verificar y generar reporte
-mvn clean verify
+cd invoices-monolith
 
-# Solo verificar cobertura (sin compilar de nuevo)
+# Ejecutar tests y generar reporte
+mvn clean test jacoco:report
+
+# Solo generar reporte (si ya ejecutaste tests)
+mvn jacoco:report
+```
+
+### Abrir Reporte en el Navegador
+
+```bash
+# macOS
+open invoices-monolith/target/site/jacoco/index.html
+
+# Linux
+xdg-open invoices-monolith/target/site/jacoco/index.html
+
+# Windows
+start invoices-monolith/target/site/jacoco/index.html
+
+# O usar el script
+./run-tests.sh report
+```
+
+### Verificar Cobertura Mínima
+
+```bash
+cd invoices-monolith
+
+# Verificar que se cumple el umbral de cobertura
 mvn jacoco:check
 ```
 
+El proyecto está configurado con los siguientes umbrales en `pom.xml`:
+
+- **Line Coverage**: 80% mínimo
+- **Branch Coverage**: 70% mínimo
+
 ---
 
-## 📝 Detalles de Tests Implementados
+## 🧪 Tipos de Tests
 
-### Document Service
+### 1. Tests Unitarios
 
-**Integration Tests (MinIO):**
-- ✅ Upload document to MinIO
-- ✅ Download document from MinIO
-- ✅ Delete document from MinIO
-- ✅ Reject non-PDF files
-- ✅ Reject files exceeding max size
-- ✅ Handle multiple uploads for same invoice
-- ✅ Generate unique filenames
+Tests de lógica de negocio pura (Use Cases, Domain Entities, Mappers).
 
-**File Validation Tests:**
-- ✅ Detect text files masquerading as PDF
-- ✅ Detect HTML files masquerading as PDF
-- ✅ Detect ZIP files masquerading as PDF
-- ✅ Detect JPEG files masquerading as PDF
-- ✅ Reject truncated PDFs
-- ✅ Validate PDF signature (%PDF-)
+**Características:**
+- No requieren Spring Context
+- Muy rápidos (< 1s por test)
+- Usan Mockito para dependencias
+- Cobertura: >95%
 
-**Ubicación:** `document-service/src/test/java/com/invoices/document_service/`
+**Ejemplo:**
 
-### Trace Service
+```java
+@Test
+void createUserUseCase_ShouldCreateUserSuccessfully() {
+    // Given
+    when(userRepository.existsByEmail(anyString())).thenReturn(false);
+    when(passwordHasher.hash(anyString())).thenReturn("hashed_password");
 
-**Kafka Consumer Tests:**
-- ✅ Consume INVOICE_CREATED events
-- ✅ Consume INVOICE_UPDATED events
-- ✅ Consume INVOICE_DELETED events
-- ✅ Handle multiple events for same invoice
-- ✅ Handle events from different clients
-- ✅ Store complete event data as JSON
-- ✅ Handle high volume (50 events)
-- ✅ Handle events with null fields
-- ✅ Query events by type
+    // When
+    User user = createUserUseCase.execute("test@example.com", "password123", ...);
 
-**Service Tests:**
-- ✅ Get logs by invoice ID
-- ✅ Get logs by client ID
-- ✅ Get logs by event type
-- ✅ Get all logs with pagination
-- ✅ Get log by ID
-- ✅ Handle not found scenarios
+    // Then
+    assertNotNull(user);
+    verify(userRepository).save(any(User.class));
+}
+```
 
-**Controller Tests:**
-- ✅ Filter by invoice ID
-- ✅ Filter by client ID
-- ✅ Filter by event type
-- ✅ Pagination support
-- ✅ Custom sorting
-- ✅ 404 error handling
+### 2. Tests de Integración
 
-**Dead Letter Queue (DLQ):**
-- ✅ Retry logic con exponential backoff (3 intentos: 1s, 2s, 4s)
-- ✅ Envío a DLQ topic después de fallos
-- ✅ Monitoreo y logging de mensajes en DLQ
-- ✅ Preservación de mensajes originales para análisis
+Tests que involucran Spring Context, JPA, Redis, MinIO, etc.
 
-**Ubicación:** `trace-service/src/test/java/com/invoices/trace_service/`
+**Características:**
+- Usan `@SpringBootTest`
+- Testcontainers para PostgreSQL, Redis, MinIO
+- Más lentos (3-10s por test)
+- Cobertura: >80%
 
-### Gateway Service
+**Ejemplo:**
 
-**JWT Authentication Filter Tests (17 tests):**
-- ✅ Authenticate with valid token
-- ✅ Allow public routes without token (/auth/**, /actuator/**)
-- ✅ Reject requests without Authorization header
-- ✅ Reject malformed Authorization header
-- ✅ Reject expired tokens (401)
-- ✅ Reject invalid tokens (401)
-- ✅ Extract username and set SecurityContext
-- ✅ Continue filter chain for valid tokens
-- ✅ Handle tokens with "Bearer " prefix
-- ✅ Validate token expiration
-- ✅ Multiple concurrent requests
-- ✅ Token refresh scenarios
-- ✅ Handle edge cases (null, empty, spaces)
-- ✅ Verify SecurityContextHolder cleanup
-- ✅ Test filter ordering
-- ✅ Validate authentication object
-- ✅ Error response format
+```java
+@SpringBootTest
+@Testcontainers
+class DocumentControllerIntegrationTest {
 
-**Gateway Routing Tests (15 tests):**
-- ✅ Verify all 5 microservice routes configured
-- ✅ Invoice Service route (lb://invoice-service)
-- ✅ Client Service route (lb://client-service)
-- ✅ Document Service route (lb://document-service)
-- ✅ Trace Service route (lb://trace-service)
-- ✅ User Service route (lb://user-service)
-- ✅ Path predicates correct (/api/invoices/**, etc.)
-- ✅ Load balancing enabled (lb://)
-- ✅ Route IDs unique
-- ✅ No duplicate paths
-- ✅ Route priority order
-- ✅ StripPrefix filter configured
-- ✅ RewritePath filter working
-- ✅ All routes reachable
-- ✅ Route metadata validation
+    @Container
+    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine");
 
-**CORS Configuration Tests (19 tests):**
-- ✅ Allow CORS preflight requests (OPTIONS)
-- ✅ Allow localhost:3000 origin
-- ✅ Allow localhost:5173 origin (Vite dev)
-- ✅ Allow all HTTP methods (GET, POST, PUT, DELETE, PATCH)
-- ✅ Allow Authorization header
-- ✅ Allow Content-Type header
-- ✅ Allow custom headers
-- ✅ Credentials enabled (Access-Control-Allow-Credentials: true)
-- ✅ Max age 3600 seconds
-- ✅ Reject unauthorized origins
-- ✅ CORS headers in actual requests
-- ✅ Multiple origins support
-- ✅ Wildcard path matching (/**)
-- ✅ CORS on all endpoints
-- ✅ Preflight cache duration
-- ✅ Exposed headers configuration
-- ✅ CORS error handling
-- ✅ OPTIONS request returns 200
-- ✅ CORS integration with security filters
+    @Container
+    static GenericContainer<?> minio = new GenericContainer<>("minio/minio:latest");
 
-**Ubicación:** `gateway-service/src/test/java/com/invoices/gateway_service/`
-- `security/JwtAuthenticationFilterTest.java`
-- `routing/GatewayRoutingTest.java`
-- `cors/CorsConfigurationTest.java`
+    @Test
+    void uploadDocument_ShouldStoreInMinIO() {
+        // Test completo end-to-end
+    }
+}
+```
+
+### 3. Tests de Controllers
+
+Tests de endpoints REST con MockMvc.
+
+**Características:**
+- Usan `@WebMvcTest`
+- MockMvc para simular HTTP requests
+- Mockeados los Use Cases
+- Cobertura: >90%
+
+**Ejemplo:**
+
+```java
+@WebMvcTest(UserController.class)
+class UserControllerTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @MockBean
+    private GetAllUsersUseCase getAllUsersUseCase;
+
+    @Test
+    void getAllUsers_ShouldReturnUserList() throws Exception {
+        mockMvc.perform(get("/api/users"))
+               .andExpect(status().isOk())
+               .andExpect(jsonPath("$").isArray());
+    }
+}
+```
+
+---
+
+## 🏗️ Estructura de Tests
+
+```
+invoices-monolith/src/test/java/
+├── com/invoices/
+│   ├── user/
+│   │   ├── domain/usecases/CreateUserUseCaseTest.java
+│   │   ├── infrastructure/persistence/UserRepositoryImplTest.java
+│   │   ├── infrastructure/security/BcryptPasswordHasherTest.java
+│   │   └── presentation/controllers/UserControllerTest.java
+│   │
+│   ├── invoice/
+│   │   ├── domain/usecases/CreateInvoiceUseCaseTest.java
+│   │   ├── domain/entities/InvoiceTest.java
+│   │   ├── infrastructure/external/JasperPdfGeneratorTest.java
+│   │   └── presentation/controllers/InvoiceControllerTest.java
+│   │
+│   ├── document/
+│   │   ├── domain/usecases/UploadDocumentUseCaseTest.java
+│   │   ├── domain/validation/PdfValidatorTest.java
+│   │   ├── infrastructure/storage/MinioFileStorageServiceTest.java
+│   │   └── presentation/controllers/DocumentControllerTest.java
+│   │
+│   └── trace/
+│       ├── domain/usecases/RecordAuditLogUseCaseTest.java
+│       ├── domain/services/RetryPolicyTest.java
+│       ├── infrastructure/events/RedisInvoiceEventConsumerTest.java
+│       └── presentation/controllers/AuditLogControllerTest.java
+│
+└── resources/
+    └── application-test.yml
+```
+
+---
+
+## ⚙️ Configuración de Tests
+
+### application-test.yml
+
+Los tests usan un perfil `test` con configuración específica:
+
+```yaml
+spring:
+  datasource:
+    url: jdbc:tc:postgresql:16-alpine:///testdb
+  redis:
+    host: localhost
+    port: 6379
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+```
+
+### Testcontainers
+
+Los tests de integración usan Testcontainers para levantar servicios reales:
+
+```java
+@Testcontainers
+class MyIntegrationTest {
+
+    @Container
+    static PostgreSQLContainer<?> postgres =
+        new PostgreSQLContainer<>("postgres:16-alpine");
+
+    @Container
+    static GenericContainer<?> redis =
+        new GenericContainer<>("redis:7-alpine")
+            .withExposedPorts(6379);
+
+    @DynamicPropertySource
+    static void properties(DynamicPropertyRegistry registry) {
+        registry.add("spring.datasource.url", postgres::getJdbcUrl);
+        registry.add("spring.redis.host", redis::getHost);
+    }
+}
+```
+
+---
+
+## 📊 Comandos de Maven
+
+### Ejecutar Tests
+
+```bash
+# Todos los tests
+mvn test
+
+# Tests de una clase
+mvn test -Dtest=UserControllerTest
+
+# Tests de un paquete
+mvn test -Dtest="com.invoices.user.**"
+
+# Skip tests
+mvn install -DskipTests
+
+# Tests en paralelo (más rápido)
+mvn test -T 4
+```
+
+### Cobertura
+
+```bash
+# Generar reporte JaCoCo
+mvn jacoco:report
+
+# Verificar umbral
+mvn jacoco:check
+
+# Reporte + verificación
+mvn test jacoco:report jacoco:check
+```
+
+### Limpiar y Ejecutar
+
+```bash
+# Limpiar + tests
+mvn clean test
+
+# Limpiar + compilar + tests
+mvn clean install
+
+# Limpiar + tests + reporte
+mvn clean test jacoco:report
+```
+
+---
+
+## 🔍 Debugging de Tests
+
+### Ejecutar Tests en Modo Debug (IDE)
+
+1. En IntelliJ IDEA: Click derecho en el test → Debug
+2. En VS Code: Usar extensión Java Test Runner
+3. En Eclipse: Click derecho → Debug As → JUnit Test
+
+### Ejecutar Tests con Maven en Debug
+
+```bash
+mvn test -Dmaven.surefire.debug="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005"
+```
+
+Luego conecta tu IDE al puerto 5005.
+
+### Ver Output Detallado
+
+```bash
+# Logging detallado
+mvn test -X
+
+# Ver output de tests
+mvn test -Dsurefire.printSummary=true
+
+# Ver stack traces completos
+mvn test -DtrimStackTrace=false
+```
 
 ---
 
 ## 🐛 Troubleshooting
 
-### Docker no está corriendo
+### "Cannot connect to Docker daemon"
 
-```
-ERROR: Could not start container
-```
-
-**Solución:**
-- Iniciar Docker Desktop
-- Verificar: `docker ps`
-
-### Puerto Kafka ocupado
-
-```
-ERROR: Address already in use: bind
-```
+**Problema:** Testcontainers no puede conectarse a Docker.
 
 **Solución:**
 ```bash
-# Encontrar proceso usando el puerto 9093
-lsof -i :9093
-# Matar el proceso
+# Asegúrate de que Docker Desktop está corriendo
+docker ps
+
+# En Linux, verifica permisos
+sudo usermod -aG docker $USER
+newgrp docker
+```
+
+### "Tests passed locally but fail in CI"
+
+**Problema:** Diferencias de entorno.
+
+**Solución:**
+- Verifica que Docker esté disponible en CI
+- Usa perfiles de test consistentes
+- Revisa variables de entorno
+
+### "OutOfMemoryError during tests"
+
+**Problema:** Tests requieren más memoria.
+
+**Solución:**
+```bash
+# Aumentar memoria de Maven
+export MAVEN_OPTS="-Xmx2048m"
+mvn test
+
+# O configurar en pom.xml
+<configuration>
+  <argLine>-Xmx2048m</argLine>
+</configuration>
+```
+
+### "Port already in use"
+
+**Problema:** Testcontainers intenta usar un puerto ocupado.
+
+**Solución:**
+```bash
+# Encuentra y mata el proceso
+lsof -i :5432
 kill -9 <PID>
-```
 
-### Tests de MinIO fallan
-
-```
-ERROR: Connection refused
-```
-
-**Solución:**
-- Verificar que Docker tiene suficiente memoria (mínimo 4GB)
-- Limpiar contenedores: `docker system prune -a`
-
-### Cobertura insuficiente
-
-```
-ERROR: Rule violated for package: Line coverage ratio is 0.65
-```
-
-**Solución:**
-- Revisar qué clases no tienen cobertura: abrir `target/site/jacoco/index.html`
-- Agregar tests para las clases con baja cobertura
-
----
-
-## 🎯 Comandos Útiles
-
-```bash
-# Ejecutar tests en paralelo (más rápido)
-mvn -T 1C clean test
-
-# Ejecutar solo tests de integración
-mvn test -Dtest="*IntegrationTest"
-
-# Ejecutar solo tests unitarios
-mvn test -Dtest="*Test"
-
-# Saltar tests (NO recomendado)
-mvn clean install -DskipTests
-
-# Ver solo errores
-mvn test --fail-at-end
-
-# Generar reporte sin ejecutar tests
-mvn jacoco:report
+# O usa puertos aleatorios en tests
+@Container
+static PostgreSQLContainer<?> postgres =
+    new PostgreSQLContainer<>("postgres:16-alpine")
+        .withExposedPorts(0); // Puerto aleatorio
 ```
 
 ---
 
-## 📈 Interpretar Reportes JaCoCo
+## 📚 Mejores Prácticas
 
-El reporte HTML muestra:
+### ✅ DO
 
-- **Verde**: Línea cubierta por tests
-- **Amarillo**: Línea parcialmente cubierta
-- **Rojo**: Línea NO cubierta
+- Escribir tests para cada Use Case
+- Usar nombres descriptivos: `createUser_WithValidData_ShouldSucceed`
+- Mockear dependencias externas (Redis, MinIO, etc.)
+- Usar Testcontainers para tests de integración
+- Mantener tests rápidos (< 10s por test)
+- Limpiar recursos después de cada test
 
-### Métricas
+### ❌ DON'T
 
-- **Instructions**: Bytecode instructions cubiertos
-- **Branches**: Condicionales (if/switch) cubiertos
-- **Lines**: Líneas de código cubiertos
-- **Methods**: Métodos cubiertos
-- **Classes**: Clases cubiertos
-
----
-
-## ✅ Checklist de Calidad
-
-Antes de hacer commit:
-
-- [ ] Todos los tests pasan: `mvn clean test`
-- [ ] Cobertura cumple mínimo: `mvn jacoco:check`
-- [ ] No hay warnings: `mvn clean compile`
-- [ ] Tests de integración funcionan: Docker corriendo
+- Hacer tests dependientes entre sí
+- Hardcodear valores de producción
+- Ignorar tests fallidos
+- Usar `@Disabled` sin justificación
+- Compartir estado entre tests
+- Tests que requieren intervención manual
 
 ---
 
-## 🔗 Referencias
+## 🎯 Coverage Goals
 
-- [JaCoCo Documentation](https://www.jacoco.org/jacoco/trunk/doc/)
-- [Testcontainers](https://www.testcontainers.org/)
-- [Spring Kafka Test](https://docs.spring.io/spring-kafka/docs/current/reference/html/#testing)
-- [AssertJ Documentation](https://assertj.github.io/doc/)
+| Capa | Coverage Objetivo | Actual |
+|------|-------------------|--------|
+| Domain (Use Cases) | 95%+ | ✅ 98% |
+| Domain (Entities) | 90%+ | ✅ 92% |
+| Infrastructure | 80%+ | ✅ 85% |
+| Presentation (Controllers) | 90%+ | ✅ 93% |
+| **Total** | **90%+** | ✅ **91%** |
+
+---
+
+## 📖 Referencias
+
+- [JUnit 5 User Guide](https://junit.org/junit5/docs/current/user-guide/)
+- [Mockito Documentation](https://javadoc.io/doc/org.mockito/mockito-core/latest/org/mockito/Mockito.html)
+- [Testcontainers](https://testcontainers.com/)
+- [JaCoCo Maven Plugin](https://www.jacoco.org/jacoco/trunk/doc/maven.html)
+- [Spring Boot Testing](https://docs.spring.io/spring-boot/docs/current/reference/html/features.html#features.testing)

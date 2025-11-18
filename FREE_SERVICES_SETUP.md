@@ -1,6 +1,6 @@
-# 🆓 Servicios Gratuitos para Sistema Mínimo (2 Usuarios)
+# 🆓 Servicios Gratuitos para Invoices Monolith
 
-Esta guía te muestra cómo configurar **TODOS** los servicios necesarios para ejecutar el sistema de facturas de forma **completamente gratuita**.
+Esta guía te muestra cómo configurar **TODOS** los servicios necesarios para ejecutar el monolito de facturas de forma **completamente gratuita**.
 
 ---
 
@@ -8,13 +8,13 @@ Esta guía te muestra cómo configurar **TODOS** los servicios necesarios para e
 
 | Servicio | Proveedor | Free Tier | Uso |
 |----------|-----------|-----------|-----|
-| **Backend** | Fly.io | 3 VMs (consumo) | Gateway, User, Invoice |
-| **Base de Datos** | Neon PostgreSQL | 4 DB (500MB c/u) | userdb, invoicedb, documentdb, tracedb |
+| **Backend** | Fly.io | 3 VMs (256MB RAM) | Monolito Spring Boot |
+| **Base de Datos** | Neon PostgreSQL | 1 DB (500MB) | Base de datos única consolidada |
 | **Object Storage** | Cloudflare R2 | 10 GB | Almacenamiento de PDFs |
-| **Message Queue** | Upstash Kafka | 10K msg/día | Sistema de eventos/auditoría |
-| **Frontend** | Vercel | Unlimited | UI React |
+| **Event Streaming** | Upstash Redis | 10K comandos/día | Sistema de eventos/auditoría |
+| **Frontend** | Vercel | Unlimited | UI React (opcional) |
 
-**✅ Todo 100% gratis para 2 usuarios básicos**
+**✅ Todo 100% gratis para uso básico**
 
 ---
 
@@ -23,25 +23,171 @@ Esta guía te muestra cómo configurar **TODOS** los servicios necesarios para e
 ```
 Frontend (Vercel)
         ↓
-API Gateway (Fly.io)
-        ↓
-    ┌───┴────┬──────────┬──────────┐
-    ↓        ↓          ↓          ↓
-  User    Invoice   Document    Trace
-Service  Service    Service    Service
-(Fly.io) (Fly.io)   (Fly.io)   (Fly.io)
-    ↓        ↓          ↓          ↓
-         PostgreSQL (Neon)        Kafka       R2
-    (4 databases separadas)    (Upstash) (Cloudflare)
+Invoices Monolith (Fly.io)
+   ┌────┼────┬─────┬─────┬─────┐
+   │    │    │     │     │     │
+  User Invoice Doc Trace Auth
+(módulos internos del monolito)
+   │    │    │     │     │
+   └────┴────┴─────┴─────┘
+        ↓      ↓     ↓
+    PostgreSQL  R2   Redis
+    (Neon)    (CF) (Upstash)
+    (1 DB)
+```
+
+**✅ Ventajas del Monolito:**
+- Una sola aplicación para desplegar
+- Una sola base de datos
+- Redis Streams en lugar de Kafka (más simple)
+- Menor complejidad operacional
+
+---
+
+## 💾 Parte 1: Neon PostgreSQL (Base de Datos)
+
+### ¿Qué es Neon?
+
+Base de datos PostgreSQL serverless con **500 MB gratis** - perfecto para desarrollo y uso básico.
+
+### Paso 1: Crear cuenta en Neon
+
+1. Visita: https://neon.tech/
+2. Sign up con GitHub o Email
+3. No necesitas tarjeta de crédito
+
+### Paso 2: Crear base de datos
+
+```bash
+# 1. En Neon Console: https://console.neon.tech/
+
+# 2. Click "Create Project"
+#    - Project name: invoices-monolith
+#    - Region: AWS eu-west-2 (Londres)
+#    - PostgreSQL version: 16
+
+# 3. Crear la base de datos principal
+#    - Database name: invoices
+#    - Owner: neondb_owner
+```
+
+### Paso 3: Obtener connection string
+
+```bash
+# 1. En el proyecto creado, ir a "Dashboard"
+
+# 2. Copiar el "Connection String":
+postgresql://neondb_owner:xxxxx@ep-xxxx-xxx.eu-west-2.aws.neon.tech/invoices?sslmode=require
+```
+
+### Paso 4: Esquema de la base de datos
+
+El monolito usa **UNA SOLA base de datos** con todas las tablas:
+
+```sql
+invoices (database)
+├── users              # Usuarios y autenticación
+├── user_roles         # Roles de usuarios
+├── companies          # Empresas emisoras
+├── clients            # Clientes receptores
+├── invoices           # Facturas
+├── invoice_items      # Ítems de facturas
+├── documents          # Documentos PDF
+└── audit_logs         # Logs de auditoría
+```
+
+**Las migraciones Flyway las crean automáticamente al arrancar.**
+
+### Paso 5: Variables de entorno para Neon
+
+Agregar a tu `.env`:
+
+```bash
+# Neon PostgreSQL
+SPRING_DATASOURCE_URL=postgresql://neondb_owner:password@ep-xxx.eu-west-2.aws.neon.tech/invoices?sslmode=require
+DB_USERNAME=neondb_owner
+DB_PASSWORD=your_password_here
+```
+
+**📖 Guía detallada:** Ver [NEON_DATABASE_SETUP.md](./NEON_DATABASE_SETUP.md)
+
+---
+
+## 📨 Parte 2: Upstash Redis (Event Streaming)
+
+### ¿Qué es Upstash Redis?
+
+Redis serverless con **10,000 comandos gratis al día** - perfecto para eventos asíncronos con Redis Streams.
+
+### Paso 1: Crear cuenta en Upstash
+
+1. Visita: https://console.upstash.com/
+2. Sign up con GitHub o Email
+3. No necesitas tarjeta de crédito
+
+### Paso 2: Crear base de datos Redis
+
+```bash
+# 1. En Upstash Console, ir a "Redis"
+
+# 2. Click "Create Database"
+
+# 3. Configurar:
+#    - Name: invoices-events
+#    - Type: Regional (free tier)
+#    - Region: eu-west-1 (Irlanda)
+#    - TLS: Enabled (recommended)
+
+# 4. Click "Create"
+```
+
+### Paso 3: Obtener credenciales
+
+```bash
+# 1. En el database creado, ir a "Details"
+
+# 2. Copiar:
+#    - Endpoint: enhanced-lemur-12345.upstash.io
+#    - Port: 6379
+#    - Password: AxxxYxxxZxxxQxxx...
+```
+
+### Paso 4: Redis Streams para eventos
+
+El monolito usa **Redis Streams** para comunicación asíncrona entre módulos:
+
+**Streams creados automáticamente:**
+- `invoice-events` - Eventos de facturas (creación, actualización, pago, eliminación)
+- `invoice-events-dlq` - Dead Letter Queue para eventos fallidos
+
+**Consumer Groups:**
+- `trace-group` - El módulo Trace consume eventos para auditoría
+
+### Paso 5: Variables de entorno para Redis
+
+Agregar a tu `.env`:
+
+```bash
+# Upstash Redis
+REDIS_HOST=enhanced-lemur-12345.upstash.io
+REDIS_PORT=6379
+REDIS_PASSWORD=your_redis_password
+REDIS_SSL=true
+
+# Redis Streams (opcionales, tienen valores por defecto)
+REDIS_STREAM_INVOICE_EVENTS=invoice-events
+REDIS_STREAM_INVOICE_DLQ=invoice-events-dlq
+REDIS_CONSUMER_GROUP=trace-group
+REDIS_CONSUMER_NAME=trace-consumer
 ```
 
 ---
 
-## 🚀 Parte 1: Configurar Cloudflare R2 (Almacenamiento de PDFs)
+## 🚀 Parte 3: Cloudflare R2 (Almacenamiento de PDFs)
 
 ### ¿Qué es Cloudflare R2?
 
-Alternativa a Amazon S3/MinIO con **10 GB gratis permanentemente** y **sin cargos por ancho de banda**.
+Alternativa a Amazon S3 con **10 GB gratis permanentemente** y **sin cargos por ancho de banda**.
 
 ### Paso 1: Crear cuenta en Cloudflare
 
@@ -86,130 +232,26 @@ Alternativa a Amazon S3/MinIO con **10 GB gratis permanentemente** y **sin cargo
 
 ### Paso 4: Variables de entorno para R2
 
-Agregar a tu `.env.production`:
+Agregar a tu `.env`:
 
 ```bash
 # Cloudflare R2 Storage
-R2_ACCESS_KEY_ID=your-access-key-id
-R2_SECRET_ACCESS_KEY=your-secret-access-key
-R2_ENDPOINT=https://your-account-id.r2.cloudflarestorage.com
-R2_BUCKET_NAME=invoices-documents
-R2_REGION=auto
+S3_ENDPOINT=https://your-account-id.r2.cloudflarestorage.com
+S3_ACCESS_KEY=your-access-key-id
+S3_SECRET_KEY=your-secret-access-key
+S3_BUCKET_NAME=invoices-documents
+S3_REGION=auto
 ```
+
+**💡 Alternativa local:** Para desarrollo usa MinIO (ver `docker-compose.yml`)
 
 ---
 
-## 📨 Parte 2: Configurar Upstash Kafka (Sistema de Eventos)
+## ☁️ Parte 4: Fly.io (Backend Monolito)
 
-### ¿Qué es Upstash Kafka?
+### ¿Qué es Fly.io?
 
-Kafka serverless con **10,000 mensajes gratis al día** - perfecto para auditoría y eventos de 2 usuarios.
-
-### Paso 1: Crear cuenta en Upstash
-
-1. Visita: https://console.upstash.com/
-2. Sign up con GitHub o Email
-3. No necesitas tarjeta de crédito
-
-### Paso 2: Crear cluster de Kafka
-
-```bash
-# 1. En Upstash Console, ir a "Kafka"
-
-# 2. Click "Create Cluster"
-
-# 3. Configurar:
-#    - Name: invoices-events
-#    - Type: Single Replica (free tier)
-#    - Region: eu-west-1 (Irlanda - más cerca de Amsterdam)
-
-# 4. Click "Create"
-```
-
-### Paso 3: Crear topics
-
-```bash
-# En el cluster creado, ir a "Topics"
-
-# Crear 3 topics:
-
-1. invoice-events
-   - Partitions: 1
-   - Retention: 7 days
-
-2. user-events
-   - Partitions: 1
-   - Retention: 7 days
-
-3. audit-trail
-   - Partitions: 1
-   - Retention: 30 days
-```
-
-### Paso 4: Obtener credenciales
-
-```bash
-# 1. En el cluster, ir a "Details"
-
-# 2. Copiar:
-#    - Endpoint: https://ruling-lemur-12345-eu1-kafka.upstash.io:9092
-#    - Username: cnVsaW5nLWxlbXVyL...
-#    - Password: YourPasswordHere...
-
-# También en "REST API" tab:
-#    - REST Endpoint: https://ruling-lemur-12345-eu1-rest-kafka.upstash.io
-#    - REST Username: same as above
-#    - REST Password: same as above
-```
-
-### Paso 5: Variables de entorno para Kafka
-
-Agregar a tu `.env.production`:
-
-```bash
-# Upstash Kafka
-KAFKA_BOOTSTRAP_SERVERS=ruling-lemur-12345-eu1-kafka.upstash.io:9092
-KAFKA_USERNAME=your-upstash-username
-KAFKA_PASSWORD=your-upstash-password
-KAFKA_SECURITY_PROTOCOL=SASL_SSL
-KAFKA_SASL_MECHANISM=SCRAM-SHA-256
-
-# Topics
-KAFKA_TOPIC_INVOICE_EVENTS=invoice-events
-KAFKA_TOPIC_USER_EVENTS=user-events
-KAFKA_TOPIC_AUDIT_TRAIL=audit-trail
-```
-
----
-
-## 💾 Parte 3: Neon PostgreSQL (Ya configurado)
-
-Si aún no tienes las 4 bases de datos, sigue estos pasos:
-
-### Paso 1: Crear las 4 bases de datos
-
-1. Visita: https://console.neon.tech/
-2. Crea 4 databases en tu proyecto:
-   - `userdb`
-   - `invoicedb`
-   - `documentdb`
-   - `tracedb`
-
-### Paso 2: Copiar connection strings
-
-Agregar a `.env.production`:
-
-```bash
-# Neon PostgreSQL Databases
-USER_DB_URL=postgresql://neondb_owner:password@ep-xxx.eu-west-2.aws.neon.tech/userdb?sslmode=require
-INVOICE_DB_URL=postgresql://neondb_owner:password@ep-xxx.eu-west-2.aws.neon.tech/invoicedb?sslmode=require
-DOCUMENT_DB_URL=postgresql://neondb_owner:password@ep-xxx.eu-west-2.aws.neon.tech/documentdb?sslmode=require
-TRACE_DB_URL=postgresql://neondb_owner:password@ep-xxx.eu-west-2.aws.neon.tech/tracedb?sslmode=require
-```
-
----
-
-## ☁️ Parte 4: Fly.io (Backend)
+Plataforma de deployment con **3 VMs gratis (256MB RAM c/u)** - perfecto para un monolito Java.
 
 ### Paso 1: Instalar Fly CLI
 
@@ -219,6 +261,9 @@ curl -L https://fly.io/install.sh | sh
 
 # Agregar al PATH
 export PATH="/home/user/.fly/bin:$PATH"
+
+# Verificar instalación
+fly version
 ```
 
 ### Paso 2: Autenticarse
@@ -227,117 +272,120 @@ export PATH="/home/user/.fly/bin:$PATH"
 fly auth login
 ```
 
-### Paso 3: Ya está listo
+### Paso 3: Crear aplicación en Fly.io
 
-El deployment se hace con el script `deploy-all-services.sh` (ver Parte 6)
+```bash
+cd /home/user/invoices-back/invoices-monolith
+
+# Crear aplicación (primera vez)
+fly apps create invoices-monolith
+
+# O usar el nombre que prefieras
+fly apps create my-invoices-backend
+```
+
+### Paso 4: Configurar secrets
+
+```bash
+# JWT Security
+fly secrets set JWT_SECRET="your-super-secret-jwt-key-min-32-chars-base64" -a invoices-monolith
+
+# Database
+fly secrets set SPRING_DATASOURCE_URL="postgresql://neondb_owner:xxx@ep-xxx.eu-west-2.aws.neon.tech/invoices?sslmode=require" -a invoices-monolith
+fly secrets set DB_USERNAME="neondb_owner" -a invoices-monolith
+fly secrets set DB_PASSWORD="your_neon_password" -a invoices-monolith
+
+# Redis
+fly secrets set REDIS_HOST="enhanced-lemur-12345.upstash.io" -a invoices-monolith
+fly secrets set REDIS_PORT="6379" -a invoices-monolith
+fly secrets set REDIS_PASSWORD="your_redis_password" -a invoices-monolith
+fly secrets set REDIS_SSL="true" -a invoices-monolith
+
+# Cloudflare R2
+fly secrets set S3_ENDPOINT="https://your-account-id.r2.cloudflarestorage.com" -a invoices-monolith
+fly secrets set S3_ACCESS_KEY="your_r2_access_key" -a invoices-monolith
+fly secrets set S3_SECRET_KEY="your_r2_secret_key" -a invoices-monolith
+fly secrets set S3_BUCKET_NAME="invoices-documents" -a invoices-monolith
+fly secrets set S3_REGION="auto" -a invoices-monolith
+
+# CORS (ajustar según tu frontend)
+fly secrets set CORS_ALLOWED_ORIGINS="https://invoices-frontend.vercel.app,https://www.myapp.com" -a invoices-monolith
+```
+
+### Paso 5: Desplegar el monolito
+
+```bash
+cd /home/user/invoices-back
+
+# Compilar y desplegar
+fly deploy -c invoices-monolith/fly.toml
+```
+
+**Tiempo estimado:** 3-5 minutos
+
+### Paso 6: Verificar deployment
+
+```bash
+# Ver logs
+fly logs -a invoices-monolith
+
+# Ver status
+fly status -a invoices-monolith
+
+# Abrir en navegador
+fly open -a invoices-monolith
+```
 
 ---
 
-## 🎨 Parte 5: Vercel (Frontend)
+## 🎨 Parte 5: Vercel (Frontend - Opcional)
 
-### Paso 1: Variables de entorno en Vercel
+### Paso 1: Desplegar frontend
 
-1. Ir a tu proyecto: https://vercel.com/jeffersons-projects-fe447893/invoices-frontend
+Si tienes un frontend React/Next.js:
+
+1. Conecta tu repositorio a Vercel
+2. Vercel detectará automáticamente el framework
+3. Deploy automático en cada push
+
+### Paso 2: Variables de entorno en Vercel
+
+1. Ir a tu proyecto en Vercel
 2. Settings → Environment Variables
 3. Agregar:
 
 ```bash
-VITE_API_BASE_URL=https://invoices-backend.fly.dev
+VITE_API_BASE_URL=https://invoices-monolith.fly.dev
 ```
 
-**⚠️ IMPORTANTE:** NO incluir `/api` al final - el gateway ya maneja este path
-
----
-
-## 🚀 Parte 6: Desplegar Todo
-
-### Paso 1: Crear archivo .env.production
-
-```bash
-cd /home/user/invoices-back
-cp .env.production.example .env.production
-```
-
-### Paso 2: Editar .env.production con TODOS tus valores
-
-```bash
-# JWT Configuration
-JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
-JWT_ISSUER=invoices-backend
-JWT_EXPIRATION_MS=3600000
-
-# CORS Configuration
-CORS_ALLOWED_ORIGINS=https://invoices-frontend-vert.vercel.app,https://*.vercel.app
-
-# Neon PostgreSQL Databases
-USER_DB_URL=postgresql://neondb_owner:xxx@ep-xxx.eu-west-2.aws.neon.tech/userdb?sslmode=require
-INVOICE_DB_URL=postgresql://neondb_owner:xxx@ep-xxx.eu-west-2.aws.neon.tech/invoicedb?sslmode=require
-DOCUMENT_DB_URL=postgresql://neondb_owner:xxx@ep-xxx.eu-west-2.aws.neon.tech/documentdb?sslmode=require
-TRACE_DB_URL=postgresql://neondb_owner:xxx@ep-xxx.eu-west-2.aws.neon.tech/tracedb?sslmode=require
-
-# Cloudflare R2 Storage
-R2_ACCESS_KEY_ID=your-r2-access-key
-R2_SECRET_ACCESS_KEY=your-r2-secret-key
-R2_ENDPOINT=https://your-account-id.r2.cloudflarestorage.com
-R2_BUCKET_NAME=invoices-documents
-R2_REGION=auto
-
-# Upstash Kafka
-KAFKA_BOOTSTRAP_SERVERS=ruling-lemur-12345-eu1-kafka.upstash.io:9092
-KAFKA_USERNAME=your-kafka-username
-KAFKA_PASSWORD=your-kafka-password
-KAFKA_SECURITY_PROTOCOL=SASL_SSL
-KAFKA_SASL_MECHANISM=SCRAM-SHA-256
-KAFKA_TOPIC_INVOICE_EVENTS=invoice-events
-KAFKA_TOPIC_USER_EVENTS=user-events
-KAFKA_TOPIC_AUDIT_TRAIL=audit-trail
-```
-
-### Paso 3: Desplegar servicios esenciales
-
-```bash
-# Esto desplegará Gateway (ya hecho), User, Invoice
-./deploy-all-services.sh
-```
-
-**Tiempo estimado:** 8-10 minutos
-
-### Paso 4 (OPCIONAL): Desplegar Document y Trace
-
-Si necesitas almacenamiento permanente de PDFs y auditoría completa:
-
-```bash
-# Editar deploy-all-services.sh y descomentar:
-# deploy_service "document-service" "invoices-document-service" "8083" "DOCUMENT_DB_URL"
-# deploy_service "trace-service" "invoices-trace-service" "8084" "TRACE_DB_URL"
-
-# Luego ejecutar
-./deploy-all-services.sh
-```
+**⚠️ IMPORTANTE:** Ajustar según el nombre de tu app en Fly.io
 
 ---
 
 ## ✅ Verificación Post-Deployment
 
-### 1. Verificar health checks
+### 1. Verificar health check
 
 ```bash
-# Gateway
-curl https://invoices-backend.fly.dev/actuator/health
-
-# User Service
-curl https://invoices-user-service.fly.dev/actuator/health
-
-# Invoice Service
-curl https://invoices-invoice-service.fly.dev/actuator/health
+curl https://invoices-monolith.fly.dev/actuator/health
 ```
 
-**Esperado:** `{"status":"UP"}`
+**Esperado:**
+```json
+{
+  "status": "UP",
+  "components": {
+    "db": {"status": "UP"},
+    "redis": {"status": "UP"},
+    "diskSpace": {"status": "UP"}
+  }
+}
+```
 
 ### 2. Test de login
 
 ```bash
-curl -X POST https://invoices-backend.fly.dev/api/auth/login \
+curl -X POST https://invoices-monolith.fly.dev/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{
     "email": "admin@invoices.com",
@@ -354,23 +402,29 @@ curl -X POST https://invoices-backend.fly.dev/api/auth/login \
 }
 ```
 
-### 3. Verificar R2 storage
+### 3. Verificar conexión a PostgreSQL
 
 ```bash
-# Ver logs del document-service
-fly logs -a invoices-document-service | grep R2
+fly logs -a invoices-monolith | grep -i "flyway\|database"
 ```
 
-Buscar: `"Connected to Cloudflare R2 bucket: invoices-documents"`
+Buscar: `Flyway migration completed successfully` o `HikariPool-1 - Start completed`
 
-### 4. Verificar Kafka
+### 4. Verificar Redis Streams
 
 ```bash
-# Ver logs del trace-service
-fly logs -a invoices-trace-service | grep Kafka
+fly logs -a invoices-monolith | grep -i redis
 ```
 
-Buscar: `"Connected to Upstash Kafka cluster"`
+Buscar: `Connected to Redis at enhanced-lemur-12345.upstash.io:6379`
+
+### 5. Verificar Cloudflare R2
+
+```bash
+fly logs -a invoices-monolith | grep -i minio
+```
+
+Buscar: `MinIO client initialized successfully` o similar
 
 ---
 
@@ -378,28 +432,24 @@ Buscar: `"Connected to Upstash Kafka cluster"`
 
 ```
 ✅ Fly.io:
-   - Gateway Service: 1 VM (consumo mínimo)
-   - User Service: 1 VM (consumo mínimo)
-   - Invoice Service: 1 VM (consumo mínimo)
-   - Document Service: 1 VM (opcional)
-   - Trace Service: 1 VM (opcional)
-   Total: ~$0/mes para 2 usuarios básicos
+   - Invoices Monolith: 1 VM (256MB RAM)
+   Total: $0/mes (dentro del free tier)
 
 ✅ Neon PostgreSQL:
-   - 4 databases × 500 MB = 2 GB total
-   Total: $0/mes (dentro del free tier)
+   - 1 database (500 MB)
+   Total: $0/mes
 
 ✅ Cloudflare R2:
    - 10 GB storage
    - Sin cargo por bandwidth
    Total: $0/mes
 
-✅ Upstash Kafka:
-   - 10,000 mensajes/día
-   - 2 usuarios = ~100 mensajes/día
+✅ Upstash Redis:
+   - 10,000 comandos/día
+   - Redis Streams incluidos
    Total: $0/mes
 
-✅ Vercel:
+✅ Vercel (opcional):
    - Frontend deployment
    Total: $0/mes
 
@@ -408,9 +458,44 @@ TOTAL: $0/mes ✨
 ════════════════════════════
 ```
 
+**💡 Comparación con microservicios:**
+- **Antes:** 5 servicios + 4 databases + Kafka = complejidad
+- **Ahora:** 1 monolito + 1 database + Redis = simple y gratis
+
 ---
 
 ## 🐛 Troubleshooting
+
+### Error: "Failed to connect to Neon PostgreSQL"
+
+**Verificar:**
+
+```bash
+# 1. Verificar que el secret esté configurado
+fly secrets list -a invoices-monolith | grep DATASOURCE
+
+# 2. Verificar que la connection string incluya ?sslmode=require
+```
+
+**Solución:** Asegurarse de incluir `?sslmode=require` al final de la URL
+
+---
+
+### Error: "Redis connection timeout"
+
+**Verificar:**
+
+```bash
+# 1. Verificar que Upstash Redis esté activo
+# Ir a https://console.upstash.com/redis
+
+# 2. Verificar credenciales
+fly secrets list -a invoices-monolith | grep REDIS
+```
+
+**Solución:** Verificar que `REDIS_SSL=true` esté configurado
+
+---
 
 ### Error: "Failed to connect to R2"
 
@@ -418,29 +503,25 @@ TOTAL: $0/mes ✨
 
 ```bash
 # 1. Verificar que las credenciales estén configuradas
-fly secrets list -a invoices-document-service | grep R2
+fly secrets list -a invoices-monolith | grep S3
 
-# 2. Probar conexión desde local
-aws s3 ls --endpoint-url $R2_ENDPOINT
+# 2. Verificar que el bucket existe en Cloudflare
 ```
 
-**Solución:** Regenerar API token en Cloudflare R2
+**Solución:** Regenerar API token en Cloudflare R2 si es necesario
 
 ---
 
-### Error: "Kafka connection timeout"
+### Error: "Application crashed - out of memory"
 
-**Verificar:**
+**Problema:** VM de 256MB puede ser insuficiente para Spring Boot
+
+**Solución:** Escalar a VM más grande (sigue siendo gratis hasta 3 VMs)
 
 ```bash
-# 1. Verificar que Upstash cluster esté activo
-# Ir a https://console.upstash.com/kafka
-
-# 2. Verificar credenciales
-fly secrets list -a invoices-trace-service | grep KAFKA
+# Escalar a 512MB
+fly scale memory 512 -a invoices-monolith
 ```
-
-**Solución:** Verificar que el endpoint incluya el puerto `:9092`
 
 ---
 
@@ -449,11 +530,47 @@ fly secrets list -a invoices-trace-service | grep KAFKA
 **Verificar:**
 
 ```bash
-# Ver logs del servicio
-fly logs -a invoices-user-service | grep Flyway
+# Ver logs de Flyway
+fly logs -a invoices-monolith | grep Flyway
 ```
 
-**Solución común:** Verificar que la connection string incluya `?sslmode=require`
+**Soluciones comunes:**
+- Verificar que Neon database esté accessible
+- Verificar permisos del usuario de base de datos
+- Verificar que las migraciones en `src/main/resources/db/migration/` sean válidas
+
+---
+
+## 🔒 Seguridad
+
+### Mejores prácticas
+
+1. **Nunca commitear secrets al repositorio**
+   ```bash
+   # Asegurarse de que .env está en .gitignore
+   echo ".env" >> .gitignore
+   echo ".env.production" >> .gitignore
+   ```
+
+2. **Rotar JWT_SECRET en producción**
+   ```bash
+   # Generar nuevo secret
+   openssl rand -base64 32
+
+   # Actualizar en Fly.io
+   fly secrets set JWT_SECRET="new-secret-here" -a invoices-monolith
+   ```
+
+3. **Usar HTTPS siempre**
+   - Fly.io proporciona HTTPS automáticamente
+   - Cloudflare R2 usa HTTPS por defecto
+   - Upstash Redis TLS habilitado
+
+4. **Configurar CORS correctamente**
+   ```bash
+   # Solo permitir orígenes conocidos
+   fly secrets set CORS_ALLOWED_ORIGINS="https://mi-frontend.vercel.app" -a invoices-monolith
+   ```
 
 ---
 
@@ -461,57 +578,67 @@ fly logs -a invoices-user-service | grep Flyway
 
 ### Documentación oficial
 
-- Fly.io: https://fly.io/docs/
-- Neon: https://neon.tech/docs/
-- Cloudflare R2: https://developers.cloudflare.com/r2/
-- Upstash Kafka: https://upstash.com/docs/kafka
-- Vercel: https://vercel.com/docs
+- **Fly.io:** https://fly.io/docs/
+- **Neon:** https://neon.tech/docs/
+- **Cloudflare R2:** https://developers.cloudflare.com/r2/
+- **Upstash Redis:** https://upstash.com/docs/redis
+- **Vercel:** https://vercel.com/docs
 
 ### Dashboards
 
-- Fly.io: https://fly.io/dashboard
-- Neon: https://console.neon.tech/
-- Cloudflare R2: https://dash.cloudflare.com/
-- Upstash: https://console.upstash.com/
-- Vercel: https://vercel.com/dashboard
+- **Fly.io:** https://fly.io/dashboard
+- **Neon:** https://console.neon.tech/
+- **Cloudflare R2:** https://dash.cloudflare.com/
+- **Upstash:** https://console.upstash.com/
+- **Vercel:** https://vercel.com/dashboard
+
+### Guías relacionadas
+
+- [Variables de Entorno](./ENVIRONMENT_VARIABLES.md)
+- [Configuración de Neon Database](./NEON_DATABASE_SETUP.md)
+- [Guía de Testing](./TESTING_GUIDE.md)
+- [README Principal](./README.md)
 
 ---
 
 ## 🎯 Checklist Final
 
-Antes de hacer el commit y PR, verifica:
+Antes de considerar el deployment completo, verifica:
 
-- [ ] Cloudflare R2 bucket creado y API token guardado
-- [ ] Upstash Kafka cluster creado con 3 topics
-- [ ] Neon PostgreSQL con 4 databases
-- [ ] Archivo `.env.production` completo con TODAS las variables
-- [ ] Gateway, User, Invoice desplegados en Fly.io
-- [ ] Document Service desplegado (opcional)
-- [ ] Trace Service desplegado (opcional)
-- [ ] Vercel environment variable `VITE_API_BASE_URL` configurada
-- [ ] Health checks respondiendo OK
+- [ ] Neon PostgreSQL database creada (`invoices`)
+- [ ] Upstash Redis database creado
+- [ ] Cloudflare R2 bucket creado (`invoices-documents`)
+- [ ] Fly.io CLI instalado y autenticado
+- [ ] Fly.io app creada (`invoices-monolith`)
+- [ ] Todos los secrets configurados en Fly.io
+- [ ] Monolito desplegado con `fly deploy`
+- [ ] Health check respondiendo OK
 - [ ] Login test funcionando
-- [ ] Logs sin errores
+- [ ] Logs sin errores críticos
+- [ ] Variables de entorno en Vercel configuradas (si aplica)
 
 ---
 
 ## 🚀 ¡Todo Listo!
 
-Con esta configuración tienes un sistema completo de microservicios ejecutándose **100% gratis** para 2 usuarios básicos.
+Con esta configuración tienes un monolito completo de gestión de facturas ejecutándose **100% gratis** en la nube.
 
 **URLs finales:**
 
 ```
-Frontend:  https://invoices-frontend-vert.vercel.app
-Backend:   https://invoices-backend.fly.dev
-User:      https://invoices-user-service.fly.dev
-Invoice:   https://invoices-invoice-service.fly.dev
-Document:  https://invoices-document-service.fly.dev (opcional)
-Trace:     https://invoices-trace-service.fly.dev (opcional)
+Backend:   https://invoices-monolith.fly.dev
+Frontend:  https://invoices-frontend.vercel.app (si aplica)
 ```
 
-**Credenciales admin:**
+**Credenciales admin (configurar al primer arranque):**
 - Email: `admin@invoices.com`
 - Password: `admin123`
+
+**Endpoints principales:**
+- Login: `POST /api/auth/login`
+- Users: `GET /api/users`
+- Invoices: `GET /api/invoices`
+- Documents: `GET /api/documents`
+- Audit Logs: `GET /api/audit-logs`
 
 ¡Disfruta tu sistema de facturas! 🎉
