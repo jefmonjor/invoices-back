@@ -1,4 +1,4 @@
-package com.invoices.document_service.entity;
+package com.invoices.document.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

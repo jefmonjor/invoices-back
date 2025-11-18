@@ -1,4 +1,4 @@
-package com.invoices.invoice_service.domain.entities;
+package com.invoices.invoice.domain.entities;
 
 /**
  * Company domain entity - represents the issuer (emisor) of invoices.

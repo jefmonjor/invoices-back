@@ -1,6 +1,6 @@
-package com.invoices.invoice_service.infrastructure.persistence.repositories;
+package com.invoices.invoice.infrastructure.persistence.repositories;
 
-import com.invoices.invoice_service.infrastructure.persistence.entities.ClientJpaEntity;
+import com.invoices.invoice.infrastructure.persistence.entities.ClientJpaEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

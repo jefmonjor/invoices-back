@@ -1,4 +1,4 @@
-package com.invoices.invoice_service.infrastructure.persistence.entities;
+package com.invoices.invoice.infrastructure.persistence.entities;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;

@@ -1,6 +1,6 @@
-package com.invoices.invoice_service.domain.usecases;
+package com.invoices.invoice.domain.usecases;
 
-import com.invoices.invoice_service.domain.ports.PdfGeneratorService;
+import com.invoices.invoice.domain.ports.PdfGeneratorService;
 
 /**
  * Use case: Generate PDF with custom configuration.

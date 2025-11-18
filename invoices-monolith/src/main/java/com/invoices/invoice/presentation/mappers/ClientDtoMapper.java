@@ -1,7 +1,7 @@
-package com.invoices.invoice_service.presentation.mappers;
+package com.invoices.invoice.presentation.mappers;
 
-import com.invoices.invoice_service.domain.entities.Client;
-import com.invoices.invoice_service.dto.ClientDTO;
+import com.invoices.invoice.domain.entities.Client;
+import com.invoices.invoice.dto.ClientDTO;
 import org.springframework.stereotype.Component;
 
 /**

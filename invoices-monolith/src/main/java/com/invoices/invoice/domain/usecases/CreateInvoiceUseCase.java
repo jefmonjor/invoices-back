@@ -1,11 +1,11 @@
-package com.invoices.invoice_service.domain.usecases;
+package com.invoices.invoice.domain.usecases;
 
-import com.invoices.invoice_service.domain.entities.Invoice;
-import com.invoices.invoice_service.domain.entities.InvoiceItem;
-import com.invoices.invoice_service.domain.ports.ClientRepository;
-import com.invoices.invoice_service.domain.ports.CompanyRepository;
-import com.invoices.invoice_service.domain.ports.InvoiceRepository;
-import com.invoices.invoice_service.exception.ClientNotFoundException;
+import com.invoices.invoice.domain.entities.Invoice;
+import com.invoices.invoice.domain.entities.InvoiceItem;
+import com.invoices.invoice.domain.ports.ClientRepository;
+import com.invoices.invoice.domain.ports.CompanyRepository;
+import com.invoices.invoice.domain.ports.InvoiceRepository;
+import com.invoices.invoice.exception.ClientNotFoundException;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

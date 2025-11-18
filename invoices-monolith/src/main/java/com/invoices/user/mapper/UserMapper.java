@@ -1,9 +1,9 @@
-package com.invoices.user_service.mapper;
+package com.invoices.user.mapper;
 
-import com.invoices.user_service.dto.CreateUserRequest;
-import com.invoices.user_service.dto.UpdateUserRequest;
-import com.invoices.user_service.dto.UserDTO;
-import com.invoices.user_service.entity.User;
+import com.invoices.user.dto.CreateUserRequest;
+import com.invoices.user.dto.UpdateUserRequest;
+import com.invoices.user.dto.UserDTO;
+import com.invoices.user.entity.User;
 
 import java.util.HashSet;
 import java.util.Set;

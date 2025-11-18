@@ -1,9 +1,9 @@
-package com.invoices.user_service.controller;
+package com.invoices.user.controller;
 
-import com.invoices.user_service.dto.AuthResponse;
-import com.invoices.user_service.dto.CreateUserRequest;
-import com.invoices.user_service.dto.LoginRequest;
-import com.invoices.user_service.service.AuthService;
+import com.invoices.user.dto.AuthResponse;
+import com.invoices.user.dto.CreateUserRequest;
+import com.invoices.user.dto.LoginRequest;
+import com.invoices.user.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;

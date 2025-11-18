@@ -1,9 +1,9 @@
-package com.invoices.invoice_service.presentation.mappers;
+package com.invoices.invoice.presentation.mappers;
 
-import com.invoices.invoice_service.domain.entities.Invoice;
-import com.invoices.invoice_service.domain.entities.InvoiceItem;
-import com.invoices.invoice_service.dto.InvoiceDTO;
-import com.invoices.invoice_service.dto.InvoiceItemDTO;
+import com.invoices.invoice.domain.entities.Invoice;
+import com.invoices.invoice.domain.entities.InvoiceItem;
+import com.invoices.invoice.dto.InvoiceDTO;
+import com.invoices.invoice.dto.InvoiceItemDTO;
 import org.springframework.stereotype.Component;
 
 import java.util.stream.Collectors;

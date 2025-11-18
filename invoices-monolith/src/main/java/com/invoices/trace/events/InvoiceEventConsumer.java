@@ -1,10 +1,10 @@
-package com.invoices.trace_service.events;
+package com.invoices.trace.events;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.invoices.trace_service.dto.InvoiceEvent;
-import com.invoices.trace_service.entity.AuditLog;
-import com.invoices.trace_service.repository.AuditLogRepository;
+import com.invoices.trace.dto.InvoiceEvent;
+import com.invoices.trace.entity.AuditLog;
+import com.invoices.trace.repository.AuditLogRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;

@@ -1,9 +1,9 @@
-package com.invoices.user_service.controller;
+package com.invoices.user.controller;
 
-import com.invoices.user_service.dto.CreateUserRequest;
-import com.invoices.user_service.dto.UpdateUserRequest;
-import com.invoices.user_service.dto.UserDTO;
-import com.invoices.user_service.service.UserService;
+import com.invoices.user.dto.CreateUserRequest;
+import com.invoices.user.dto.UpdateUserRequest;
+import com.invoices.user.dto.UserDTO;
+import com.invoices.user.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;

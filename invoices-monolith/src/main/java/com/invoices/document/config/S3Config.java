@@ -1,4 +1,4 @@
-package com.invoices.document_service.config;
+package com.invoices.document.config;
 
 import io.minio.BucketExistsArgs;
 import io.minio.MakeBucketArgs;

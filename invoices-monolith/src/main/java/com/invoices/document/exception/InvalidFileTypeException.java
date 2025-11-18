@@ -1,4 +1,4 @@
-package com.invoices.document_service.exception;
+package com.invoices.document.exception;
 
 public class InvalidFileTypeException extends RuntimeException {
     public InvalidFileTypeException(String message) {

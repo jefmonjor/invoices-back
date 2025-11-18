@@ -1,6 +1,6 @@
-package com.invoices.trace_service.repository;
+package com.invoices.trace.repository;
 
-import com.invoices.trace_service.entity.AuditLog;
+import com.invoices.trace.entity.AuditLog;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

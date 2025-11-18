@@ -1,6 +1,6 @@
-package com.invoices.trace_service.config;
+package com.invoices.trace.config;
 
-import com.invoices.trace_service.events.InvoiceEventConsumer;
+import com.invoices.trace.events.InvoiceEventConsumer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;

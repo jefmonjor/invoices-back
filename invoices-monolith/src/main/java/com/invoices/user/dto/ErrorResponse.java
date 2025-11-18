@@ -1,4 +1,4 @@
-package com.invoices.user_service.dto;
+package com.invoices.user.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;

@@ -1,4 +1,4 @@
-package com.invoices.invoice_service.domain.exceptions;
+package com.invoices.invoice.domain.exceptions;
 
 /**
  * Exception thrown when attempting an invalid operation on an invoice.

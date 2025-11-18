@@ -1,8 +1,8 @@
-package com.invoices.invoice_service.domain.usecases;
+package com.invoices.invoice.domain.usecases;
 
-import com.invoices.invoice_service.domain.entities.Invoice;
-import com.invoices.invoice_service.domain.exceptions.InvoiceNotFoundException;
-import com.invoices.invoice_service.domain.ports.InvoiceRepository;
+import com.invoices.invoice.domain.entities.Invoice;
+import com.invoices.invoice.domain.exceptions.InvoiceNotFoundException;
+import com.invoices.invoice.domain.ports.InvoiceRepository;
 
 /**
  * Use case: Retrieve invoice by ID.

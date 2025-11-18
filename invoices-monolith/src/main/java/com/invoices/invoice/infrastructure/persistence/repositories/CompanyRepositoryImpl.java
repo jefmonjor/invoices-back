@@ -1,8 +1,8 @@
-package com.invoices.invoice_service.infrastructure.persistence.repositories;
+package com.invoices.invoice.infrastructure.persistence.repositories;
 
-import com.invoices.invoice_service.domain.entities.Company;
-import com.invoices.invoice_service.domain.ports.CompanyRepository;
-import com.invoices.invoice_service.infrastructure.persistence.mappers.CompanyJpaMapper;
+import com.invoices.invoice.domain.entities.Company;
+import com.invoices.invoice.domain.ports.CompanyRepository;
+import com.invoices.invoice.infrastructure.persistence.mappers.CompanyJpaMapper;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;

@@ -1,4 +1,4 @@
-package com.invoices.invoice_service.events;
+package com.invoices.invoice.events;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;

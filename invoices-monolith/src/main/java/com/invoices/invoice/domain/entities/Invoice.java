@@ -1,7 +1,7 @@
-package com.invoices.invoice_service.domain.entities;
+package com.invoices.invoice.domain.entities;
 
-import com.invoices.invoice_service.domain.exceptions.InvalidInvoiceNumberFormatException;
-import com.invoices.invoice_service.domain.exceptions.InvalidInvoiceStateException;
+import com.invoices.invoice.domain.exceptions.InvalidInvoiceNumberFormatException;
+import com.invoices.invoice.domain.exceptions.InvalidInvoiceStateException;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;

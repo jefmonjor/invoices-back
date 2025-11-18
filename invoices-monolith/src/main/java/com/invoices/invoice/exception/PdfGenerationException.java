@@ -1,4 +1,4 @@
-package com.invoices.invoice_service.exception;
+package com.invoices.invoice.exception;
 
 public class PdfGenerationException extends RuntimeException {
     public PdfGenerationException(String message) {

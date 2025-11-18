@@ -1,4 +1,4 @@
-package com.invoices.invoice_service.dto;
+package com.invoices.invoice.dto;
 
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;

@@ -1,7 +1,7 @@
-package com.invoices.trace_service.controller;
+package com.invoices.trace.controller;
 
-import com.invoices.trace_service.dto.AuditLogDTO;
-import com.invoices.trace_service.service.AuditLogService;
+import com.invoices.trace.dto.AuditLogDTO;
+import com.invoices.trace.service.AuditLogService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;

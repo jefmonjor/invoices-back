@@ -1,7 +1,7 @@
-package com.invoices.invoice_service.infrastructure.persistence.mappers;
+package com.invoices.invoice.infrastructure.persistence.mappers;
 
-import com.invoices.invoice_service.domain.entities.Company;
-import com.invoices.invoice_service.infrastructure.persistence.entities.CompanyJpaEntity;
+import com.invoices.invoice.domain.entities.Company;
+import com.invoices.invoice.infrastructure.persistence.entities.CompanyJpaEntity;
 import org.springframework.stereotype.Component;
 
 /**

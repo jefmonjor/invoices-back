@@ -1,4 +1,4 @@
-package com.invoices.document_service.exception;
+package com.invoices.document.exception;
 
 public class FileUploadException extends RuntimeException {
     public FileUploadException(String message) {

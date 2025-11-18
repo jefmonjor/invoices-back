@@ -1,4 +1,4 @@
-package com.invoices.invoice_service.domain.entities;
+package com.invoices.invoice.domain.entities;
 
 /**
  * Client domain entity - represents the customer/client.

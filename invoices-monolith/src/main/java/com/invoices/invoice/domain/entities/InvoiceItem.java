@@ -1,4 +1,4 @@
-package com.invoices.invoice_service.domain.entities;
+package com.invoices.invoice.domain.entities;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;

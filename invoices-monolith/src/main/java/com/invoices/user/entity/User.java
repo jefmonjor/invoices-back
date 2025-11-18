@@ -1,4 +1,4 @@
-package com.invoices.user_service.entity;
+package com.invoices.user.entity;
 
 import jakarta.persistence.*;
 import lombok.*;

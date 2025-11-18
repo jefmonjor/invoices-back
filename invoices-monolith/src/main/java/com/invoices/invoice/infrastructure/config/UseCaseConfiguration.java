@@ -1,10 +1,10 @@
-package com.invoices.invoice_service.infrastructure.config;
+package com.invoices.invoice.infrastructure.config;
 
-import com.invoices.invoice_service.domain.ports.ClientRepository;
-import com.invoices.invoice_service.domain.ports.CompanyRepository;
-import com.invoices.invoice_service.domain.ports.InvoiceRepository;
-import com.invoices.invoice_service.domain.ports.PdfGeneratorService;
-import com.invoices.invoice_service.domain.usecases.*;
+import com.invoices.invoice.domain.ports.ClientRepository;
+import com.invoices.invoice.domain.ports.CompanyRepository;
+import com.invoices.invoice.domain.ports.InvoiceRepository;
+import com.invoices.invoice.domain.ports.PdfGeneratorService;
+import com.invoices.invoice.domain.usecases.*;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 

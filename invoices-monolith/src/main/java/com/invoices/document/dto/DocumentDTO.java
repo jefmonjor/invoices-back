@@ -1,4 +1,4 @@
-package com.invoices.document_service.dto;
+package com.invoices.document.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

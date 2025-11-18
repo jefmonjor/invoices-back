@@ -1,4 +1,4 @@
-package com.invoices.trace_service.dto;
+package com.invoices.trace.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

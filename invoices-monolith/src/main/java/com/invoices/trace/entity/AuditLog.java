@@ -1,4 +1,4 @@
-package com.invoices.trace_service.entity;
+package com.invoices.trace.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

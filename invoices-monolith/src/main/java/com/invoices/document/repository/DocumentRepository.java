@@ -1,6 +1,6 @@
-package com.invoices.document_service.repository;
+package com.invoices.document.repository;
 
-import com.invoices.document_service.entity.Document;
+import com.invoices.document.entity.Document;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

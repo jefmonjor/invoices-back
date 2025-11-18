@@ -1,7 +1,7 @@
-package com.invoices.invoice_service.infrastructure.external.jasper;
+package com.invoices.invoice.infrastructure.external.jasper;
 
-import com.invoices.invoice_service.domain.entities.Invoice;
-import com.invoices.invoice_service.domain.ports.PdfGeneratorService;
+import com.invoices.invoice.domain.entities.Invoice;
+import com.invoices.invoice.domain.ports.PdfGeneratorService;
 import net.sf.jasperreports.engine.*;
 import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
 import org.springframework.stereotype.Service;

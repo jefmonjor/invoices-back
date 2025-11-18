@@ -1,9 +1,9 @@
-package com.invoices.trace_service.service;
+package com.invoices.trace.service;
 
-import com.invoices.trace_service.dto.AuditLogDTO;
-import com.invoices.trace_service.entity.AuditLog;
-import com.invoices.trace_service.exception.AuditLogNotFoundException;
-import com.invoices.trace_service.repository.AuditLogRepository;
+import com.invoices.trace.dto.AuditLogDTO;
+import com.invoices.trace.entity.AuditLog;
+import com.invoices.trace.exception.AuditLogNotFoundException;
+import com.invoices.trace.repository.AuditLogRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;

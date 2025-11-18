@@ -1,4 +1,4 @@
-package com.invoices.user_service.exception;
+package com.invoices.user.exception;
 
 /**
  * Exception thrown when a JWT token has expired.

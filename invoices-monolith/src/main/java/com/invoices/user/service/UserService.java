@@ -1,13 +1,13 @@
-package com.invoices.user_service.service;
+package com.invoices.user.service;
 
-import com.invoices.user_service.dto.CreateUserRequest;
-import com.invoices.user_service.dto.UpdateUserRequest;
-import com.invoices.user_service.dto.UserDTO;
-import com.invoices.user_service.entity.User;
-import com.invoices.user_service.exception.UserAlreadyExistsException;
-import com.invoices.user_service.exception.UserNotFoundException;
-import com.invoices.user_service.mapper.UserMapper;
-import com.invoices.user_service.repository.UserRepository;
+import com.invoices.user.dto.CreateUserRequest;
+import com.invoices.user.dto.UpdateUserRequest;
+import com.invoices.user.dto.UserDTO;
+import com.invoices.user.entity.User;
+import com.invoices.user.exception.UserAlreadyExistsException;
+import com.invoices.user.exception.UserNotFoundException;
+import com.invoices.user.mapper.UserMapper;
+import com.invoices.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;

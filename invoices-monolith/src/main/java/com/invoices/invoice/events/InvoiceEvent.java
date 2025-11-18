@@ -1,4 +1,4 @@
-package com.invoices.invoice_service.events;
+package com.invoices.invoice.events;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

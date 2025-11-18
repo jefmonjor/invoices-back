@@ -1,4 +1,4 @@
-package com.invoices.trace_service.exception;
+package com.invoices.trace.exception;
 
 public class AuditLogNotFoundException extends RuntimeException {
     public AuditLogNotFoundException(String message) {

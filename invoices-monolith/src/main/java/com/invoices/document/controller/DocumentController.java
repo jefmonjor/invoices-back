@@ -1,8 +1,8 @@
-package com.invoices.document_service.controller;
+package com.invoices.document.controller;
 
-import com.invoices.document_service.dto.DocumentDTO;
-import com.invoices.document_service.dto.UploadDocumentResponse;
-import com.invoices.document_service.service.DocumentService;
+import com.invoices.document.dto.DocumentDTO;
+import com.invoices.document.dto.UploadDocumentResponse;
+import com.invoices.document.service.DocumentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;

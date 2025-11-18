@@ -1,10 +1,10 @@
-package com.invoices.invoice_service.infrastructure.persistence.mappers;
+package com.invoices.invoice.infrastructure.persistence.mappers;
 
-import com.invoices.invoice_service.domain.entities.Invoice;
-import com.invoices.invoice_service.domain.entities.InvoiceItem;
-import com.invoices.invoice_service.domain.entities.InvoiceStatus;
-import com.invoices.invoice_service.infrastructure.persistence.entities.InvoiceItemJpaEntity;
-import com.invoices.invoice_service.infrastructure.persistence.entities.InvoiceJpaEntity;
+import com.invoices.invoice.domain.entities.Invoice;
+import com.invoices.invoice.domain.entities.InvoiceItem;
+import com.invoices.invoice.domain.entities.InvoiceStatus;
+import com.invoices.invoice.infrastructure.persistence.entities.InvoiceItemJpaEntity;
+import com.invoices.invoice.infrastructure.persistence.entities.InvoiceJpaEntity;
 import org.springframework.stereotype.Component;
 
 import java.util.List;

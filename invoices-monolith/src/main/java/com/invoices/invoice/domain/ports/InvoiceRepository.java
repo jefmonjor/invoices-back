@@ -1,6 +1,6 @@
-package com.invoices.invoice_service.domain.ports;
+package com.invoices.invoice.domain.ports;
 
-import com.invoices.invoice_service.domain.entities.Invoice;
+import com.invoices.invoice.domain.entities.Invoice;
 
 import java.util.List;
 import java.util.Optional;

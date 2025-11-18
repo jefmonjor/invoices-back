@@ -1,13 +1,13 @@
-package com.invoices.document_service.service;
+package com.invoices.document.service;
 
-import com.invoices.document_service.config.MinioConfig;
-import com.invoices.document_service.dto.DocumentDTO;
-import com.invoices.document_service.dto.UploadDocumentResponse;
-import com.invoices.document_service.entity.Document;
-import com.invoices.document_service.exception.DocumentNotFoundException;
-import com.invoices.document_service.exception.FileUploadException;
-import com.invoices.document_service.exception.InvalidFileTypeException;
-import com.invoices.document_service.repository.DocumentRepository;
+import com.invoices.document.config.MinioConfig;
+import com.invoices.document.dto.DocumentDTO;
+import com.invoices.document.dto.UploadDocumentResponse;
+import com.invoices.document.entity.Document;
+import com.invoices.document.exception.DocumentNotFoundException;
+import com.invoices.document.exception.FileUploadException;
+import com.invoices.document.exception.InvalidFileTypeException;
+import com.invoices.document.repository.DocumentRepository;
 import io.minio.GetObjectArgs;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;

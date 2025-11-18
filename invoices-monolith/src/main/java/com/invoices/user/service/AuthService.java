@@ -1,12 +1,12 @@
-package com.invoices.user_service.service;
+package com.invoices.user.service;
 
-import com.invoices.user_service.dto.AuthResponse;
-import com.invoices.user_service.dto.CreateUserRequest;
-import com.invoices.user_service.dto.LoginRequest;
-import com.invoices.user_service.dto.UserDTO;
-import com.invoices.user_service.entity.User;
-import com.invoices.user_service.exception.InvalidCredentialsException;
-import com.invoices.user_service.repository.UserRepository;
+import com.invoices.user.dto.AuthResponse;
+import com.invoices.user.dto.CreateUserRequest;
+import com.invoices.user.dto.LoginRequest;
+import com.invoices.user.dto.UserDTO;
+import com.invoices.user.entity.User;
+import com.invoices.user.exception.InvalidCredentialsException;
+import com.invoices.user.repository.UserRepository;
 import com.invoices.security.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

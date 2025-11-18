@@ -1,4 +1,4 @@
-package com.invoices.invoice_service.domain.entities;
+package com.invoices.invoice.domain.entities;
 
 /**
  * Invoice status enum representing the lifecycle of an invoice.

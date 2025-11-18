@@ -1,4 +1,4 @@
-package com.invoices.user_service.exception;
+package com.invoices.user.exception;
 
 /**
  * Exception thrown when attempting to create a user that already exists.
