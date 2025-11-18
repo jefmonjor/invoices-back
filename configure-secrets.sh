@@ -35,20 +35,14 @@ fi
 
 echo -e "${GREEN}✅ Fly CLI instalado y autenticado${NC}\n"
 
-# Preguntar qué base de datos usar
-echo -e "${YELLOW}¿Qué base de datos quieres usar?${NC}"
-echo "  1) Nueva DB 'invoices' (recomendado - limpia)"
-echo "  2) DB existente 'invoicedb'"
-read -p "Opción (1 o 2): " DB_OPTION
+# Usar la nueva base de datos creada
+DB_NAME="neondb"
+DB_HOST="ep-delicate-snow-abyzqltv-pooler.eu-west-2.aws.neon.tech"
+DB_USER="neondb_owner"
+DB_PASS="npg_02GsdHFqhfoU"
 
-if [ "$DB_OPTION" = "1" ]; then
-    DB_NAME="invoices"
-    echo -e "${BLUE}📝 Usando DB: invoices${NC}"
-    echo -e "${YELLOW}⚠️  Asegúrate de haber creado esta DB en Neon Console${NC}\n"
-else
-    DB_NAME="invoicedb"
-    echo -e "${BLUE}📝 Usando DB existente: invoicedb${NC}\n"
-fi
+echo -e "${BLUE}📝 Usando nueva base de datos: ${DB_NAME}${NC}"
+echo -e "${BLUE}📝 Host: ${DB_HOST}${NC}\n"
 
 # Pedir JWT_SECRET
 echo -e "${YELLOW}🔑 Genera un JWT Secret seguro:${NC}"
@@ -76,13 +70,13 @@ fly secrets set JWT_ISSUER="invoices-backend-prod" -a $APP_NAME
 
 # PostgreSQL
 echo -e "${YELLOW}[4/17]${NC} Configurando SPRING_DATASOURCE_URL..."
-fly secrets set SPRING_DATASOURCE_URL="postgresql://neondb_owner:npg_MT7IHNPGYZ9y@ep-proud-breeze-abi4429i-pooler.eu-west-2.aws.neon.tech/${DB_NAME}?sslmode=require" -a $APP_NAME
+fly secrets set SPRING_DATASOURCE_URL="postgresql://${DB_USER}:${DB_PASS}@${DB_HOST}/${DB_NAME}?sslmode=require" -a $APP_NAME
 
 echo -e "${YELLOW}[5/17]${NC} Configurando DB_USERNAME..."
-fly secrets set DB_USERNAME="neondb_owner" -a $APP_NAME
+fly secrets set DB_USERNAME="${DB_USER}" -a $APP_NAME
 
 echo -e "${YELLOW}[6/17]${NC} Configurando DB_PASSWORD..."
-fly secrets set DB_PASSWORD="npg_MT7IHNPGYZ9y" -a $APP_NAME
+fly secrets set DB_PASSWORD="${DB_PASS}" -a $APP_NAME
 
 # Redis
 echo -e "${YELLOW}[7/17]${NC} Configurando REDIS_HOST..."
