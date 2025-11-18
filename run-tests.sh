@@ -1,72 +1,67 @@
 #!/bin/bash
 
-#############################################
-# Script para ejecutar tests y ver reportes
-# Uso: ./run-tests.sh [servicio]
-#############################################
+# ============================================================================
+# Script de ejecución de tests para Invoices Monolith
+# ============================================================================
 
 set -e  # Exit on error
 
-# Colores
+# Colores para output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
+CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # Banner
 echo -e "${BLUE}"
 echo "╔════════════════════════════════════════════╗"
-echo "║   🧪 Invoices Backend - Test Runner       ║"
-echo "╔════════════════════════════════════════════╗"
+echo "║   🧪 Invoices Monolith - Test Runner      ║"
+echo "╚════════════════════════════════════════════╝"
 echo -e "${NC}"
 
-# Función para verificar Docker
-check_docker() {
-    echo -e "${YELLOW}🐳 Verificando Docker...${NC}"
-    if ! docker info > /dev/null 2>&1; then
-        echo -e "${RED}❌ ERROR: Docker no está corriendo${NC}"
-        echo -e "${YELLOW}Por favor, inicia Docker Desktop y vuelve a intentar${NC}"
-        exit 1
-    fi
-    echo -e "${GREEN}✅ Docker está corriendo${NC}"
-}
+# Función para ejecutar tests
+run_tests() {
+    echo -e "${CYAN}📦 Navegando al directorio del monolito...${NC}"
+    cd invoices-monolith
 
-# Función para ejecutar tests de un servicio
-run_service_tests() {
-    local service=$1
-    echo -e "\n${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo -e "${BLUE}Testing: ${service}${NC}"
-    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}\n"
+    echo -e "${CYAN}🧹 Limpiando builds anteriores...${NC}"
+    mvn clean -q
 
-    cd "$service"
+    echo ""
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${BLUE}🧪 Ejecutando todos los tests...${NC}"
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
 
-    # Ejecutar tests
-    if mvn clean test; then
-        echo -e "\n${GREEN}✅ Tests passed for ${service}${NC}"
+    if mvn test; then
+        echo ""
+        echo -e "${GREEN}✅ Tests completados exitosamente${NC}"
 
-        # Verificar JaCoCo
-        if mvn jacoco:check; then
-            echo -e "${GREEN}✅ Coverage meets requirements for ${service}${NC}"
-        else
-            echo -e "${RED}❌ Coverage below minimum for ${service}${NC}"
-        fi
+        echo ""
+        echo -e "${CYAN}📊 Generando reporte de cobertura con JaCoCo...${NC}"
+        mvn jacoco:report -q
+
+        echo ""
+        echo -e "${GREEN}✅ Reporte de cobertura generado${NC}"
     else
-        echo -e "\n${RED}❌ Tests failed for ${service}${NC}"
+        echo ""
+        echo -e "${RED}❌ Tests fallaron${NC}"
         cd ..
-        return 1
+        exit 1
     fi
 
     cd ..
 }
 
-# Función para abrir reportes JaCoCo
+# Función para abrir reportes
 open_reports() {
-    local service=$1
-    local report_path="${service}/target/site/jacoco/index.html"
+    local report_path="invoices-monolith/target/site/jacoco/index.html"
 
     if [ -f "$report_path" ]; then
-        echo -e "${GREEN}📊 Abriendo reporte JaCoCo para ${service}...${NC}"
+        echo ""
+        echo -e "${YELLOW}📊 Abriendo reporte JaCoCo...${NC}"
 
         # Detectar OS y abrir reporte
         case "$(uname -s)" in
@@ -84,9 +79,18 @@ open_reports() {
                 ;;
         esac
     else
-        echo -e "${RED}❌ Reporte no encontrado: $report_path${NC}"
-        echo -e "${YELLOW}Ejecuta los tests primero: ./run-tests.sh ${service}${NC}"
+        echo -e "${YELLOW}❌ Reporte no encontrado: $report_path${NC}"
+        echo -e "${YELLOW}Ejecuta los tests primero: ./run-tests.sh${NC}"
     fi
+}
+
+# Función para limpiar
+clean_all() {
+    echo -e "${YELLOW}🧹 Limpiando targets del monolito...${NC}"
+    cd invoices-monolith
+    mvn clean -q
+    cd ..
+    echo -e "${GREEN}✅ Limpieza completada${NC}"
 }
 
 # Función para mostrar ayuda
@@ -95,105 +99,46 @@ show_help() {
     echo "  ./run-tests.sh [opción]"
     echo ""
     echo -e "${YELLOW}Opciones:${NC}"
-    echo "  all              Ejecutar todos los tests"
-    echo "  document         Ejecutar tests de Document Service"
-    echo "  trace            Ejecutar tests de Trace Service"
-    echo "  gateway          Ejecutar tests de Gateway Service"
-    echo "  report [service] Abrir reporte JaCoCo del servicio"
-    echo "  clean            Limpiar todos los targets"
-    echo "  help             Mostrar esta ayuda"
+    echo "  (sin opción)    Ejecutar todos los tests del monolito"
+    echo "  report          Abrir reporte JaCoCo"
+    echo "  clean           Limpiar todos los targets"
+    echo "  help            Mostrar esta ayuda"
     echo ""
     echo -e "${YELLOW}Ejemplos:${NC}"
-    echo "  ./run-tests.sh all"
-    echo "  ./run-tests.sh document"
-    echo "  ./run-tests.sh report trace"
-    echo "  ./run-tests.sh clean"
+    echo "  ./run-tests.sh           # Ejecutar todos los tests"
+    echo "  ./run-tests.sh report    # Ver reporte de cobertura"
+    echo "  ./run-tests.sh clean     # Limpiar builds"
 }
 
-# Función para limpiar
-clean_all() {
-    echo -e "${YELLOW}🧹 Limpiando targets...${NC}"
-    for service in document-service trace-service gateway-service; do
-        if [ -d "$service" ]; then
-            echo -e "  Limpiando ${service}..."
-            cd "$service"
-            mvn clean -q
-            cd ..
-        fi
-    done
-    echo -e "${GREEN}✅ Limpieza completada${NC}"
+# Función para mostrar resumen
+show_summary() {
+    echo ""
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${GREEN}✅ EJECUCIÓN COMPLETADA${NC}"
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+    echo -e "${YELLOW}📊 Reportes generados:${NC}"
+    echo -e "   • JaCoCo Coverage: ${CYAN}invoices-monolith/target/site/jacoco/index.html${NC}"
+    echo -e "   • Surefire Reports: ${CYAN}invoices-monolith/target/surefire-reports/${NC}"
+    echo ""
+    echo -e "${YELLOW}💡 Comandos útiles:${NC}"
+    echo -e "   • Ver reporte: ${CYAN}./run-tests.sh report${NC}"
+    echo -e "   • Limpiar: ${CYAN}./run-tests.sh clean${NC}"
+    echo ""
 }
 
 # Función principal
 main() {
-    local command=${1:-help}
+    local command=${1:-test}
 
     case $command in
-        all)
-            check_docker
-            echo -e "${BLUE}🚀 Ejecutando TODOS los tests...${NC}\n"
-
-            # Ejecutar tests en secuencia
-            run_service_tests "document-service"
-            run_service_tests "trace-service"
-            run_service_tests "gateway-service"
-
-            echo -e "\n${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-            echo -e "${GREEN}✅ TODOS LOS TESTS COMPLETADOS${NC}"
-            echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}\n"
-
-            echo -e "${YELLOW}📊 Para ver los reportes JaCoCo:${NC}"
-            echo -e "  ./run-tests.sh report document"
-            echo -e "  ./run-tests.sh report trace"
-            echo -e "  ./run-tests.sh report gateway"
-            ;;
-
-        document)
-            check_docker
-            run_service_tests "document-service"
-            echo -e "\n${YELLOW}Para ver el reporte: ./run-tests.sh report document${NC}"
-            ;;
-
-        trace)
-            check_docker
-            run_service_tests "trace-service"
-            echo -e "\n${YELLOW}Para ver el reporte: ./run-tests.sh report trace${NC}"
-            ;;
-
-        gateway)
-            run_service_tests "gateway-service"
-            echo -e "\n${YELLOW}Para ver el reporte: ./run-tests.sh report gateway${NC}"
+        test|"")
+            run_tests
+            show_summary
             ;;
 
         report)
-            local service_name=${2:-}
-            if [ -z "$service_name" ]; then
-                echo -e "${RED}❌ ERROR: Especifica un servicio${NC}"
-                echo -e "${YELLOW}Ejemplo: ./run-tests.sh report document${NC}"
-                exit 1
-            fi
-
-            case $service_name in
-                document)
-                    open_reports "document-service"
-                    ;;
-                trace)
-                    open_reports "trace-service"
-                    ;;
-                gateway)
-                    open_reports "gateway-service"
-                    ;;
-                all)
-                    open_reports "document-service"
-                    open_reports "trace-service"
-                    open_reports "gateway-service"
-                    ;;
-                *)
-                    echo -e "${RED}❌ ERROR: Servicio desconocido: $service_name${NC}"
-                    echo -e "${YELLOW}Servicios válidos: document, trace, gateway, all${NC}"
-                    exit 1
-                    ;;
-            esac
+            open_reports
             ;;
 
         clean)
@@ -205,7 +150,8 @@ main() {
             ;;
 
         *)
-            echo -e "${RED}❌ ERROR: Comando desconocido: $command${NC}\n"
+            echo -e "${RED}❌ ERROR: Comando desconocido: $command${NC}"
+            echo ""
             show_help
             exit 1
             ;;

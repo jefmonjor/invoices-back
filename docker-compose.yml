@@ -1,33 +1,37 @@
 version: '3.8'
 
-services:
-  # =================================================================
-  # INFRASTRUCTURE SERVICES
-  # =================================================================
+# =====================================================================
+# Docker Compose para Invoices Monolith
+# Sistema de gestión de facturas con arquitectura monolítica modular
+# =====================================================================
 
-  # PostgreSQL - 4 bases de datos separadas
+services:
+  # ===================================================================
+  # INFRASTRUCTURE SERVICES
+  # ===================================================================
+
+  # PostgreSQL - Base de datos única consolidada
   postgres:
     image: postgres:16-alpine
     container_name: invoices-postgres
     environment:
+      POSTGRES_DB: invoices
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${POSTGRES_ROOT_PASSWORD:-postgres_root_pass}
-      POSTGRES_MULTIPLE_DATABASES: userdb,invoicedb,documentdb,tracedb
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     volumes:
       - postgres-data:/var/lib/postgresql/data
-      - ./docker/init-databases.sh:/docker-entrypoint-initdb.d/init-databases.sh
     ports:
       - "5432:5432"
     networks:
       - invoices-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d invoices"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  # Redis (reemplaza Kafka para event streaming)
-  # En producción, usar Redis gratuito: Upstash Redis o Redis Cloud
+  # Redis - Event streaming y cache
+  # Reemplaza Kafka para event-driven communication
   redis:
     image: redis:7-alpine
     container_name: invoices-redis
@@ -44,8 +48,8 @@ services:
       timeout: 5s
       retries: 5
 
-  # MinIO (almacenamiento S3-compatible local)
-  # En producción, usar Cloudflare R2 (gratis hasta 10GB)
+  # MinIO - S3-compatible object storage (desarrollo local)
+  # En producción usar Cloudflare R2 (gratis hasta 10GB)
   minio:
     image: minio/minio:latest
     container_name: invoices-minio
@@ -56,8 +60,8 @@ services:
     volumes:
       - minio-data:/data
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "9000:9000"   # API
+      - "9001:9001"   # Console
     networks:
       - invoices-network
     healthcheck:
@@ -66,260 +70,101 @@ services:
       timeout: 5s
       retries: 5
 
-  # =================================================================
-  # SPRING CLOUD SERVICES
-  # =================================================================
-
-  # Eureka Server
-  eureka-server:
-    build:
-      context: ./eureka-server
-      dockerfile: Dockerfile
-    container_name: invoices-eureka
-    environment:
-      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
-      - EUREKA_USERNAME=${EUREKA_USERNAME:-eureka-admin}
-      - EUREKA_PASSWORD=${EUREKA_PASSWORD:-eureka_pass_2025}
-    ports:
-      - "8761:8761"
-    networks:
-      - invoices-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8761/actuator/health"]
-      interval: 15s
-      timeout: 5s
-      retries: 10
-
-  # Config Server
-  config-server:
-    build:
-      context: ./config-server
-      dockerfile: Dockerfile
-    container_name: invoices-config-server
-    environment:
-      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
-      - EUREKA_SERVER_HOST=eureka-server
-      - EUREKA_SERVER_PORT=8761
-      - EUREKA_USERNAME=${EUREKA_USERNAME:-eureka-admin}
-      - EUREKA_PASSWORD=${EUREKA_PASSWORD:-eureka_pass_2025}
-    ports:
-      - "8888:8888"
+  # MinIO Client - Crear bucket inicial automáticamente
+  minio-setup:
+    image: minio/mc:latest
+    container_name: invoices-minio-setup
     depends_on:
-      eureka-server:
-        condition: service_healthy
-    networks:
-      - invoices-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8888/actuator/health"]
-      interval: 15s
-      timeout: 5s
-      retries: 10
-
-  # =================================================================
-  # BUSINESS SERVICES
-  # =================================================================
-
-  # User Service
-  user-service:
-    build:
-      context: ./user-service
-      dockerfile: Dockerfile
-    container_name: invoices-user-service
-    environment:
-      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
-      - USER_DB_HOST=postgres
-      - USER_DB_PORT=5432
-      - USER_DB_NAME=userdb
-      - USER_DB_USERNAME=${USER_DB_USERNAME:-user_service_user}
-      - USER_DB_PASSWORD=${USER_DB_PASSWORD:-user_pass_2025}
-      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-min-32-chars-base64-encoded-change-in-production}
-      - JWT_EXPIRATION_MS=${JWT_EXPIRATION_MS:-3600000}
-      - JWT_ISSUER=${JWT_ISSUER:-invoices-backend}
-      - EUREKA_SERVER_HOST=eureka-server
-      - EUREKA_SERVER_PORT=8761
-      - EUREKA_USERNAME=${EUREKA_USERNAME:-eureka-admin}
-      - EUREKA_PASSWORD=${EUREKA_PASSWORD:-eureka_pass_2025}
-    ports:
-      - "8082:8082"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      eureka-server:
-        condition: service_healthy
-    networks:
-      - invoices-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8082/actuator/health"]
-      interval: 15s
-      timeout: 5s
-      retries: 10
-
-  # Invoice Service
-  invoice-service:
-    build:
-      context: ./invoice-service
-      dockerfile: Dockerfile
-    container_name: invoices-invoice-service
-    environment:
-      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
-      - INVOICE_DB_HOST=postgres
-      - INVOICE_DB_PORT=5432
-      - INVOICE_DB_NAME=invoicedb
-      - INVOICE_DB_USERNAME=${INVOICE_DB_USERNAME:-invoice_service_user}
-      - INVOICE_DB_PASSWORD=${INVOICE_DB_PASSWORD:-invoice_pass_2025}
-      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-min-32-chars-base64-encoded-change-in-production}
-      - JWT_ISSUER=${JWT_ISSUER:-invoices-backend}
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - REDIS_STREAM_INVOICE_EVENTS=${REDIS_STREAM_INVOICE_EVENTS:-invoice-events}
-      - EUREKA_CLIENT_ENABLED=false
-      - EUREKA_SERVER_HOST=eureka-server
-      - EUREKA_SERVER_PORT=8761
-      - EUREKA_USERNAME=${EUREKA_USERNAME:-eureka-admin}
-      - EUREKA_PASSWORD=${EUREKA_PASSWORD:-eureka_pass_2025}
-    ports:
-      - "8081:8081"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      user-service:
-        condition: service_healthy
-    networks:
-      - invoices-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
-      interval: 15s
-      timeout: 5s
-      retries: 10
-
-  # Document Service
-  document-service:
-    build:
-      context: ./document-service
-      dockerfile: Dockerfile
-    container_name: invoices-document-service
-    environment:
-      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
-      - DOCUMENT_DB_HOST=postgres
-      - DOCUMENT_DB_PORT=5432
-      - DOCUMENT_DB_NAME=documentdb
-      - DOCUMENT_DB_USERNAME=${DOCUMENT_DB_USERNAME:-document_service_user}
-      - DOCUMENT_DB_PASSWORD=${DOCUMENT_DB_PASSWORD:-document_pass_2025}
-      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-min-32-chars-base64-encoded-change-in-production}
-      - JWT_ISSUER=${JWT_ISSUER:-invoices-backend}
-      - S3_ENDPOINT=http://minio:9000
-      - S3_ACCESS_KEY=${MINIO_ACCESS_KEY:-minioadmin}
-      - S3_SECRET_KEY=${MINIO_SECRET_KEY:-minioadmin123}
-      - S3_BUCKET_NAME=${MINIO_BUCKET_NAME:-invoices-documents}
-      - EUREKA_CLIENT_ENABLED=false
-      - EUREKA_SERVER_HOST=eureka-server
-      - EUREKA_SERVER_PORT=8761
-      - EUREKA_USERNAME=${EUREKA_USERNAME:-eureka-admin}
-      - EUREKA_PASSWORD=${EUREKA_PASSWORD:-eureka_pass_2025}
-    ports:
-      - "8083:8083"
-    depends_on:
-      postgres:
-        condition: service_healthy
       minio:
         condition: service_healthy
     networks:
       - invoices-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8083/actuator/health"]
-      interval: 15s
-      timeout: 5s
-      retries: 10
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set myminio http://minio:9000 ${MINIO_ACCESS_KEY:-minioadmin} ${MINIO_SECRET_KEY:-minioadmin123};
+      mc mb myminio/${MINIO_BUCKET_NAME:-invoices-documents} --ignore-existing;
+      mc anonymous set download myminio/${MINIO_BUCKET_NAME:-invoices-documents};
+      exit 0;
+      "
 
-  # Trace Service
-  trace-service:
+  # ===================================================================
+  # MONOLITH APPLICATION
+  # ===================================================================
+
+  invoices-monolith:
     build:
-      context: ./trace-service
+      context: ./invoices-monolith
       dockerfile: Dockerfile
-    container_name: invoices-trace-service
+    container_name: invoices-monolith
     environment:
+      # Spring Profile
       - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
-      - TRACE_DB_HOST=postgres
-      - TRACE_DB_PORT=5432
-      - TRACE_DB_NAME=tracedb
-      - TRACE_DB_USERNAME=${TRACE_DB_USERNAME:-trace_service_user}
-      - TRACE_DB_PASSWORD=${TRACE_DB_PASSWORD:-trace_pass_2025}
-      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-min-32-chars-base64-encoded-change-in-production}
-      - JWT_ISSUER=${JWT_ISSUER:-invoices-backend}
+
+      # Database Configuration
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/invoices
+      - DB_USERNAME=${DB_USERNAME:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres}
+
+      # Redis Configuration
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
       - REDIS_STREAM_INVOICE_EVENTS=${REDIS_STREAM_INVOICE_EVENTS:-invoice-events}
+      - REDIS_STREAM_DLQ=${REDIS_STREAM_DLQ:-invoice-events-dlq}
       - REDIS_CONSUMER_GROUP=${REDIS_CONSUMER_GROUP:-trace-group}
-      - EUREKA_CLIENT_ENABLED=false
-      - EUREKA_SERVER_HOST=eureka-server
-      - EUREKA_SERVER_PORT=8761
-      - EUREKA_USERNAME=${EUREKA_USERNAME:-eureka-admin}
-      - EUREKA_PASSWORD=${EUREKA_PASSWORD:-eureka_pass_2025}
+
+      # S3/MinIO Configuration
+      - S3_ENDPOINT=http://minio:9000
+      - S3_ACCESS_KEY=${MINIO_ACCESS_KEY:-minioadmin}
+      - S3_SECRET_KEY=${MINIO_SECRET_KEY:-minioadmin123}
+      - S3_BUCKET_NAME=${MINIO_BUCKET_NAME:-invoices-documents}
+      - S3_REGION=${S3_REGION:-us-east-1}
+
+      # JWT Security
+      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-min-32-chars-base64-encoded-change-in-production}
+      - JWT_EXPIRATION_MS=${JWT_EXPIRATION_MS:-3600000}
+      - JWT_ISSUER=${JWT_ISSUER:-invoices-monolith}
+
+      # CORS Configuration
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:5173}
+      - CORS_ALLOWED_METHODS=${CORS_ALLOWED_METHODS:-GET,POST,PUT,DELETE,OPTIONS,PATCH}
+      - CORS_ALLOWED_HEADERS=${CORS_ALLOWED_HEADERS:-*}
+      - CORS_MAX_AGE=${CORS_MAX_AGE:-3600}
+
+      # Application Port
+      - SERVER_PORT=8080
     ports:
-      - "8084:8084"
+      - "8080:8080"
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
-    networks:
-      - invoices-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8084/actuator/health"]
-      interval: 15s
-      timeout: 5s
-      retries: 10
-
-  # Gateway Service
-  gateway-service:
-    build:
-      context: ./gateway-service
-      dockerfile: Dockerfile
-    container_name: invoices-gateway
-    environment:
-      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
-      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-min-32-chars-base64-encoded-change-in-production}
-      - JWT_ISSUER=${JWT_ISSUER:-invoices-backend}
-      - EUREKA_CLIENT_ENABLED=false
-      - EUREKA_SERVER_HOST=eureka-server
-      - EUREKA_SERVER_PORT=8761
-      - EUREKA_USERNAME=${EUREKA_USERNAME:-eureka-admin}
-      - EUREKA_PASSWORD=${EUREKA_PASSWORD:-eureka_pass_2025}
-      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:5173}
-      - CORS_ALLOWED_METHODS=${CORS_ALLOWED_METHODS:-GET,POST,PUT,DELETE,OPTIONS}
-      - CORS_MAX_AGE=${CORS_MAX_AGE:-3600}
-    ports:
-      - "8080:8080"
-    depends_on:
-      user-service:
+      minio:
         condition: service_healthy
-      invoice-service:
-        condition: service_healthy
-      document-service:
-        condition: service_healthy
-      trace-service:
-        condition: service_healthy
+      minio-setup:
+        condition: service_completed_successfully
     networks:
       - invoices-network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
-      interval: 15s
-      timeout: 5s
-      retries: 10
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
 
-# =================================================================
+# =====================================================================
 # NETWORKS
-# =================================================================
+# =====================================================================
 networks:
   invoices-network:
     driver: bridge
     name: invoices-network
 
-# =================================================================
-# VOLUMES (persistencia de datos)
-# =================================================================
+# =====================================================================
+# VOLUMES (Persistencia de datos)
+# =====================================================================
 volumes:
   postgres-data:
     name: invoices-postgres-data

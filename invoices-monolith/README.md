@@ -1,15 +1,36 @@
 # Invoices Monolith
 
-**Aplicación monolítica consolidada** - Todos los servicios de facturación en una sola aplicación para simplificar el despliegue y la operación.
+**Aplicación monolítica con Clean Architecture** - Sistema de gestión de facturas construido con principios de arquitectura limpia, separación de responsabilidades y alta cohesión.
 
-## 📦 Servicios Consolidados
+## 🏛️ Arquitectura
 
-Este monolito integra todos los microservicios anteriores:
+Este proyecto implementa **Clean Architecture** (Arquitectura Hexagonal) con 4 módulos principales:
 
-- **User Service**: Gestión de usuarios y autenticación (JWT)
-- **Invoice Service**: Gestión de facturas, ítems, clientes y empresas
-- **Document Service**: Generación de PDFs y almacenamiento de documentos (S3/R2)
-- **Trace Service**: Auditoría y trazabilidad de eventos
+- **Invoice Module**: Gestión de facturas, ítems, clientes y empresas
+- **User Module**: Gestión de usuarios y autenticación (JWT)
+- **Document Module**: Generación de PDFs y almacenamiento de documentos (S3/R2)
+- **Trace Module**: Auditoría y trazabilidad de eventos
+
+### Capas de Clean Architecture
+
+Cada módulo sigue el patrón de capas:
+
+1. **Domain Layer** (Núcleo del negocio)
+   - `entities/`: Entidades de dominio (lógica de negocio pura)
+   - `usecases/`: Casos de uso (reglas de aplicación)
+   - `ports/`: Interfaces (puertos de entrada y salida)
+
+2. **Infrastructure Layer** (Adaptadores externos)
+   - `persistence/`: Implementación de repositorios y mappers de base de datos
+   - `external/`: Integraciones con servicios externos
+   - `events/`: Manejo de eventos y mensajería
+   - `storage/`: Almacenamiento de archivos (S3/R2)
+   - `security/`: Implementaciones de seguridad
+
+3. **Presentation Layer** (Interfaz de usuario)
+   - `controllers/`: Controladores REST
+   - `dto/`: Data Transfer Objects
+   - `mappers/`: Conversión entre DTOs y entidades de dominio
 
 ## 🚀 Despliegue Rápido en Fly.io
 
@@ -166,26 +187,75 @@ invoices-monolith/
 ├── src/main/java/com/invoices/
 │   ├── InvoicesApplication.java          # Clase principal
 │   ├── config/                            # Configuración global
-│   ├── security/                          # Seguridad y JWT
-│   ├── user/                              # Módulo de usuarios
-│   │   ├── controller/
-│   │   ├── service/
-│   │   ├── repository/
-│   │   ├── entity/
-│   │   └── dto/
-│   ├── invoice/                           # Módulo de facturas
-│   │   ├── presentation/controllers/
-│   │   ├── domain/usecases/
-│   │   ├── infrastructure/persistence/
-│   │   └── ...
-│   ├── document/                          # Módulo de documentos
-│   │   ├── controller/
-│   │   ├── service/
-│   │   └── ...
-│   └── trace/                             # Módulo de auditoría
-│       ├── controller/
-│       ├── service/
-│       └── ...
+│   ├── security/                          # Seguridad y JWT (global)
+│   ├── exception/                         # Excepciones globales
+│   │
+│   ├── invoice/                           # Módulo Invoice (Clean Architecture)
+│   │   ├── domain/
+│   │   │   ├── entities/                 # Entidades de dominio
+│   │   │   ├── usecases/                 # Casos de uso
+│   │   │   ├── ports/                    # Interfaces (puertos)
+│   │   │   └── exceptions/               # Excepciones de dominio
+│   │   ├── infrastructure/
+│   │   │   ├── persistence/              # Repositorios JPA
+│   │   │   │   ├── entities/            # Entidades JPA
+│   │   │   │   ├── repositories/        # Repositorios Spring Data
+│   │   │   │   └── mappers/             # Mappers de persistencia
+│   │   │   ├── external/jasper/         # Generación de reportes
+│   │   │   └── config/                   # Configuración del módulo
+│   │   └── presentation/
+│   │       ├── controllers/              # REST Controllers
+│   │       ├── dto/                      # DTOs de API
+│   │       └── mappers/                  # Mappers de presentación
+│   │
+│   ├── user/                              # Módulo User (Clean Architecture)
+│   │   ├── domain/
+│   │   │   ├── entities/                 # User, Role
+│   │   │   ├── usecases/                 # CreateUser, UpdateUser, etc.
+│   │   │   └── ports/                    # UserRepository (interface)
+│   │   ├── infrastructure/
+│   │   │   ├── persistence/              # Implementación JPA
+│   │   │   │   ├── entities/            # UserJpaEntity
+│   │   │   │   ├── repositories/        # UserJpaRepository
+│   │   │   │   └── mappers/             # User <-> UserJpaEntity
+│   │   │   ├── security/                 # JWT, AuthFilter
+│   │   │   └── config/                   # Configuración del módulo
+│   │   └── presentation/
+│   │       ├── controllers/              # UserController, AuthController
+│   │       ├── dto/                      # UserDTO, LoginRequest
+│   │       └── mappers/                  # User <-> UserDTO
+│   │
+│   ├── document/                          # Módulo Document (Clean Architecture)
+│   │   ├── domain/
+│   │   │   ├── entities/                 # Document
+│   │   │   ├── usecases/                 # UploadDocument, DownloadDocument
+│   │   │   ├── ports/                    # DocumentRepository, StoragePort
+│   │   │   └── validation/               # Validaciones de dominio
+│   │   ├── infrastructure/
+│   │   │   ├── persistence/              # Repositorio JPA
+│   │   │   ├── storage/                  # Implementación S3/R2
+│   │   │   └── config/                   # Configuración S3
+│   │   └── presentation/
+│   │       ├── controllers/              # DocumentController
+│   │       ├── dto/                      # DocumentDTO
+│   │       └── mappers/                  # Document <-> DocumentDTO
+│   │
+│   └── trace/                             # Módulo Trace (Clean Architecture)
+│       ├── domain/
+│       │   ├── entities/                 # AuditLog
+│       │   ├── usecases/                 # CreateAuditLog, QueryAuditLogs
+│       │   ├── ports/                    # AuditLogRepository
+│       │   ├── services/                 # Servicios de dominio
+│       │   └── events/                   # Eventos de dominio
+│       ├── infrastructure/
+│       │   ├── persistence/              # Repositorio JPA
+│       │   ├── events/                   # Event Listeners
+│       │   └── config/                   # Configuración de eventos
+│       └── presentation/
+│           ├── controllers/              # AuditLogController
+│           ├── dto/                      # AuditLogDTO
+│           └── mappers/                  # AuditLog <-> AuditLogDTO
+│
 ├── src/main/resources/
 │   ├── application.yml                    # Configuración principal
 │   ├── db/migration/                      # Migraciones Flyway
@@ -195,22 +265,23 @@ invoices-monolith/
 └── pom.xml                                # Dependencias Maven
 ```
 
-## 🔄 Migración desde Microservicios
+### Principios de Clean Architecture Aplicados
 
-Este monolito consolida los siguientes microservicios anteriores:
+- **Independencia de frameworks**: El dominio no depende de Spring o JPA
+- **Testabilidad**: Lógica de negocio fácilmente testeable sin infraestructura
+- **Independencia de UI**: Los casos de uso no conocen los detalles de REST
+- **Independencia de Base de Datos**: El dominio usa interfaces (ports), no implementaciones
+- **Regla de dependencia**: Las dependencias apuntan hacia adentro (Domain <- Infrastructure/Presentation)
 
-- `user-service` → `com.invoices.user.*`
-- `invoice-service` → `com.invoices.invoice.*`
-- `document-service` → `com.invoices.document.*`
-- `trace-service` → `com.invoices.trace.*`
-- `gateway-service` → Integrado en la configuración de seguridad
+## 🎯 Ventajas de Clean Architecture
 
-**Ventajas del monolito:**
-- ✅ Un solo despliegue
-- ✅ Configuración simplificada
-- ✅ Menor complejidad operacional
-- ✅ Mejor para equipos pequeños
-- ✅ Más fácil de debugear
+**Beneficios del enfoque actual:**
+- ✅ **Testabilidad**: Lógica de negocio aislada y fácil de probar
+- ✅ **Mantenibilidad**: Separación clara de responsabilidades
+- ✅ **Escalabilidad**: Módulos independientes con bajo acoplamiento
+- ✅ **Flexibilidad**: Fácil cambio de tecnologías de infraestructura
+- ✅ **Claridad**: Arquitectura comprensible y bien documentada
+- ✅ **Independencia**: El dominio no depende de frameworks externos
 
 ## 📝 Notas de Producción
 
