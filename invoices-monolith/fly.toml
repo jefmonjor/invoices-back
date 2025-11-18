@@ -12,6 +12,8 @@ primary_region = "ams"  # Amsterdam - Change to your preferred region
 
 [build]
   dockerfile = "Dockerfile"
+  # Increase build timeout for Maven compilation (default is 10m)
+  build-timeout = "20m"
   [build.args]
     BUILDKIT_INLINE_CACHE = "1"
 
