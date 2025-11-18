@@ -1,25 +1,8 @@
-# Multi-stage Dockerfile for Invoices Monolith
-# Optimized for production deployment on Fly.io
+# Dockerfile for pre-built JAR
+# Use this when you build locally and want faster Fly.io deployments
+# Build JAR locally first: ./build-local.sh
+# Then deploy with: fly deploy --dockerfile Dockerfile.prebuilt
 
-# Stage 1: Build
-FROM maven:3.9-eclipse-temurin-21-alpine AS build
-WORKDIR /app
-
-# Copy pom.xml and download dependencies (cached layer)
-COPY pom.xml .
-RUN mvn dependency:go-offline -B
-
-# Copy source code
-COPY src ./src
-
-# Build the application with optimizations:
-# - Skip tests for faster builds
-# - Use multiple threads for parallel compilation
-# - Batch mode for non-interactive builds
-# - Offline mode to use cached dependencies
-RUN mvn clean package -DskipTests -B -T 1C --offline
-
-# Stage 2: Runtime
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 
@@ -30,8 +13,8 @@ RUN apk add --no-cache curl
 RUN addgroup -g 1000 spring && \
     adduser -u 1000 -G spring -s /bin/sh -D spring
 
-# Copy JAR from build stage
-COPY --from=build /app/target/*.jar app.jar
+# Copy pre-built JAR
+COPY target/*.jar app.jar
 
 # Change ownership to spring user
 RUN chown -R spring:spring /app
