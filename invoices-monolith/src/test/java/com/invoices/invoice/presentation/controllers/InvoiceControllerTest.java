@@ -1,7 +1,6 @@
 package com.invoices.invoice.presentation.controllers;
 
-import com.invoices.api.model.InvoiceConfigDTO;
-import com.invoices.api.model.InvoiceDTO;
+import com.invoices.invoice.dto.InvoiceDTO;
 import com.invoices.invoice.domain.entities.*;
 import com.invoices.invoice.domain.exceptions.InvoiceNotFoundException;
 import com.invoices.invoice.domain.usecases.GeneratePdfUseCase;
