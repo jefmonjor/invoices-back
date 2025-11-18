@@ -41,7 +41,7 @@ class InvoiceIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        // Create test company
+        // Create and save test company
         testCompany = new Company(
             null,
             "TRANSOLIDO S.L.",
@@ -54,8 +54,9 @@ class InvoiceIntegrationTest {
             "contacto@transolido.es",
             "ES60 0182 4840 0022 0165 7539"
         );
+        testCompany = companyRepository.save(testCompany);
 
-        // Create test client
+        // Create and save test client
         testClient = new Client(
             null,
             "SERSFRITRUCKS, S.A.",
@@ -67,18 +68,16 @@ class InvoiceIntegrationTest {
             "968123456",
             "info@sersfritrucks.com"
         );
+        testClient = clientRepository.save(testClient);
     }
 
     @Test
     void shouldCreateAndRetrieveInvoice() {
-        // Arrange - Save company and client first (if not in migrations)
-        // For this test, we assume migrations already inserted companies and clients
-
-        // Create invoice
+        // Arrange - Create invoice with saved company and client
         Invoice invoice = new Invoice(
             null,
-            1L, // Assuming company ID 1 exists from migration
-            1L, // Assuming client ID 1 exists from migration
+            testCompany.getId(),
+            testClient.getId(),
             "INT-2025-001",
             LocalDateTime.now(),
             new BigDecimal("15.00"),
@@ -193,8 +192,8 @@ class InvoiceIntegrationTest {
         // Arrange - Create invoice with specific values
         Invoice invoice = new Invoice(
             null,
-            1L,
-            1L,
+            testCompany.getId(),
+            testClient.getId(),
             "INT-2025-007",
             LocalDateTime.now(),
             new BigDecimal("15.00"),
@@ -229,14 +228,12 @@ class InvoiceIntegrationTest {
 
     @Test
     void shouldVerifyCompanyAndClientExist() {
-        // This test assumes migrations have inserted test data
-
-        // Act & Assert - Check company exists
-        boolean companyExists = companyRepository.existsById(1L);
+        // Act & Assert - Check company exists (saved in setUp)
+        boolean companyExists = companyRepository.existsById(testCompany.getId());
         assertThat(companyExists).isTrue();
 
-        // Act & Assert - Check client exists
-        boolean clientExists = clientRepository.existsById(1L);
+        // Act & Assert - Check client exists (saved in setUp)
+        boolean clientExists = clientRepository.existsById(testClient.getId());
         assertThat(clientExists).isTrue();
     }
 
@@ -245,8 +242,8 @@ class InvoiceIntegrationTest {
         // Arrange - Create invoice with multiple items
         Invoice invoice = new Invoice(
             null,
-            1L,
-            1L,
+            testCompany.getId(),
+            testClient.getId(),
             "INT-2025-008",
             LocalDateTime.now(),
             new BigDecimal("15.00"),
@@ -281,8 +278,8 @@ class InvoiceIntegrationTest {
     private Invoice createTestInvoice(String invoiceNumber) {
         Invoice invoice = new Invoice(
             null,
-            1L, // Assuming company ID 1 exists
-            1L, // Assuming client ID 1 exists
+            testCompany.getId(),
+            testClient.getId(),
             invoiceNumber,
             LocalDateTime.now(),
             new BigDecimal("15.00"),

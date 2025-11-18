@@ -1,0 +1,78 @@
+spring:
+  application:
+    name: invoices-monolith-test
+
+  # Exclude problematic auto-configurations for tests
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
+
+  # H2 In-Memory Database for testing
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+    hikari:
+      maximum-pool-size: 5
+
+  # JPA Configuration for tests
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+        dialect: org.hibernate.dialect.H2Dialect
+
+  # Disable Flyway for tests
+  flyway:
+    enabled: false
+
+  # Redis Configuration - disabled for tests
+  data:
+    redis:
+      repositories:
+        enabled: false
+
+# JWT Configuration for tests
+jwt:
+  secret: test-secret-key-that-is-at-least-32-characters-long-for-testing
+  expiration: 3600000
+  issuer: invoices-test
+
+# S3 Configuration for tests - mock values
+s3:
+  endpoint: http://localhost:9000
+  access-key: test-access-key
+  secret-key: test-secret-key
+  bucket-name: test-bucket
+  region: us-east-1
+  path-style-access: true
+
+# Disable rate limiting for tests
+bucket4j:
+  enabled: false
+
+# Logging Configuration for tests
+logging:
+  level:
+    root: INFO
+    com.invoices: INFO
+    org.springframework.security: WARN
+    org.hibernate.SQL: WARN
+    org.springframework.test: INFO
+
+# Actuator Configuration for tests
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  health:
+    redis:
+      enabled: false
+    db:
+      enabled: true
