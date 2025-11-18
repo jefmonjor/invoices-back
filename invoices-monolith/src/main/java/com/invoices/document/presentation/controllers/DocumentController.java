@@ -1,8 +1,11 @@
-package com.invoices.document.controller;
+package com.invoices.document.presentation.controllers;
 
-import com.invoices.document.dto.DocumentDTO;
-import com.invoices.document.dto.UploadDocumentResponse;
-import com.invoices.document.service.DocumentService;
+import com.invoices.document.domain.entities.Document;
+import com.invoices.document.domain.entities.FileContent;
+import com.invoices.document.domain.usecases.*;
+import com.invoices.document.presentation.dto.DocumentDTO;
+import com.invoices.document.presentation.dto.UploadDocumentResponse;
+import com.invoices.document.presentation.mappers.DocumentDtoMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -19,8 +22,15 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
+import java.util.stream.Collectors;
 
+/**
+ * REST controller for document management operations (Clean Architecture).
+ * Uses Use Cases from domain layer instead of service layer.
+ */
 @RestController
 @RequestMapping("/api/documents")
 @RequiredArgsConstructor
@@ -28,7 +38,12 @@ import java.util.List;
 @Tag(name = "Document Service", description = "Document management API for uploading, downloading, and managing PDF files")
 public class DocumentController {
 
-    private final DocumentService documentService;
+    private final UploadDocumentUseCase uploadDocumentUseCase;
+    private final DownloadDocumentUseCase downloadDocumentUseCase;
+    private final GetDocumentByIdUseCase getDocumentByIdUseCase;
+    private final GetDocumentsByInvoiceUseCase getDocumentsByInvoiceUseCase;
+    private final DeleteDocumentUseCase deleteDocumentUseCase;
+    private final DocumentDtoMapper mapper;
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "Upload a document", description = "Upload a PDF document and optionally associate it with an invoice")
@@ -49,8 +64,33 @@ public class DocumentController {
             @RequestParam(value = "uploadedBy", required = false, defaultValue = "system") String uploadedBy
     ) {
         log.info("POST /api/documents - Uploading document: {}", file.getOriginalFilename());
-        UploadDocumentResponse response = documentService.uploadDocument(file, invoiceId, uploadedBy);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+
+        try {
+            // Convert MultipartFile to domain FileContent
+            FileContent fileContent = new FileContent(
+                    file.getInputStream(),
+                    file.getSize(),
+                    file.getContentType()
+            );
+
+            // Execute use case
+            Document uploadedDocument = uploadDocumentUseCase.execute(
+                    fileContent,
+                    file.getOriginalFilename(),
+                    invoiceId,
+                    uploadedBy
+            );
+
+            // Map to response DTO
+            UploadDocumentResponse response = mapper.toUploadResponse(uploadedDocument);
+
+            log.info("Document uploaded successfully with ID: {}", uploadedDocument.getId());
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+
+        } catch (IOException e) {
+            log.error("Failed to read file input stream", e);
+            throw new IllegalArgumentException("Failed to read uploaded file: " + e.getMessage());
+        }
     }
 
     @GetMapping("/{id}")
@@ -65,8 +105,12 @@ public class DocumentController {
             @PathVariable Long id
     ) {
         log.info("GET /api/documents/{} - Fetching document metadata", id);
-        DocumentDTO document = documentService.getDocumentById(id);
-        return ResponseEntity.ok(document);
+
+        Document document = getDocumentByIdUseCase.execute(id);
+        DocumentDTO documentDTO = mapper.toDTO(document);
+
+        log.info("Document metadata retrieved successfully: {}", id);
+        return ResponseEntity.ok(documentDTO);
     }
 
     @GetMapping("/{id}/download")
@@ -84,17 +128,26 @@ public class DocumentController {
         log.info("GET /api/documents/{}/download - Downloading document", id);
 
         // Get metadata first to get original filename
-        DocumentDTO metadata = documentService.getDocumentById(id);
-        byte[] content = documentService.downloadDocument(id);
+        Document metadata = downloadDocumentUseCase.getDocumentMetadata(id);
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_PDF);
-        headers.setContentDispositionFormData("attachment", metadata.getOriginalFilename());
-        headers.setContentLength(content.length);
+        // Get file content
+        try (InputStream inputStream = downloadDocumentUseCase.execute(id)) {
+            byte[] content = inputStream.readAllBytes();
 
-        return ResponseEntity.ok()
-                .headers(headers)
-                .body(content);
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            headers.setContentDispositionFormData("attachment", metadata.getOriginalFilename());
+            headers.setContentLength(content.length);
+
+            log.info("Document downloaded successfully: {}", id);
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .body(content);
+
+        } catch (IOException e) {
+            log.error("Failed to read downloaded file stream", e);
+            throw new IllegalArgumentException("Failed to read downloaded file: " + e.getMessage());
+        }
     }
 
     @GetMapping
@@ -108,8 +161,14 @@ public class DocumentController {
             @RequestParam("invoiceId") Long invoiceId
     ) {
         log.info("GET /api/documents?invoiceId={} - Fetching documents for invoice", invoiceId);
-        List<DocumentDTO> documents = documentService.getDocumentsByInvoiceId(invoiceId);
-        return ResponseEntity.ok(documents);
+
+        List<Document> documents = getDocumentsByInvoiceUseCase.execute(invoiceId);
+        List<DocumentDTO> documentDTOs = documents.stream()
+                .map(mapper::toDTO)
+                .collect(Collectors.toList());
+
+        log.info("Retrieved {} documents for invoice {}", documentDTOs.size(), invoiceId);
+        return ResponseEntity.ok(documentDTOs);
     }
 
     @DeleteMapping("/{id}")
@@ -124,7 +183,10 @@ public class DocumentController {
             @PathVariable Long id
     ) {
         log.info("DELETE /api/documents/{} - Deleting document", id);
-        documentService.deleteDocument(id);
+
+        deleteDocumentUseCase.execute(id);
+
+        log.info("Document deleted successfully: {}", id);
         return ResponseEntity.noContent().build();
     }
 }

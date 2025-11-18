@@ -1,4 +1,4 @@
-package com.invoices.document.entity;
+package com.invoices.document.infrastructure.persistence.entities;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -9,13 +9,21 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 
+/**
+ * JPA Entity for document persistence.
+ * This is the infrastructure representation of a Document,
+ * separate from the domain entity to maintain clean architecture.
+ */
 @Entity
-@Table(name = "documents")
+@Table(name = "documents", indexes = {
+        @Index(name = "idx_document_invoice_id", columnList = "invoice_id"),
+        @Index(name = "idx_document_storage_object", columnList = "minio_object_name")
+})
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Document {
+public class DocumentJpaEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

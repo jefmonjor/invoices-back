@@ -1,4 +1,4 @@
-package com.invoices.document.dto;
+package com.invoices.document.presentation.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -7,6 +7,9 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
+/**
+ * Data Transfer Object for Document presentation.
+ */
 @Data
 @Builder
 @NoArgsConstructor
