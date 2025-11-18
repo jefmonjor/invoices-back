@@ -54,6 +54,12 @@ public class InvoiceRepositoryImpl implements InvoiceRepository {
     }
 
     @Override
+    public void delete(Invoice invoice) {
+        InvoiceJpaEntity jpaEntity = mapper.toJpaEntity(invoice);
+        jpaRepository.delete(jpaEntity);
+    }
+
+    @Override
     public void deleteById(Long id) {
         jpaRepository.deleteById(id);
     }

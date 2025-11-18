@@ -60,16 +60,11 @@ public class InvoiceController {
      */
     @GetMapping
     public ResponseEntity<List<InvoiceDTO>> getAllInvoices() {
-        try {
-            List<Invoice> invoices = getAllInvoicesUseCase.execute();
-            List<InvoiceDTO> dtos = invoices.stream()
-                .map(dtoMapper::toDto)
-                .collect(Collectors.toList());
-            return ResponseEntity.ok(dtos);
-
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        List<Invoice> invoices = getAllInvoicesUseCase.execute();
+        List<InvoiceDTO> dtos = invoices.stream()
+            .map(dtoMapper::toDto)
+            .collect(Collectors.toList());
+        return ResponseEntity.ok(dtos);
     }
 
     /**
@@ -77,36 +72,25 @@ public class InvoiceController {
      */
     @PostMapping
     public ResponseEntity<InvoiceDTO> createInvoice(@Valid @RequestBody CreateInvoiceRequest request) {
-        try {
-            // Convert DTO items to domain InvoiceItems
-            List<InvoiceItem> items = request.getItems().stream()
-                .map(this::toDomainItem)
-                .collect(Collectors.toList());
+        // Convert DTO items to domain InvoiceItems
+        List<InvoiceItem> items = request.getItems().stream()
+            .map(this::toDomainItem)
+            .collect(Collectors.toList());
 
-            // Execute use case
-            Invoice invoice = createInvoiceUseCase.execute(
-                request.getCompanyId(),
-                request.getClientId(),
-                request.getInvoiceNumber(),
-                request.getIrpfPercentage(),
-                request.getRePercentage(),
-                items,
-                request.getNotes()
-            );
+        // Execute use case
+        Invoice invoice = createInvoiceUseCase.execute(
+            request.getCompanyId(),
+            request.getClientId(),
+            request.getInvoiceNumber(),
+            request.getIrpfPercentage(),
+            request.getRePercentage(),
+            items,
+            request.getNotes()
+        );
 
-            // Convert to DTO and return
-            InvoiceDTO dto = dtoMapper.toDto(invoice);
-            return ResponseEntity.status(HttpStatus.CREATED).body(dto);
-
-        } catch (ClientNotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
-
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        // Convert to DTO and return
+        InvoiceDTO dto = dtoMapper.toDto(invoice);
+        return ResponseEntity.status(HttpStatus.CREATED).body(dto);
     }
 
     /**
@@ -114,20 +98,9 @@ public class InvoiceController {
      */
     @GetMapping("/{id}")
     public ResponseEntity<InvoiceDTO> getInvoiceById(@PathVariable Long id) {
-        try {
-            Invoice invoice = getInvoiceByIdUseCase.execute(id);
-            InvoiceDTO dto = dtoMapper.toDto(invoice);
-            return ResponseEntity.ok(dto);
-
-        } catch (InvoiceNotFoundException e) {
-            return ResponseEntity.notFound().build();
-
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
-
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        Invoice invoice = getInvoiceByIdUseCase.execute(id);
+        InvoiceDTO dto = dtoMapper.toDto(invoice);
+        return ResponseEntity.ok(dto);
     }
 
     /**
@@ -138,35 +111,24 @@ public class InvoiceController {
         @PathVariable Long id,
         @Valid @RequestBody UpdateInvoiceRequest request
     ) {
-        try {
-            // Convert DTO items to domain InvoiceItems
-            List<InvoiceItem> updatedItems = null;
-            if (request.getItems() != null) {
-                updatedItems = request.getItems().stream()
-                    .map(this::toDomainItem)
-                    .collect(Collectors.toList());
-            }
-
-            // Execute use case
-            Invoice invoice = updateInvoiceUseCase.execute(
-                id,
-                updatedItems,
-                request.getNotes()
-            );
-
-            // Convert to DTO and return
-            InvoiceDTO dto = dtoMapper.toDto(invoice);
-            return ResponseEntity.ok(dto);
-
-        } catch (InvoiceNotFoundException e) {
-            return ResponseEntity.notFound().build();
-
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
-
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        // Convert DTO items to domain InvoiceItems
+        List<InvoiceItem> updatedItems = null;
+        if (request.getItems() != null) {
+            updatedItems = request.getItems().stream()
+                .map(this::toDomainItem)
+                .collect(Collectors.toList());
         }
+
+        // Execute use case
+        Invoice invoice = updateInvoiceUseCase.execute(
+            id,
+            updatedItems,
+            request.getNotes()
+        );
+
+        // Convert to DTO and return
+        InvoiceDTO dto = dtoMapper.toDto(invoice);
+        return ResponseEntity.ok(dto);
     }
 
     /**
@@ -174,19 +136,8 @@ public class InvoiceController {
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteInvoice(@PathVariable Long id) {
-        try {
-            deleteInvoiceUseCase.execute(id);
-            return ResponseEntity.noContent().build();
-
-        } catch (InvoiceNotFoundException e) {
-            return ResponseEntity.notFound().build();
-
-        } catch (InvalidInvoiceStateException e) {
-            return ResponseEntity.badRequest().build();
-
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        deleteInvoiceUseCase.execute(id);
+        return ResponseEntity.noContent().build();
     }
 
     /**

@@ -86,8 +86,8 @@ public class AuthController {
                 roles
         );
 
-        // Generate JWT token
-        String token = jwtUtil.generateToken(createdUser.getEmail());
+        // Generate JWT token with email and roles
+        String token = jwtUtil.generateToken(createdUser.getEmail(), createdUser.getRoles());
 
         AuthResponse response = AuthResponse.builder()
                 .token(token)
@@ -138,8 +138,8 @@ public class AuthController {
         // Update last login timestamp
         updateUserLastLoginUseCase.execute(authenticatedUser.getId());
 
-        // Generate JWT token
-        String token = jwtUtil.generateToken(authenticatedUser.getEmail());
+        // Generate JWT token with email and roles
+        String token = jwtUtil.generateToken(authenticatedUser.getEmail(), authenticatedUser.getRoles());
 
         AuthResponse response = AuthResponse.builder()
                 .token(token)

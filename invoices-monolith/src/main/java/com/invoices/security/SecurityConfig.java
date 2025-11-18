@@ -48,6 +48,46 @@ public class SecurityConfig {
                 // Disable CSRF as we're using JWT (stateless)
                 .csrf(AbstractHttpConfigurer::disable)
 
+                // Configure security headers
+                .headers(headers -> headers
+                        // Prevent clickjacking attacks
+                        .frameOptions(frame -> frame.deny())
+
+                        // Prevent MIME type sniffing
+                        .contentTypeOptions(contentType -> contentType.disable())
+
+                        // Enable XSS protection
+                        .xssProtection(xss -> xss
+                                .headerValue("1; mode=block")
+                        )
+
+                        // Force HTTPS in production (Strict-Transport-Security)
+                        .httpStrictTransportSecurity(hsts -> hsts
+                                .includeSubDomains(true)
+                                .maxAgeInSeconds(31536000) // 1 year
+                        )
+
+                        // Content Security Policy to prevent XSS and data injection attacks
+                        .contentSecurityPolicy(csp -> csp
+                                .policyDirectives("default-src 'self'; " +
+                                        "script-src 'self' 'unsafe-inline'; " +
+                                        "style-src 'self' 'unsafe-inline'; " +
+                                        "img-src 'self' data:; " +
+                                        "font-src 'self' data:; " +
+                                        "connect-src 'self'")
+                        )
+
+                        // Referrer policy
+                        .referrerPolicy(referrer -> referrer
+                                .policy(org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN)
+                        )
+
+                        // Permissions policy (formerly Feature-Policy)
+                        .permissionsPolicy(permissions -> permissions
+                                .policy("geolocation=(), microphone=(), camera=()")
+                        )
+                )
+
                 // Configure authorization rules
                 .authorizeHttpRequests(auth -> auth
                         // Public endpoints - authentication not required
@@ -101,13 +141,15 @@ public class SecurityConfig {
 
     /**
      * Creates a BCrypt password encoder bean.
+     * Strength 12 provides better security against brute force attacks
+     * while maintaining acceptable performance.
      *
      * @return the password encoder
      */
     @Bean
     public PasswordEncoder passwordEncoder() {
-        log.debug("Creating BCrypt password encoder with strength 10");
-        return new BCryptPasswordEncoder(10);
+        log.debug("Creating BCrypt password encoder with strength 12");
+        return new BCryptPasswordEncoder(12);
     }
 
     /**

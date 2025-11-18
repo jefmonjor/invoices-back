@@ -62,13 +62,26 @@ public class InvoiceJpaMapper {
             jpaEntity.getRePercentage()
         );
 
-        if (jpaEntity.getNotes() != null) {
-            invoice.setNotes(jpaEntity.getNotes());
+        // Set status from database without validation (using internal method)
+        if (jpaEntity.getStatus() != null) {
+            invoice.setStatusInternal(InvoiceStatus.valueOf(jpaEntity.getStatus()));
         }
 
+        // Set timestamps from database FIRST (before setting notes)
+        if (jpaEntity.getCreatedAt() != null && jpaEntity.getUpdatedAt() != null) {
+            invoice.setTimestampsInternal(jpaEntity.getCreatedAt(), jpaEntity.getUpdatedAt());
+        }
+
+        // Set notes if present (using internal method to avoid updating timestamp)
+        if (jpaEntity.getNotes() != null) {
+            invoice.setNotesInternal(jpaEntity.getNotes());
+        }
+
+        // Add items without state validation (using internal method)
+        // This is necessary to reconstruct invoices in FINALIZED or PAID status
         jpaEntity.getItems().forEach(itemJpa -> {
             InvoiceItem item = toDomainItemEntity(itemJpa);
-            invoice.addItem(item);
+            invoice.addItemInternal(item);
         });
 
         return invoice;

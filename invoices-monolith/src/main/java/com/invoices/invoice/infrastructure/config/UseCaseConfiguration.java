@@ -2,6 +2,7 @@ package com.invoices.invoice.infrastructure.config;
 
 import com.invoices.invoice.domain.ports.ClientRepository;
 import com.invoices.invoice.domain.ports.CompanyRepository;
+import com.invoices.invoice.domain.ports.InvoiceEventPublisher;
 import com.invoices.invoice.domain.ports.InvoiceRepository;
 import com.invoices.invoice.domain.ports.PdfGeneratorService;
 import com.invoices.invoice.domain.usecases.*;
@@ -30,19 +31,33 @@ public class UseCaseConfiguration {
     public CreateInvoiceUseCase createInvoiceUseCase(
         InvoiceRepository invoiceRepository,
         CompanyRepository companyRepository,
-        ClientRepository clientRepository
+        ClientRepository clientRepository,
+        InvoiceEventPublisher eventPublisher
     ) {
-        return new CreateInvoiceUseCase(invoiceRepository, companyRepository, clientRepository);
+        return new CreateInvoiceUseCase(
+            invoiceRepository,
+            companyRepository,
+            clientRepository,
+            eventPublisher
+        );
     }
 
     @Bean
-    public UpdateInvoiceUseCase updateInvoiceUseCase(InvoiceRepository repository) {
-        return new UpdateInvoiceUseCase(repository);
+    public UpdateInvoiceUseCase updateInvoiceUseCase(
+            InvoiceRepository repository,
+            ClientRepository clientRepository,
+            InvoiceEventPublisher eventPublisher
+    ) {
+        return new UpdateInvoiceUseCase(repository, clientRepository, eventPublisher);
     }
 
     @Bean
-    public DeleteInvoiceUseCase deleteInvoiceUseCase(InvoiceRepository repository) {
-        return new DeleteInvoiceUseCase(repository);
+    public DeleteInvoiceUseCase deleteInvoiceUseCase(
+            InvoiceRepository repository,
+            ClientRepository clientRepository,
+            InvoiceEventPublisher eventPublisher
+    ) {
+        return new DeleteInvoiceUseCase(repository, clientRepository, eventPublisher);
     }
 
     @Bean

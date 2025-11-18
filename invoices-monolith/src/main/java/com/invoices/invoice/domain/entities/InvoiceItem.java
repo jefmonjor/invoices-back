@@ -88,6 +88,9 @@ public class InvoiceItem {
         if (vatPercentage == null || vatPercentage.compareTo(BigDecimal.ZERO) < 0) {
             throw new IllegalArgumentException("VAT percentage cannot be negative");
         }
+        if (vatPercentage.compareTo(ONE_HUNDRED) > 0) {
+            throw new IllegalArgumentException("VAT percentage cannot exceed 100%");
+        }
         if (discountPercentage == null || discountPercentage.compareTo(BigDecimal.ZERO) < 0) {
             throw new IllegalArgumentException("Discount percentage cannot be negative");
         }

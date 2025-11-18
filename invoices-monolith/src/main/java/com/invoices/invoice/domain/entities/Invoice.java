@@ -33,7 +33,7 @@ public class Invoice {
     private final BigDecimal rePercentage;
     private InvoiceStatus status;
     private String notes;
-    private final LocalDateTime createdAt;
+    private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
     public Invoice(
@@ -75,6 +75,18 @@ public class Invoice {
         updateTimestamp();
     }
 
+    /**
+     * Adds an item without validating invoice state.
+     * FOR INTERNAL USE ONLY - Used by persistence layer when reconstructing entities from database.
+     * DO NOT use this method in business logic.
+     * WARNING: Bypasses all state validations. Only use in mapper/reconstruction context.
+     *
+     * @param item the item to add
+     */
+    public void addItemInternal(InvoiceItem item) {
+        items.add(item);
+    }
+
     public void removeItem(InvoiceItem item) {
         if (status == InvoiceStatus.FINALIZED || status == InvoiceStatus.PAID) {
             throw new InvalidInvoiceStateException(
@@ -85,7 +97,31 @@ public class Invoice {
         updateTimestamp();
     }
 
+    /**
+     * Clears all items from the invoice.
+     * Used when updating invoice with a new set of items.
+     * Cannot be called on finalized or paid invoices.
+     */
+    public void clearItems() {
+        if (status == InvoiceStatus.FINALIZED || status == InvoiceStatus.PAID) {
+            throw new InvalidInvoiceStateException(
+                "Cannot modify invoice in " + status.getDisplayName() + " status"
+            );
+        }
+        items.clear();
+        updateTimestamp();
+    }
+
+    /**
+     * Marks invoice as pending.
+     * Valid transition: DRAFT → PENDING
+     */
     public void markAsPending() {
+        if (status != InvoiceStatus.DRAFT) {
+            throw new InvalidInvoiceStateException(
+                "Can only mark draft invoices as pending. Current status: " + status.getDisplayName()
+            );
+        }
         if (items.isEmpty()) {
             throw new InvalidInvoiceStateException(
                 "Cannot mark invoice as pending without items"
@@ -95,10 +131,28 @@ public class Invoice {
         updateTimestamp();
     }
 
-    public void markAsPaid() {
+    /**
+     * Marks invoice as finalized.
+     * Valid transition: PENDING → FINALIZED
+     */
+    public void markAsFinalized() {
         if (status != InvoiceStatus.PENDING) {
             throw new InvalidInvoiceStateException(
-                "Can only mark pending invoices as paid"
+                "Can only finalize pending invoices. Current status: " + status.getDisplayName()
+            );
+        }
+        this.status = InvoiceStatus.FINALIZED;
+        updateTimestamp();
+    }
+
+    /**
+     * Marks invoice as paid.
+     * Valid transitions: PENDING → PAID or FINALIZED → PAID
+     */
+    public void markAsPaid() {
+        if (status != InvoiceStatus.PENDING && status != InvoiceStatus.FINALIZED) {
+            throw new InvalidInvoiceStateException(
+                "Can only mark pending or finalized invoices as paid. Current status: " + status.getDisplayName()
             );
         }
         this.status = InvoiceStatus.PAID;
@@ -151,6 +205,44 @@ public class Invoice {
         updateTimestamp();
     }
 
+    /**
+     * Sets the invoice status without validation.
+     * FOR INTERNAL USE ONLY - Used by persistence layer when reconstructing entities from database.
+     * DO NOT use this method in business logic. Use markAsPending(), markAsPaid(), cancel() instead.
+     * WARNING: Bypasses all state transition validations. Only use in mapper/reconstruction context.
+     *
+     * @param status the status to set
+     */
+    public void setStatusInternal(InvoiceStatus status) {
+        this.status = status;
+    }
+
+    /**
+     * Sets timestamps without validation.
+     * FOR INTERNAL USE ONLY - Used by persistence layer when reconstructing entities from database.
+     * WARNING: Directly sets timestamps from database. Only use in mapper/reconstruction context.
+     *
+     * @param createdAt the creation timestamp
+     * @param updatedAt the update timestamp
+     */
+    public void setTimestampsInternal(LocalDateTime createdAt, LocalDateTime updatedAt) {
+        if (createdAt != null && updatedAt != null) {
+            this.createdAt = createdAt;
+            this.updatedAt = updatedAt;
+        }
+    }
+
+    /**
+     * Sets notes without updating timestamp.
+     * FOR INTERNAL USE ONLY - Used by persistence layer when reconstructing entities from database.
+     * WARNING: Does not update timestamp. Only use in mapper/reconstruction context.
+     *
+     * @param notes the notes to set
+     */
+    public void setNotesInternal(String notes) {
+        this.notes = notes;
+    }
+
     private void validateInvoiceNumber(String number) {
         if (number == null || number.trim().isEmpty()) {
             throw new InvalidInvoiceNumberFormatException("null or empty");
@@ -161,11 +253,21 @@ public class Invoice {
     }
 
     private void validatePercentages(BigDecimal irpf, BigDecimal re) {
-        if (irpf != null && irpf.compareTo(BigDecimal.ZERO) < 0) {
-            throw new IllegalArgumentException("IRPF percentage cannot be negative");
+        if (irpf != null) {
+            if (irpf.compareTo(BigDecimal.ZERO) < 0) {
+                throw new IllegalArgumentException("IRPF percentage cannot be negative");
+            }
+            if (irpf.compareTo(ONE_HUNDRED) > 0) {
+                throw new IllegalArgumentException("IRPF percentage cannot exceed 100%");
+            }
         }
-        if (re != null && re.compareTo(BigDecimal.ZERO) < 0) {
-            throw new IllegalArgumentException("RE percentage cannot be negative");
+        if (re != null) {
+            if (re.compareTo(BigDecimal.ZERO) < 0) {
+                throw new IllegalArgumentException("RE percentage cannot be negative");
+            }
+            if (re.compareTo(ONE_HUNDRED) > 0) {
+                throw new IllegalArgumentException("RE percentage cannot exceed 100%");
+            }
         }
     }
 
