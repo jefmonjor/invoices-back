@@ -6,7 +6,10 @@ import io.github.bucket4j.Refill;
 import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -20,9 +23,9 @@ import java.util.concurrent.ConcurrentHashMap;
  * Rate limiting filter using Bucket4j token bucket algorithm.
  * Limits requests per IP address to prevent abuse and DoS attacks.
  *
- * Configuration:
- * - General endpoints: 100 requests/minute per IP
- * - Auth endpoints (/api/auth/*): 10 requests/minute per IP (stricter to prevent brute force)
+ * Configuration loaded from application.yml (rate-limit.* properties):
+ * - General endpoints: Configurable requests/minute per IP (default: 100)
+ * - Auth endpoints (/api/auth/*): Configurable requests/minute per IP (default: 10)
  */
 @Component
 @Order(1)
@@ -31,14 +34,25 @@ public class RateLimitingFilter implements Filter {
 
     private final Map<String, Bucket> generalCache = new ConcurrentHashMap<>();
     private final Map<String, Bucket> authCache = new ConcurrentHashMap<>();
+    private final RateLimitProperties properties;
 
-    // General rate limit: 100 requests per minute
-    private static final long GENERAL_CAPACITY = 100;
-    private static final Duration GENERAL_REFILL_DURATION = Duration.ofMinutes(1);
+    public RateLimitingFilter(RateLimitProperties properties) {
+        this.properties = properties;
+    }
 
-    // Auth endpoints stricter limit: 10 requests per minute
-    private static final long AUTH_CAPACITY = 10;
-    private static final Duration AUTH_REFILL_DURATION = Duration.ofMinutes(1);
+    /**
+     * Configuration properties for rate limiting.
+     * Loaded from application.yml under 'rate-limit' prefix.
+     */
+    @Configuration
+    @ConfigurationProperties(prefix = "rate-limit")
+    @Data
+    public static class RateLimitProperties {
+        private long generalCapacity = 100;  // Default: 100 requests/minute
+        private long generalRefillMinutes = 1;  // Default: 1 minute
+        private long authCapacity = 10;  // Default: 10 requests/minute
+        private long authRefillMinutes = 1;  // Default: 1 minute
+    }
 
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
@@ -62,7 +76,7 @@ public class RateLimitingFilter implements Filter {
             long remainingTokens = bucket.getAvailableTokens();
             httpResponse.setHeader("X-Rate-Limit-Remaining", String.valueOf(remainingTokens));
             httpResponse.setHeader("X-Rate-Limit-Limit",
-                String.valueOf(isAuthEndpoint ? AUTH_CAPACITY : GENERAL_CAPACITY));
+                String.valueOf(isAuthEndpoint ? properties.getAuthCapacity() : properties.getGeneralCapacity()));
 
             chain.doFilter(request, response);
         } else {
@@ -87,13 +101,16 @@ public class RateLimitingFilter implements Filter {
     /**
      * Resolves or creates a bucket for the given client IP.
      * Uses different buckets for auth and general endpoints.
+     * Configuration is loaded from application.yml (rate-limit.* properties).
      */
     private Bucket resolveBucket(String clientIp, boolean isAuthEndpoint) {
         Map<String, Bucket> cache = isAuthEndpoint ? authCache : generalCache;
 
         return cache.computeIfAbsent(clientIp, key -> {
-            long capacity = isAuthEndpoint ? AUTH_CAPACITY : GENERAL_CAPACITY;
-            Duration refillDuration = isAuthEndpoint ? AUTH_REFILL_DURATION : GENERAL_REFILL_DURATION;
+            long capacity = isAuthEndpoint ? properties.getAuthCapacity() : properties.getGeneralCapacity();
+            Duration refillDuration = isAuthEndpoint
+                ? Duration.ofMinutes(properties.getAuthRefillMinutes())
+                : Duration.ofMinutes(properties.getGeneralRefillMinutes());
 
             Bandwidth limit = Bandwidth.classic(
                 capacity,
@@ -128,8 +145,9 @@ public class RateLimitingFilter implements Filter {
 
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
-        log.info("Rate limiting filter initialized with limits: General={}/min, Auth={}/min",
-            GENERAL_CAPACITY, AUTH_CAPACITY);
+        log.info("Rate limiting filter initialized with limits: General={}/{} min, Auth={}/{} min",
+            properties.getGeneralCapacity(), properties.getGeneralRefillMinutes(),
+            properties.getAuthCapacity(), properties.getAuthRefillMinutes());
     }
 
     @Override

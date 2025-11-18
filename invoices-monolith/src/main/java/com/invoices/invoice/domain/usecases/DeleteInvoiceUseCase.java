@@ -46,8 +46,9 @@ public class DeleteInvoiceUseCase {
         Client client = clientRepository.findById(invoice.getClientId())
                 .orElseThrow(() -> new ClientNotFoundException(invoice.getClientId()));
 
-        // Delete invoice
-        invoiceRepository.deleteById(invoiceId);
+        // Delete invoice using entity (prevents race conditions)
+        // This ensures we delete the exact entity we validated, not just by ID
+        invoiceRepository.delete(invoice);
 
         // Publish invoice deleted event
         eventPublisher.publishInvoiceDeleted(invoice, client.getEmail());

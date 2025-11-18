@@ -87,6 +87,13 @@ cors:
   allow-credentials: ${CORS_ALLOW_CREDENTIALS:true}
   max-age: ${CORS_MAX_AGE:3600}
 
+# Rate Limiting Configuration
+rate-limit:
+  general-capacity: ${RATE_LIMIT_GENERAL_CAPACITY:100}
+  general-refill-minutes: ${RATE_LIMIT_GENERAL_REFILL_MINUTES:1}
+  auth-capacity: ${RATE_LIMIT_AUTH_CAPACITY:10}
+  auth-refill-minutes: ${RATE_LIMIT_AUTH_REFILL_MINUTES:1}
+
 # Swagger/OpenAPI Configuration
 springdoc:
   swagger-ui:

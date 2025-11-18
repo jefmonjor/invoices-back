@@ -20,6 +20,8 @@ public interface InvoiceRepository {
 
     Invoice save(Invoice invoice);
 
+    void delete(Invoice invoice);
+
     void deleteById(Long id);
 
     boolean existsById(Long id);

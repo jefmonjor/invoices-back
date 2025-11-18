@@ -83,8 +83,9 @@ public class PdfValidator {
             BufferedInputStream bufferedStream = new BufferedInputStream(originalStream);
 
             // Mark the stream with reasonable limit (enough for Tika detection)
-            // Use file size or a reasonable default (1MB) instead of Integer.MAX_VALUE
-            int markLimit = (int) Math.min(fileContent.getSize(), 1024 * 1024);
+            // Use file size or a reasonable default (5MB) for complex PDFs
+            // 5MB should be sufficient for most PDF magic byte detection
+            int markLimit = (int) Math.min(fileContent.getSize(), 5 * 1024 * 1024);
             bufferedStream.mark(markLimit);
 
             String detectedType = tika.detect(bufferedStream);
