@@ -235,6 +235,15 @@ public class JwtUtil {
     }
 
     /**
+     * Gets the expiration time in milliseconds.
+     *
+     * @return the expiration time in milliseconds
+     */
+    public Long getExpirationTime() {
+        return expiration;
+    }
+
+    /**
      * Gets the signing key from the secret.
      *
      * @return the signing key
