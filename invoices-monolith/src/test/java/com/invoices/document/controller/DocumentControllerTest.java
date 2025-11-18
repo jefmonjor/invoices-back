@@ -72,16 +72,17 @@ class DocumentControllerTest {
 
     @BeforeEach
     void setUp() {
-        testDocument = Document.builder()
-                .id(DOCUMENT_ID)
-                .filename("unique-file.pdf")
-                .originalFilename("test-document.pdf")
-                .contentType("application/pdf")
-                .fileSize(1024L)
-                .invoiceId(INVOICE_ID)
-                .uploadedBy(UPLOADED_BY)
-                .createdAt(LocalDateTime.now())
-                .build();
+        testDocument = new Document(
+                DOCUMENT_ID,
+                "unique-file.pdf",
+                "test-document.pdf",
+                "application/pdf",
+                1024L,
+                "storage-unique-file.pdf",
+                INVOICE_ID,
+                UPLOADED_BY,
+                LocalDateTime.now()
+        );
 
         testDocumentDTO = DocumentDTO.builder()
                 .id(DOCUMENT_ID)
@@ -313,16 +314,17 @@ class DocumentControllerTest {
         @DisplayName("Should get documents by invoice ID successfully")
         void shouldGetDocumentsByInvoiceId() throws Exception {
             // Arrange
-            Document doc2 = Document.builder()
-                    .id(2L)
-                    .filename("unique-file-2.pdf")
-                    .originalFilename("document-2.pdf")
-                    .contentType("application/pdf")
-                    .fileSize(2048L)
-                    .invoiceId(INVOICE_ID)
-                    .uploadedBy(UPLOADED_BY)
-                    .createdAt(LocalDateTime.now())
-                    .build();
+            Document doc2 = new Document(
+                    2L,
+                    "unique-file-2.pdf",
+                    "document-2.pdf",
+                    "application/pdf",
+                    2048L,
+                    "storage-unique-file-2.pdf",
+                    INVOICE_ID,
+                    UPLOADED_BY,
+                    LocalDateTime.now()
+            );
 
             DocumentDTO doc2DTO = DocumentDTO.builder()
                     .id(2L)
