@@ -1,7 +1,7 @@
-package com.invoices.user_service.security;
+package com.invoices.security;
 
-import com.invoices.user_service.exception.InvalidTokenException;
-import com.invoices.user_service.exception.TokenExpiredException;
+import com.invoices.user.exception.InvalidTokenException;
+import com.invoices.user.exception.TokenExpiredException;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;

@@ -1,30 +1,40 @@
-package com.invoices.gateway_service.security;
+package com.invoices.security;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 /**
- * Security configuration for the Gateway service.
+ * Security configuration for the monolithic application.
  * Configures JWT-based authentication with stateless sessions.
  */
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 @Slf4j
 @RequiredArgsConstructor
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final UserDetailsService userDetailsService;
 
     /**
-     * Configures the security filter chain for the gateway.
+     * Configures the security filter chain.
      *
      * @param http the HttpSecurity to configure
      * @return the configured SecurityFilterChain
@@ -32,7 +42,7 @@ public class SecurityConfig {
      */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        log.info("Configuring Gateway security filter chain");
+        log.info("Configuring security filter chain");
 
         http
                 // Disable CSRF as we're using JWT (stateless)
@@ -40,14 +50,21 @@ public class SecurityConfig {
 
                 // Configure authorization rules
                 .authorizeHttpRequests(auth -> auth
-                        // Public endpoints - handled by JwtAuthenticationFilter
-                        // which checks SecurityProperties.publicPaths
+                        // Public endpoints - authentication not required
                         .requestMatchers(
                                 "/api/auth/**",
-                                "/actuator/**",
+                                "/actuator/health",
+                                "/actuator/info",
+                                "/v3/api-docs/**",
                                 "/swagger-ui/**",
-                                "/api-docs/**"
+                                "/swagger-ui.html"
                         ).permitAll()
+
+                        // Protected endpoints - require authentication
+                        .requestMatchers("/api/users/**").authenticated()
+                        .requestMatchers("/api/invoices/**").authenticated()
+                        .requestMatchers("/api/documents/**").authenticated()
+                        .requestMatchers("/api/audit/**").authenticated()
 
                         // All other requests require authentication
                         .anyRequest().authenticated()
@@ -58,10 +75,51 @@ public class SecurityConfig {
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
 
+                // Set authentication provider
+                .authenticationProvider(authenticationProvider())
+
                 // Add JWT filter before username/password authentication filter
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
-        log.info("Gateway security filter chain configured successfully");
+        log.info("Security filter chain configured successfully");
         return http.build();
+    }
+
+    /**
+     * Configures the authentication provider.
+     *
+     * @return the configured AuthenticationProvider
+     */
+    @Bean
+    public AuthenticationProvider authenticationProvider() {
+        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
+        authProvider.setUserDetailsService(userDetailsService);
+        authProvider.setPasswordEncoder(passwordEncoder());
+        log.debug("Authentication provider configured");
+        return authProvider;
+    }
+
+    /**
+     * Creates a BCrypt password encoder bean.
+     *
+     * @return the password encoder
+     */
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        log.debug("Creating BCrypt password encoder with strength 10");
+        return new BCryptPasswordEncoder(10);
+    }
+
+    /**
+     * Exposes the authentication manager as a bean.
+     *
+     * @param config the authentication configuration
+     * @return the authentication manager
+     * @throws Exception if an error occurs
+     */
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+        log.debug("Creating authentication manager");
+        return config.getAuthenticationManager();
     }
 }

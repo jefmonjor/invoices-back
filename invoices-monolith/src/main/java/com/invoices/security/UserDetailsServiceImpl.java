@@ -1,7 +1,7 @@
-package com.invoices.user_service.security;
+package com.invoices.security;
 
-import com.invoices.user_service.entity.User;
-import com.invoices.user_service.repository.UserRepository;
+import com.invoices.user.entity.User;
+import com.invoices.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.GrantedAuthority;

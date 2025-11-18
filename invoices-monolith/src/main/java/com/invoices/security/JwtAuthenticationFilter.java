@@ -1,8 +1,7 @@
-package com.invoices.gateway_service.security;
+package com.invoices.security;
 
-import com.invoices.gateway_service.config.SecurityProperties;
-import com.invoices.gateway_service.exception.InvalidTokenException;
-import com.invoices.gateway_service.exception.TokenExpiredException;
+import com.invoices.user.exception.InvalidTokenException;
+import com.invoices.user.exception.TokenExpiredException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -11,20 +10,19 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
-import org.springframework.util.AntPathMatcher;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Collections;
 
 /**
- * Filter that processes JWT authentication for each request in the Gateway.
- * Validates JWT tokens and sets authentication context.
+ * Filter that processes JWT authentication for each request.
+ * Extends OncePerRequestFilter to ensure a single execution per request.
  */
 @Component
 @Slf4j
@@ -33,11 +31,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private static final String AUTHORIZATION_HEADER = "Authorization";
     private static final String BEARER_PREFIX = "Bearer ";
-    private static final String USERNAME_HEADER = "X-Auth-User";
 
-    private final JwtValidator jwtValidator;
-    private final SecurityProperties securityProperties;
-    private final AntPathMatcher pathMatcher = new AntPathMatcher();
+    private final JwtUtil jwtUtil;
+    private final UserDetailsService userDetailsService;
 
     /**
      * Filters incoming requests to validate JWT tokens.
@@ -55,66 +51,24 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
 
-        String requestPath = request.getRequestURI();
-        log.debug("Processing request: {} {}", request.getMethod(), requestPath);
-
-        // Check if path is public
-        if (isPublicPath(requestPath)) {
-            log.debug("Public path detected, skipping JWT validation: {}", requestPath);
-            filterChain.doFilter(request, response);
-            return;
-        }
-
         try {
             String jwt = extractJwtFromRequest(request);
 
-            if (jwt == null) {
-                log.warn("No JWT token found in protected route: {}", requestPath);
-                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Missing or invalid Authorization header");
-                return;
+            if (jwt != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                authenticateWithJwt(jwt, request);
             }
-
-            if (!jwtValidator.isValid(jwt)) {
-                log.warn("Invalid JWT token for route: {}", requestPath);
-                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid or expired JWT token");
-                return;
-            }
-
-            // Extract username and set authentication
-            String username = jwtValidator.extractUsername(jwt);
-            authenticateUser(username, request);
-
-            // Add username to request header for downstream services
-            request.setAttribute(USERNAME_HEADER, username);
-
-            log.info("Successfully authenticated request for user: {} on path: {}", username, requestPath);
-
         } catch (InvalidTokenException e) {
-            log.warn("Invalid JWT token: {}", e.getMessage());
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid JWT token");
-            return;
+            log.warn("Invalid JWT token in request: {}", e.getMessage());
+            // Continue filter chain without authentication
         } catch (TokenExpiredException e) {
-            log.warn("Expired JWT token: {}", e.getMessage());
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "JWT token has expired");
-            return;
+            log.warn("Expired JWT token in request: {}", e.getMessage());
+            // Continue filter chain without authentication
         } catch (Exception e) {
             log.error("Error processing JWT authentication: {}", e.getMessage(), e);
-            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Authentication error");
-            return;
+            // Continue filter chain without authentication
         }
 
         filterChain.doFilter(request, response);
-    }
-
-    /**
-     * Checks if the request path is a public path that doesn't require authentication.
-     *
-     * @param requestPath the request path
-     * @return true if public path, false otherwise
-     */
-    private boolean isPublicPath(String requestPath) {
-        return securityProperties.getPublicPaths().stream()
-                .anyMatch(pattern -> pathMatcher.match(pattern, requestPath));
     }
 
     /**
@@ -136,24 +90,31 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     /**
-     * Sets the authentication context for the user.
+     * Authenticates the user using the JWT token.
      *
-     * @param username the username
+     * @param jwt the JWT token
      * @param request the HTTP request
      */
-    private void authenticateUser(String username, HttpServletRequest request) {
-        // Create a simple authentication token
-        // In gateway, we don't load full user details, just set basic authentication
-        UsernamePasswordAuthenticationToken authentication =
-                new UsernamePasswordAuthenticationToken(
-                        username,
-                        null,
-                        Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"))
-                );
+    private void authenticateWithJwt(String jwt, HttpServletRequest request) {
+        String username = jwtUtil.extractUsername(jwt);
+        log.debug("Authenticating user: {}", username);
 
-        authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-        SecurityContextHolder.getContext().setAuthentication(authentication);
+        UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
-        log.debug("Set authentication for user: {}", username);
+        if (jwtUtil.validateToken(jwt, userDetails)) {
+            UsernamePasswordAuthenticationToken authentication =
+                    new UsernamePasswordAuthenticationToken(
+                            userDetails,
+                            null,
+                            userDetails.getAuthorities()
+                    );
+
+            authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+
+            log.info("Successfully authenticated user: {}", username);
+        } else {
+            log.warn("JWT token validation failed for user: {}", username);
+        }
     }
 }

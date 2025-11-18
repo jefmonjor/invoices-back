@@ -7,7 +7,7 @@ import com.invoices.user_service.dto.UserDTO;
 import com.invoices.user_service.entity.User;
 import com.invoices.user_service.exception.InvalidCredentialsException;
 import com.invoices.user_service.repository.UserRepository;
-import com.invoices.user_service.security.JwtUtil;
+import com.invoices.security.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;

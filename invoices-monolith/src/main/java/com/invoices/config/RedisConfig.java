@@ -1,4 +1,4 @@
-package com.invoices.invoice_service.config;
+package com.invoices.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -14,7 +14,8 @@ import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSeriali
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 /**
- * Configuración de Redis para event streaming (reemplaza Kafka)
+ * Redis configuration for event streaming (replaces Kafka).
+ * Consolidated configuration for all modules (invoice, trace).
  */
 @Configuration
 @Slf4j
@@ -33,7 +34,7 @@ public class RedisConfig {
     private boolean redisSsl;
 
     /**
-     * Configura la conexión a Redis
+     * Configures the Redis connection.
      */
     @Bean
     public LettuceConnectionFactory redisConnectionFactory() {
@@ -48,23 +49,23 @@ public class RedisConfig {
         LettuceConnectionFactory factory = new LettuceConnectionFactory(redisConfig);
         factory.setUseSsl(redisSsl);
 
-        log.info("Configurando Redis connection: {}:{} (SSL: {})", redisHost, redisPort, redisSsl);
+        log.info("Configuring Redis connection: {}:{} (SSL: {})", redisHost, redisPort, redisSsl);
 
         return factory;
     }
 
     /**
-     * Template de Redis para operaciones generales
+     * Redis template for general operations.
      */
     @Bean
     public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
         RedisTemplate<String, Object> template = new RedisTemplate<>();
         template.setConnectionFactory(connectionFactory);
 
-        // Configurar serializadores
+        // Configure serializers
         StringRedisSerializer stringSerializer = new StringRedisSerializer();
 
-        // ObjectMapper con soporte para Java 8 DateTime
+        // ObjectMapper with Java 8 DateTime support
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
         GenericJackson2JsonRedisSerializer jsonSerializer = new GenericJackson2JsonRedisSerializer(objectMapper);
@@ -76,8 +77,20 @@ public class RedisConfig {
 
         template.afterPropertiesSet();
 
-        log.info("RedisTemplate configurado correctamente");
+        log.info("RedisTemplate configured successfully");
 
         return template;
+    }
+
+    /**
+     * ObjectMapper for JSON serialization/deserialization.
+     * Used by trace module for Redis message processing.
+     */
+    @Bean
+    public ObjectMapper objectMapper() {
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.registerModule(new JavaTimeModule());
+        log.info("ObjectMapper configured with JavaTimeModule for Redis message processing");
+        return mapper;
     }
 }
