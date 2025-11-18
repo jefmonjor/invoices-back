@@ -58,7 +58,7 @@ public class SecurityConfig {
 
                         // Enable XSS protection
                         .xssProtection(xss -> xss
-                                .headerValue("1; mode=block")
+                                .headerValue(org.springframework.security.web.header.writers.XXssProtectionHeaderWriter.HeaderValue.ENABLED_MODE_BLOCK)
                         )
 
                         // Force HTTPS in production (Strict-Transport-Security)
