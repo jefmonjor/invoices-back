@@ -127,14 +127,23 @@ management:
       base-path: /actuator
   endpoint:
     health:
-      show-details: when-authorized
+      show-details: always
+      probes:
+        enabled: true
+      group:
+        readiness:
+          include: db, diskSpace
+          show-details: always
+        liveness:
+          include: ping
+          show-details: always
   metrics:
     export:
       prometheus:
         enabled: true
   health:
     redis:
-      enabled: true
+      enabled: true  # Keep enabled for monitoring, but exclude from readiness probe
     db:
       enabled: true
 
