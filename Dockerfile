@@ -6,21 +6,28 @@
 FROM maven:3.9-eclipse-temurin-21-alpine AS build
 WORKDIR /app
 
-# Copy pom.xml and download dependencies (cached layer)
+# Copy pom.xml and download dependencies (cached layer with retry)
 COPY invoices-monolith/pom.xml .
-RUN mvn dependency:go-offline -B || mvn dependency:resolve -B
+RUN mvn dependency:go-offline -B || \
+    (sleep 5 && mvn dependency:go-offline -B) || \
+    mvn dependency:resolve -B
 
 # Copy source code
 COPY invoices-monolith/src ./src
 
-# Build the application with optimizations:
+# Build the application with optimizations and retry on network errors:
 # - Skip tests for faster builds
-# - Use multiple threads for parallel compilation (2 threads)
 # - Batch mode for non-interactive builds
 # - Increased memory for Maven to prevent OOM during compilation
 # - Quick compilation mode for faster builds
+# - Single-threaded to avoid network race conditions
+# - Retry up to 3 times on failure (handles transient network errors)
 RUN MAVEN_OPTS="-Xmx1024m -XX:+TieredCompilation -XX:TieredStopAtLevel=1" \
-    mvn clean package -DskipTests -B -T 2C -Dmaven.compiler.debug=false -Dmaven.compiler.debuglevel=none
+    mvn clean package -DskipTests -B -Dmaven.compiler.debug=false -Dmaven.compiler.debuglevel=none || \
+    (sleep 5 && MAVEN_OPTS="-Xmx1024m -XX:+TieredCompilation -XX:TieredStopAtLevel=1" \
+    mvn clean package -DskipTests -B -Dmaven.compiler.debug=false -Dmaven.compiler.debuglevel=none) || \
+    (sleep 10 && MAVEN_OPTS="-Xmx1024m -XX:+TieredCompilation -XX:TieredStopAtLevel=1" \
+    mvn clean package -DskipTests -B -Dmaven.compiler.debug=false -Dmaven.compiler.debuglevel=none)
 
 # Stage 2: Runtime
 FROM eclipse-temurin:21-jre-alpine
