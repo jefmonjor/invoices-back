@@ -172,25 +172,80 @@ railway variables
 
 ## 🛠️ Desarrollo Local
 
-### Build
+### Prerequisitos
+
+Asegúrate de tener instalado:
+- Java 21
+- Maven 3.9+
+- Docker y Docker Compose
+
+### 1. Iniciar Infraestructura (PostgreSQL, Redis, MinIO)
+
+**Primera vez o si necesitas datos limpios:**
+
+```bash
+# Iniciar servicios de infraestructura
+docker-compose -f docker-compose.dev.yml up -d
+
+# Ver logs
+docker-compose -f docker-compose.dev.yml logs -f
+
+# Verificar que estén corriendo
+docker-compose -f docker-compose.dev.yml ps
+```
+
+**Detener servicios:**
+
+```bash
+docker-compose -f docker-compose.dev.yml down
+```
+
+**Limpiar todo (eliminar datos):**
+
+```bash
+docker-compose -f docker-compose.dev.yml down -v
+```
+
+Los servicios estarán disponibles en:
+- **PostgreSQL**: `localhost:5432` (DB: invoices, User: postgres, Password: postgres)
+- **Redis**: `localhost:6379`
+- **MinIO Console**: `http://localhost:9001` (User: minioadmin, Password: minioadmin123)
+- **MinIO API**: `http://localhost:9000`
+
+### 2. Build
 
 ```bash
 ./build-local-fast.sh
 ```
 
-### Tests
+### 3. Tests
 
 ```bash
 cd invoices-monolith
 mvn test
 ```
 
-### Ejecutar
+### 4. Ejecutar la Aplicación
+
+**Opción A: Con Maven (Recomendado para desarrollo)**
+
+```bash
+cd invoices-monolith
+mvn spring-boot:run
+```
+
+**Opción B: Con JAR compilado**
 
 ```bash
 cd invoices-monolith
 java -jar target/invoices-monolith-1.0.0.jar
 ```
+
+La aplicación estará disponible en: `http://localhost:8080`
+
+- **Swagger UI**: http://localhost:8080/swagger-ui.html
+- **API Docs**: http://localhost:8080/api-docs
+- **Health Check**: http://localhost:8080/actuator/health
 
 ---
 

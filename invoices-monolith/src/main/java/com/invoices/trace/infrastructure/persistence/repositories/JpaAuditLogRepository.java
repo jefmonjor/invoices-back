@@ -8,6 +8,7 @@ import java.util.List;
 /**
  * Spring Data JPA repository for AuditLogJpaEntity.
  * This interface provides CRUD operations and custom queries for audit log persistence.
+ * No @Repository needed - Spring Data JPA auto-detects this interface.
  */
 public interface JpaAuditLogRepository extends JpaRepository<AuditLogJpaEntity, Long> {
 

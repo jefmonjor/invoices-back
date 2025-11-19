@@ -20,15 +20,43 @@ public class OpenApiConfig {
     @Value("${server.port:8080}")
     private String serverPort;
 
+    @Value("${app.api.base-url:http://localhost:${server.port:8080}}")
+    private String apiBaseUrl;
+
+    @Value("${app.api.production-url:}")
+    private String productionUrl;
+
     @Bean
     public OpenAPI invoiceServiceOpenAPI() {
         Server localServer = new Server();
-        localServer.setUrl("http://localhost:" + serverPort);
-        localServer.setDescription("Servidor local de desarrollo");
+        localServer.setUrl(apiBaseUrl);
+        localServer.setDescription("Servidor de desarrollo/Railway");
 
-        Server productionServer = new Server();
-        productionServer.setUrl("https://invoices-app.fly.dev");
-        productionServer.setDescription("Servidor de producción (Fly.io)");
+        // Only add production server if URL is configured
+        if (productionUrl != null && !productionUrl.isEmpty()) {
+            Server productionServer = new Server();
+            productionServer.setUrl(productionUrl);
+            productionServer.setDescription("Servidor de producción");
+
+            Contact contact = new Contact();
+            contact.setEmail("invoices@example.com");
+            contact.setName("Invoices Team");
+
+            License license = new License()
+                    .name("MIT License")
+                    .url("https://opensource.org/licenses/MIT");
+
+            Info info = new Info()
+                    .title("Invoices Monolith API")
+                    .version("1.0.0")
+                    .contact(contact)
+                    .description("API REST monolítica para gestionar usuarios, facturas, documentos y auditoría")
+                    .license(license);
+
+            return new OpenAPI()
+                    .info(info)
+                    .servers(List.of(localServer, productionServer));
+        }
 
         Contact contact = new Contact();
         contact.setEmail("invoices@example.com");
