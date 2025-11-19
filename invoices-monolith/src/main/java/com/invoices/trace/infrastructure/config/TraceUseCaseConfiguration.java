@@ -10,7 +10,7 @@ import org.springframework.context.annotation.Configuration;
  * This wires up all use cases with their dependencies (ports).
  */
 @Configuration
-public class UseCaseConfiguration {
+public class TraceUseCaseConfiguration {
 
     @Bean
     public RecordAuditLogUseCase recordAuditLogUseCase(

@@ -10,12 +10,12 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * Spring configuration for use case beans.
+ * Spring configuration for invoice use case beans.
  * Infrastructure configures domain use cases with their dependencies.
  * Dependency Injection following Clean Architecture.
  */
 @Configuration
-public class UseCaseConfiguration {
+public class InvoiceUseCaseConfiguration {
 
     @Bean
     public GetInvoiceByIdUseCase getInvoiceByIdUseCase(InvoiceRepository repository) {
