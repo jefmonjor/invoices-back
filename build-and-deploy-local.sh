@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # 🚀 Build Locally and Deploy to Fly.io
-# This script builds the JAR on your Mac and then deploys it to Fly.io
-# This is MUCH faster than building on Fly.io servers
+# This script builds the JAR and Docker image on your Mac, then deploys to Fly.io
+# This is MUCH faster than building on Fly.io servers (avoids build timeouts)
 
 set -e
 
@@ -28,13 +28,13 @@ echo "╔═══════════════════════�
 echo "║                                                        ║"
 echo "║   🏗️  BUILD LOCAL + DEPLOY RÁPIDO - FLY.IO 🚀         ║"
 echo "║                                                        ║"
-echo "║        Build en tu Mac + Deploy de JAR pre-built      ║"
+echo "║     Build completo en tu Mac + Deploy sin timeouts    ║"
 echo "║                                                        ║"
 echo "╚════════════════════════════════════════════════════════╝"
 echo -e "${NC}\n"
 
 # Verificar Maven
-echo -e "${BLUE}[1/4]${NC} Verificando Maven..."
+echo -e "${BLUE}[1/5]${NC} Verificando Maven..."
 if ! command -v mvn &> /dev/null; then
     echo -e "${RED}❌ Maven no está instalado${NC}"
     echo -e "${YELLOW}Instálalo con: brew install maven${NC}"
@@ -45,7 +45,7 @@ mvn --version | head -1
 echo ""
 
 # Verificar Fly CLI
-echo -e "${BLUE}[2/4]${NC} Verificando Fly CLI..."
+echo -e "${BLUE}[2/5]${NC} Verificando Fly CLI..."
 FLY_CMD=""
 if command -v fly &> /dev/null; then
     FLY_CMD="fly"
@@ -58,8 +58,23 @@ else
 fi
 echo -e "${GREEN}✅ Fly CLI instalado${NC}\n"
 
+# Verificar Docker
+echo -e "${BLUE}[3/5]${NC} Verificando Docker..."
+if ! command -v docker &> /dev/null; then
+    echo -e "${RED}❌ Docker no está instalado${NC}"
+    echo -e "${YELLOW}Instálalo desde: https://www.docker.com/products/docker-desktop${NC}"
+    exit 1
+fi
+
+if ! docker info &> /dev/null; then
+    echo -e "${RED}❌ Docker no está corriendo${NC}"
+    echo -e "${YELLOW}Abre Docker Desktop y espera a que inicie${NC}"
+    exit 1
+fi
+echo -e "${GREEN}✅ Docker corriendo${NC}\n"
+
 # Build local
-echo -e "${BLUE}[3/4]${NC} Compilando aplicación localmente..."
+echo -e "${BLUE}[4/5]${NC} Compilando aplicación localmente..."
 echo -e "${CYAN}════════════════════════════════════════════${NC}"
 echo -e "${YELLOW}⏳ Compilando con Maven...${NC}"
 echo -e "${CYAN}════════════════════════════════════════════${NC}\n"
@@ -93,7 +108,8 @@ echo -e "${CYAN}Información del deployment:${NC}"
 echo -e "  • JAR compilado:  ${GREEN}${JAR_FILE}${NC}"
 echo -e "  • Tamaño:         ${GREEN}${JAR_SIZE}${NC}"
 echo -e "  • App:            ${GREEN}${APP_NAME}${NC}"
-echo -e "  • Método:         ${GREEN}JAR pre-compilado (más rápido)${NC}\n"
+echo -e "  • Método:         ${GREEN}Build local (Docker + JAR en tu Mac)${NC}"
+echo -e "  • Ventaja:        ${GREEN}Sin timeouts - solo sube imagen final${NC}\n"
 
 read -p "$(echo -e ${YELLOW}¿Continuar con el deployment? [y/N]:${NC} )" CONFIRM
 
@@ -102,13 +118,15 @@ if [ "$CONFIRM" != "y" ] && [ "$CONFIRM" != "Y" ]; then
     exit 0
 fi
 
-# Deploy con Dockerfile.prebuilt
-echo -e "\n${BLUE}[4/4]${NC} Desplegando a Fly.io..."
+# Deploy con build local
+echo -e "\n${BLUE}[5/5]${NC} Desplegando a Fly.io..."
 echo -e "${CYAN}════════════════════════════════════════════${NC}"
-echo -e "${YELLOW}⏳ Esto será MUCHO más rápido (1-3 min)...${NC}"
+echo -e "${YELLOW}⏳ Construyendo imagen Docker localmente...${NC}"
 echo -e "${CYAN}════════════════════════════════════════════${NC}\n"
 
-if $FLY_CMD deploy --dockerfile Dockerfile.prebuilt -a $APP_NAME; then
+# Usar --local-only para construir la imagen localmente y solo subir la imagen final
+# Esto evita el timeout de build en Fly.io
+if $FLY_CMD deploy --local-only --dockerfile Dockerfile.prebuilt -a $APP_NAME; then
     echo -e "\n${GREEN}════════════════════════════════════════════${NC}"
     echo -e "${GREEN}✅ DEPLOYMENT EXITOSO${NC}"
     echo -e "${GREEN}════════════════════════════════════════════${NC}\n"
