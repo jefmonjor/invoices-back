@@ -12,7 +12,7 @@ import org.springframework.context.annotation.Configuration;
  * Following the Clean Architecture dependency injection pattern.
  */
 @Configuration
-public class UseCaseConfiguration {
+public class UserUseCaseConfiguration {
 
     @Bean
     public CreateUserUseCase createUserUseCase(

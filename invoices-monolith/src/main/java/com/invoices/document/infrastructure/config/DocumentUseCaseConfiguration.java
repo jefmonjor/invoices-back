@@ -12,7 +12,7 @@ import org.springframework.context.annotation.Configuration;
  * This wires up all use cases with their dependencies (ports).
  */
 @Configuration
-public class UseCaseConfiguration {
+public class DocumentUseCaseConfiguration {
 
     @Bean
     public PdfValidator pdfValidator() {
