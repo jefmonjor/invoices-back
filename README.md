@@ -6,136 +6,135 @@ Optimizado para **MacBook M1 Pro** y **Railway**
 
 ---
 
-## 🚂 Deploy a Railway (2 Opciones)
+## 🚂 Deploy a Railway - Desde Web (Más Fácil)
 
-### Opción 1: Desde GitHub (Recomendado - Más Fácil)
-
-1. **Push tu código a GitHub**
-   ```bash
-   git push origin main
-   ```
-
-2. **Crear proyecto en Railway**
-   - Ve a [railway.app](https://railway.app)
-   - Click **+ New Project** → **Deploy from GitHub repo**
-   - Selecciona `invoices-back`
-   - Railway detecta el `Dockerfile` automáticamente
-   - Deploy completo en 3-5 minutos ⚡
-
-3. **Configurar Variables** (ver sección abajo)
-
----
-
-### Opción 2: Desde CLI (Para Desarrollo)
+### Paso 1: Push a GitHub
 
 ```bash
-# 1. Instalar Railway CLI
-bash <(curl -fsSL https://railway.app/install.sh)
-
-# 2. Login
-railway login
-
-# 3. Build local (opcional pero más rápido)
-./build-local-fast.sh
-
-# 4. Deploy
-./deploy-railway.sh
+# Asegúrate de estar en main o merge tu branch
+git checkout main
+git merge claude/deploy-macos-backend-016XiNmf71TfQd2xwFzLMCds  # Si trabajas en branch
+git push origin main
 ```
 
----
+### Paso 2: Crear Proyecto en Railway
 
-## ⚙️ Configurar Variables en Railway
+1. Ve a **[railway.app](https://railway.app)**
+2. Click **+ New Project**
+3. Selecciona **Deploy from GitHub repo**
+4. Autoriza Railway a acceder a GitHub (primera vez)
+5. Selecciona el repositorio **`jefmonjor/invoices-back`**
+6. Railway detecta automáticamente:
+   - ✅ `railway.json` (configuración)
+   - ✅ `Dockerfile` en `invoices-monolith/`
+   - ✅ Puerto dinámico (Railway inyecta `$PORT`)
 
-### Variables Esenciales
+### Paso 3: Configurar Variables de Entorno
 
-En Railway → Tu Proyecto → Variables, añade:
+En Railway → Tu Proyecto → **Variables** tab:
+
+**Copia y pega este bloque completo:**
 
 ```bash
-# Spring Boot
 SPRING_PROFILES_ACTIVE=prod
-SPRING_DATASOURCE_URL=jdbc:postgresql://<HOST>:<PORT>/<DB>
-SPRING_DATASOURCE_USERNAME=usuario
-SPRING_DATASOURCE_PASSWORD=password
-
-# JWT (generar con: openssl rand -base64 32)
-JWT_SECRET=tu-secreto-de-32-caracteres-minimo
-
-# Redis (Upstash o Railway addon)
-REDIS_HOST=tu-redis.upstash.io
+SPRING_DATASOURCE_URL=jdbc:postgresql://ep-delicate-snow-abyzqltv-pooler.eu-west-2.aws.neon.tech:5432/neondb?sslmode=require
+SPRING_DATASOURCE_USERNAME=neondb_owner
+SPRING_DATASOURCE_PASSWORD=npg_02GsdHFqhfoU
+JWT_EXPIRATION_MS=3600000
+JWT_ISSUER=invoices-backend-prod
+REDIS_HOST=subtle-parrot-38179.upstash.io
 REDIS_PORT=6379
-REDIS_PASSWORD=tu-password
+REDIS_PASSWORD=ApUjAAIgcDI37a9MyM6T1LPJbUI4964n8CwccbGkioWuVe2WQwrM6A
 REDIS_SSL=true
-
-# S3/R2 (Cloudflare R2)
-S3_ENDPOINT=https://tu-cuenta.r2.cloudflarestorage.com
-S3_ACCESS_KEY=tu-access-key
-S3_SECRET_KEY=tu-secret-key
+S3_ENDPOINT=https://ac29c1ccf8f12dc453bdec1c87ddcffb.r2.cloudflarestorage.com
+S3_ACCESS_KEY=6534534b1dfc4ae849e1d01f952cd06c
+S3_SECRET_KEY=5bc3d93666a9fec20955fefa01b51c1d85f2b4e044233426b52dbaf7f514f246
 S3_BUCKET_NAME=invoices-documents
-
-# JVM (Railway optimizado)
+S3_REGION=auto
+S3_PATH_STYLE_ACCESS=true
+CORS_ALLOWED_ORIGINS=https://invoices-frontend-vert.vercel.app,http://localhost:3000,http://localhost:5173
 JAVA_OPTS=-XX:+UseContainerSupport -XX:MaxRAMPercentage=70.0 -XX:+ExitOnOutOfMemoryError
 ```
 
-### Configuración Automática (Más Fácil)
-
+**Generar JWT_SECRET único:**
 ```bash
-# Script interactivo que configura todas las variables de Neon
-./configure-railway-neon.sh
+# En tu Mac, ejecuta:
+openssl rand -base64 32
+
+# Luego añade en Railway:
+JWT_SECRET=<el-valor-generado>
 ```
 
-### Configuración Manual (CLI)
+### Paso 4: Deploy Automático
+
+Railway inicia el build automáticamente después de configurar variables:
+- 🔨 Build con Docker (5-8 minutos)
+- 🚀 Deploy automático
+- ✅ Health check en `/actuator/health`
+- 🌐 URL pública generada: `https://tu-proyecto.up.railway.app`
+
+### Paso 5: Verificar Deployment
 
 ```bash
-railway variables set SPRING_DATASOURCE_URL="jdbc:postgresql://..."
-railway variables set JWT_SECRET="$(openssl rand -base64 32)"
-railway variables set SPRING_PROFILES_ACTIVE="prod"
-# ... etc
+# Ver logs en Railway UI o:
+# 1. Click en tu proyecto
+# 2. Tab "Deployments"
+# 3. Ver logs en tiempo real
 ```
 
 ---
 
-## 🗄️ Base de Datos - Usando Neon PostgreSQL
+### Alternativa: Deploy desde CLI (Desarrollo)
 
-### Configurar Neon en Railway (Recomendado)
+<details>
+<summary>Click para ver instrucciones CLI (opcional)</summary>
 
-Usaremos **Neon PostgreSQL** (ya configurado) con Railway:
+```bash
+# 1. Configurar variables automáticamente
+./configure-railway-auto.sh
 
-1. **Obtén tu connection string de Neon**
-   - Ve a [console.neon.tech](https://console.neon.tech)
-   - Selecciona tu proyecto
-   - Copia el **Connection String**
-   - Ejemplo: `postgresql://user:password@ep-xxx.us-east-2.aws.neon.tech/neondb?sslmode=require`
+# 2. Deploy
+railway up
+```
 
-2. **Configura las variables en Railway**
+</details>
 
-   En Railway → Variables:
+---
 
-   ```bash
-   # Opción 1: URL completa (más fácil)
-   SPRING_DATASOURCE_URL=jdbc:postgresql://ep-xxx.us-east-2.aws.neon.tech:5432/neondb?sslmode=require
-   SPRING_DATASOURCE_USERNAME=tu-usuario-neon
-   SPRING_DATASOURCE_PASSWORD=tu-password-neon
+## ✅ Servicios Pre-Configurados
 
-   # Opción 2: Desde Neon pooled connection (mejor rendimiento)
-   SPRING_DATASOURCE_URL=jdbc:postgresql://ep-xxx-pooler.us-east-2.aws.neon.tech:5432/neondb?sslmode=require
-   SPRING_DATASOURCE_USERNAME=tu-usuario-neon
-   SPRING_DATASOURCE_PASSWORD=tu-password-neon
-   ```
+Tu proyecto ya tiene credenciales para:
+- **PostgreSQL**: Neon (`neondb` - EU West 2)
+- **Redis**: Upstash (`subtle-parrot-38179`)
+- **Storage**: Cloudflare R2 (`invoices-documents`)
 
-3. **Variables adicionales de Neon (opcional)**
-   ```bash
-   # Para conexiones SSL
-   SPRING_DATASOURCE_HIKARI_CONNECTION_TIMEOUT=30000
-   SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE=5
-   ```
+Solo necesitas copiar las variables en Railway UI (Paso 3 arriba).
 
-### Alternativa: PostgreSQL de Railway
+---
 
-Si prefieres usar el addon de Railway:
+## 🗄️ Base de Datos - Neon PostgreSQL
 
-1. En Railway → **+ New** → **Database** → **PostgreSQL**
-2. Railway auto-configura `DATABASE_URL`
-3. Adapta a formato JDBC como arriba
+### ✅ Ya Configurada
+
+Tu proyecto usa **Neon PostgreSQL** (serverless) con:
+- **Host**: `ep-delicate-snow-abyzqltv-pooler.eu-west-2.aws.neon.tech`
+- **Database**: `neondb`
+- **Region**: EU West 2 (London)
+- **Connection**: Pooled (mejor rendimiento)
+- **SSL**: Habilitado
+
+El script `configure-railway-auto.sh` configura automáticamente la conexión JDBC:
+```
+jdbc:postgresql://ep-delicate-snow-abyzqltv-pooler.eu-west-2.aws.neon.tech:5432/neondb?sslmode=require
+```
+
+### Acceso a la Base de Datos
+
+Ve a [console.neon.tech](https://console.neon.tech) para:
+- Ver tablas y datos
+- Ejecutar queries SQL
+- Monitorear uso
+- Gestionar branches
 
 ---
 
@@ -308,23 +307,36 @@ railway variables | grep DATASOURCE
 
 ---
 
-## 🚀 Flujo Completo de Deploy
+## 🚀 Flujo Completo de Deploy (Web UI)
 
-```bash
-# 1. Build local
-./build-local-fast.sh
+### Deployment Inicial
 
-# 2. Commit y push
-git add -A
-git commit -m "Ready for Railway deployment"
-git push origin main
+1. **Push código** (si tienes cambios pendientes)
+   ```bash
+   git add -A
+   git commit -m "Ready for Railway"
+   git push origin main
+   ```
 
-# 3. Deploy desde Railway UI
-# O desde CLI:
-railway login
-railway link  # Primera vez
-railway up    # Deploy
-```
+2. **Railway UI**
+   - Ve a [railway.app](https://railway.app)
+   - + New Project → Deploy from GitHub
+   - Selecciona `jefmonjor/invoices-back`
+
+3. **Configurar Variables**
+   - Tab "Variables"
+   - Copia el bloque del **Paso 3** (arriba)
+   - Pega las 17 variables
+   - Añade `JWT_SECRET` generado con `openssl rand -base64 32`
+
+4. **Ver Deploy**
+   - Tab "Deployments" → Ver logs en tiempo real
+   - Espera 5-8 minutos
+   - URL generada: `https://tu-proyecto.up.railway.app`
+
+### Deployments Posteriores (Automáticos)
+
+Cada `git push origin main` → Railway redeploy automáticamente ✅
 
 ---
 
