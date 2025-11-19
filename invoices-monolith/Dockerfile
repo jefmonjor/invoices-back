@@ -1,5 +1,5 @@
 # Multi-stage Dockerfile for Invoices Monolith
-# Optimized for production deployment on Fly.io
+# Optimized for Railway deployment
 
 # Stage 1: Build
 FROM maven:3.9-eclipse-temurin-21-alpine AS build
@@ -41,17 +41,15 @@ RUN chown -R spring:spring /app
 # Switch to non-root user
 USER spring:spring
 
-# Expose port
+# Expose port (Railway injects PORT dynamically)
 EXPOSE 8080
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
-    CMD curl -f http://localhost:8080/actuator/health || exit 1
+# Environment for JVM optimization
+ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=70.0 -XX:+ExitOnOutOfMemoryError -Djava.security.egd=file:/dev/./urandom"
 
-# Run the application
-ENTRYPOINT ["java", \
-    "-XX:+UseContainerSupport", \
-    "-XX:MaxRAMPercentage=75.0", \
-    "-XX:+ExitOnOutOfMemoryError", \
-    "-Djava.security.egd=file:/dev/./urandom", \
-    "-jar", "app.jar"]
+# Health check (Railway manages health checks, but good to have)
+HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:${PORT:-8080}/actuator/health || exit 1
+
+# Run the application - Read PORT from Railway environment
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar --server.port=${PORT:-8080}"]
