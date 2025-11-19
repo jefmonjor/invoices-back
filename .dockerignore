@@ -1,0 +1,37 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+README.old.md
+docs/
+
+# CI/CD
+.github/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
+
+# Build artifacts (except source in invoices-monolith)
+invoices-monolith/target/
+invoices-monolith/.mvn/
+**/node_modules/
+
+# Config files not needed for build
+fly.toml
+railway.json
+*.sh
+configure-secrets.sh
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db

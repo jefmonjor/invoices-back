@@ -26,7 +26,7 @@ git push origin main
 5. Selecciona el repositorio **`jefmonjor/invoices-back`**
 6. Railway detecta automáticamente:
    - ✅ `railway.json` (configuración)
-   - ✅ `Dockerfile` en `invoices-monolith/`
+   - ✅ `Dockerfile` en raíz del repo
    - ✅ Puerto dinámico (Railway inyecta `$PORT`)
 
 ### Paso 3: Configurar Variables de Entorno
@@ -264,7 +264,7 @@ Después del deploy, Railway te da:
 railway logs
 
 # Verificar que Dockerfile esté en la ruta correcta
-# railway.json → "dockerfilePath": "invoices-monolith/Dockerfile"
+# railway.json → "dockerfilePath": "Dockerfile"
 ```
 
 ### App no arranca
