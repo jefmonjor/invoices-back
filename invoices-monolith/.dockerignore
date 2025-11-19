@@ -1,0 +1,49 @@
+# Git files
+.git
+.gitignore
+.gitattributes
+
+# IDE files
+.idea
+.vscode
+*.iml
+*.swp
+*.swo
+*~
+
+# Build output (except target for prebuilt)
+# target
+
+# Test files
+src/test
+
+# Documentation
+*.md
+docs/
+
+# CI/CD
+.github
+.gitlab-ci.yml
+
+# Environment files
+.env
+.env.*
+
+# Logs
+*.log
+logs/
+
+# Maven wrapper (not needed in container)
+.mvn
+mvnw
+mvnw.cmd
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Fly.io files
+fly.toml
+
+# Scripts
+*.sh
