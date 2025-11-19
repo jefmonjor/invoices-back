@@ -3,6 +3,7 @@ package com.invoices.invoice.events;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.invoices.trace.domain.events.InvoiceEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -34,7 +35,7 @@ public class InvoiceEventProducer {
      */
     public void sendInvoiceCreated(InvoiceEvent event) {
         log.info("Enviando evento INVOICE_CREATED para factura: {} al stream: {}",
-                event.invoiceNumber(), invoiceEventsStream);
+                event.getInvoiceNumber(), invoiceEventsStream);
         sendEvent(event);
     }
 
@@ -43,7 +44,7 @@ public class InvoiceEventProducer {
      */
     public void sendInvoiceUpdated(InvoiceEvent event) {
         log.info("Enviando evento INVOICE_UPDATED para factura: {} al stream: {}",
-                event.invoiceNumber(), invoiceEventsStream);
+                event.getInvoiceNumber(), invoiceEventsStream);
         sendEvent(event);
     }
 
@@ -52,7 +53,7 @@ public class InvoiceEventProducer {
      */
     public void sendInvoicePaid(InvoiceEvent event) {
         log.info("Enviando evento INVOICE_PAID para factura: {} al stream: {}",
-                event.invoiceNumber(), invoiceEventsStream);
+                event.getInvoiceNumber(), invoiceEventsStream);
         sendEvent(event);
     }
 
@@ -61,7 +62,7 @@ public class InvoiceEventProducer {
      */
     public void sendInvoiceCancelled(InvoiceEvent event) {
         log.info("Enviando evento INVOICE_CANCELLED para factura: {} al stream: {}",
-                event.invoiceNumber(), invoiceEventsStream);
+                event.getInvoiceNumber(), invoiceEventsStream);
         sendEvent(event);
     }
 
@@ -72,14 +73,14 @@ public class InvoiceEventProducer {
         try {
             // Convertir el evento a un Map para Redis Streams
             Map<String, String> eventData = new HashMap<>();
-            eventData.put("eventType", event.eventType());
-            eventData.put("invoiceId", String.valueOf(event.invoiceId()));
-            eventData.put("invoiceNumber", event.invoiceNumber());
-            eventData.put("clientId", String.valueOf(event.clientId()));
-            eventData.put("clientEmail", event.clientEmail());
-            eventData.put("total", event.total().toString());
-            eventData.put("status", event.status());
-            eventData.put("timestamp", event.timestamp().toString());
+            eventData.put("eventType", event.getEventType());
+            eventData.put("invoiceId", String.valueOf(event.getInvoiceId()));
+            eventData.put("invoiceNumber", event.getInvoiceNumber());
+            eventData.put("clientId", String.valueOf(event.getClientId()));
+            eventData.put("clientEmail", event.getClientEmail());
+            eventData.put("total", event.getTotal().toString());
+            eventData.put("status", event.getStatus());
+            eventData.put("timestamp", event.getTimestamp().toString());
 
             // Serializar el evento completo como JSON para tenerlo completo
             eventData.put("payload", objectMapper.writeValueAsString(event));
@@ -91,13 +92,13 @@ public class InvoiceEventProducer {
                             .ofStrings(eventData));
 
             log.debug("Evento enviado exitosamente para factura: {} con ID: {}",
-                    event.invoiceNumber(), recordId);
+                    event.getInvoiceNumber(), recordId);
 
         } catch (JsonProcessingException e) {
-            log.error("Error al serializar evento de factura {} a JSON", event.invoiceNumber(), e);
+            log.error("Error al serializar evento de factura {} a JSON", event.getInvoiceNumber(), e);
         } catch (Exception e) {
             log.error("Error inesperado al enviar evento de factura {} a Redis Streams",
-                    event.invoiceNumber(), e);
+                    event.getInvoiceNumber(), e);
         }
     }
 }
