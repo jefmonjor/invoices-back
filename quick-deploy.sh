@@ -48,22 +48,36 @@ echo -e "${GREEN}✅ Fly CLI instalado${NC}\n"
 
 # Verificar autenticación
 echo -e "${BLUE}[2/4]${NC} Verificando autenticación..."
-if ! $FLY_CMD auth whoami &> /dev/null; then
-    echo -e "${RED}❌ No estás autenticado en Fly.io${NC}"
-    echo -e "${YELLOW}Ejecuta: fly auth login${NC}\n"
+AUTH_CHECK=$($FLY_CMD auth whoami 2>&1)
+AUTH_EXIT_CODE=$?
+
+if [ $AUTH_EXIT_CODE -ne 0 ]; then
+    echo -e "${YELLOW}⚠️  Token expirado o inválido${NC}"
+    echo -e "${CYAN}Es necesario re-autenticarse${NC}\n"
 
     read -p "$(echo -e ${YELLOW}¿Quieres autenticarte ahora? [y/N]:${NC} )" AUTH_NOW
 
     if [ "$AUTH_NOW" = "y" ] || [ "$AUTH_NOW" = "Y" ]; then
-        echo -e "\n${CYAN}Abriendo navegador para autenticación...${NC}\n"
+        echo -e "\n${CYAN}Limpiando sesión anterior...${NC}"
+        $FLY_CMD auth logout &> /dev/null || true
+
+        echo -e "${CYAN}Abriendo navegador para autenticación...${NC}\n"
         $FLY_CMD auth login
-        echo -e "\n${GREEN}✅ Autenticación completada${NC}\n"
+
+        # Verificar que la autenticación funcionó
+        if $FLY_CMD auth whoami &> /dev/null; then
+            USER_EMAIL=$($FLY_CMD auth whoami 2>/dev/null || echo "unknown")
+            echo -e "\n${GREEN}✅ Autenticación exitosa: ${USER_EMAIL}${NC}\n"
+        else
+            echo -e "${RED}❌ Error en la autenticación${NC}"
+            exit 1
+        fi
     else
         echo -e "${RED}Deployment cancelado${NC}"
         exit 1
     fi
 else
-    USER_EMAIL=$($FLY_CMD auth whoami 2>/dev/null || echo "unknown")
+    USER_EMAIL=$(echo "$AUTH_CHECK" | head -1)
     echo -e "${GREEN}✅ Autenticado como: ${USER_EMAIL}${NC}\n"
 fi
 
@@ -113,14 +127,39 @@ if [ "$CONFIRM" != "y" ] && [ "$CONFIRM" != "Y" ]; then
     exit 0
 fi
 
-# Deploy
+# Deploy con reintentos
 echo -e "\n${CYAN}════════════════════════════════════════════${NC}"
 echo -e "${YELLOW}⏳ Desplegando a Fly.io...${NC}"
 echo -e "${CYAN}════════════════════════════════════════════${NC}\n"
 
 cd invoices-monolith
 
-if $FLY_CMD deploy -a $APP_NAME; then
+# Intentar deployment con reintentos en caso de error de red
+MAX_RETRIES=2
+RETRY_COUNT=0
+DEPLOY_SUCCESS=false
+
+while [ $RETRY_COUNT -le $MAX_RETRIES ]; do
+    if [ $RETRY_COUNT -gt 0 ]; then
+        echo -e "${YELLOW}Reintento $RETRY_COUNT de $MAX_RETRIES...${NC}\n"
+        sleep 5
+    fi
+
+    if $FLY_CMD deploy -a $APP_NAME; then
+        DEPLOY_SUCCESS=true
+        break
+    else
+        DEPLOY_EXIT_CODE=$?
+        RETRY_COUNT=$((RETRY_COUNT + 1))
+
+        if [ $RETRY_COUNT -le $MAX_RETRIES ]; then
+            echo -e "\n${YELLOW}⚠️  Error en deployment (intento $RETRY_COUNT de $((MAX_RETRIES + 1)))${NC}"
+            echo -e "${CYAN}Esperando antes de reintentar...${NC}\n"
+        fi
+    fi
+done
+
+if [ "$DEPLOY_SUCCESS" = true ]; then
     echo -e "\n${GREEN}════════════════════════════════════════════${NC}"
     echo -e "${GREEN}✅ DEPLOYMENT EXITOSO${NC}"
     echo -e "${GREEN}════════════════════════════════════════════${NC}\n"
@@ -152,16 +191,24 @@ if $FLY_CMD deploy -a $APP_NAME; then
 
 else
     echo -e "\n${RED}════════════════════════════════════════════${NC}"
-    echo -e "${RED}❌ DEPLOYMENT FALLÓ${NC}"
+    echo -e "${RED}❌ DEPLOYMENT FALLÓ después de $((MAX_RETRIES + 1)) intentos${NC}"
     echo -e "${RED}════════════════════════════════════════════${NC}\n"
 
     echo -e "${YELLOW}Posibles causas:${NC}"
-    echo -e "  1. Timeout de build (si tarda >20 min)"
-    echo -e "  2. Error de compilación Maven"
-    echo -e "  3. Problemas de red\n"
+    echo -e "  1. ${CYAN}Token expirado${NC} - Ejecuta: ${YELLOW}fly auth logout && fly auth login${NC}"
+    echo -e "  2. ${CYAN}Timeout de build${NC} (si tarda >20 min)"
+    echo -e "  3. ${CYAN}Error de compilación${NC} Maven"
+    echo -e "  4. ${CYAN}Problemas de red${NC} - Intenta con otra conexión\n"
 
-    echo -e "${CYAN}Ver logs del error:${NC}"
-    echo -e "  ${YELLOW}fly logs -a ${APP_NAME}${NC}\n"
+    echo -e "${YELLOW}Soluciones sugeridas:${NC}"
+    echo -e "  1. Re-autenticar: ${CYAN}fly auth logout && fly auth login${NC}"
+    echo -e "  2. Ver logs:      ${CYAN}fly logs -a ${APP_NAME}${NC}"
+    echo -e "  3. Verificar app: ${CYAN}fly status -a ${APP_NAME}${NC}\n"
+
+    echo -e "${MAGENTA}Si el error es de autorización:${NC}"
+    echo -e "  ${YELLOW}fly auth logout${NC}"
+    echo -e "  ${YELLOW}fly auth login${NC}"
+    echo -e "  ${YELLOW}bash quick-deploy.sh${NC}\n"
 
     exit 1
 fi
