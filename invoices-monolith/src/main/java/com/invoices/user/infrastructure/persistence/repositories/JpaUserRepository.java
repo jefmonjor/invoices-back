@@ -8,6 +8,7 @@ import java.util.Optional;
 /**
  * Spring Data JPA repository for UserJpaEntity.
  * This interface provides CRUD operations and custom queries for user persistence.
+ * No @Repository needed - Spring Data JPA auto-detects this interface.
  */
 public interface JpaUserRepository extends JpaRepository<UserJpaEntity, Long> {
 

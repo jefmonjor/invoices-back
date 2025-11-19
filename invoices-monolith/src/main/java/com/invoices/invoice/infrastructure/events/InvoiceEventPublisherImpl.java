@@ -2,7 +2,7 @@ package com.invoices.invoice.infrastructure.events;
 
 import com.invoices.invoice.domain.entities.Invoice;
 import com.invoices.invoice.domain.ports.InvoiceEventPublisher;
-import com.invoices.invoice.events.InvoiceEvent;
+import com.invoices.trace.domain.events.InvoiceEvent;
 import com.invoices.invoice.events.InvoiceEventProducer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

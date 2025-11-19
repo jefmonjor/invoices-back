@@ -9,6 +9,7 @@ import java.util.Optional;
 /**
  * Spring Data JPA repository for DocumentJpaEntity.
  * This interface provides CRUD operations and custom queries for document persistence.
+ * No @Repository needed - Spring Data JPA auto-detects this interface.
  */
 public interface JpaDocumentRepository extends JpaRepository<DocumentJpaEntity, Long> {
 
