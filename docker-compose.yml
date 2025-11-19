@@ -1,0 +1,176 @@
+version: '3.8'
+
+# =====================================================================
+# Docker Compose para Invoices Monolith
+# Sistema de gestión de facturas con arquitectura monolítica modular
+# =====================================================================
+
+services:
+  # ===================================================================
+  # INFRASTRUCTURE SERVICES
+  # ===================================================================
+
+  # PostgreSQL - Base de datos única consolidada
+  postgres:
+    image: postgres:16-alpine
+    container_name: invoices-postgres
+    environment:
+      POSTGRES_DB: invoices
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - invoices-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d invoices"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis - Event streaming y cache
+  # Reemplaza Kafka para event-driven communication
+  redis:
+    image: redis:7-alpine
+    container_name: invoices-redis
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - invoices-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MinIO - S3-compatible object storage (desarrollo local)
+  # En producción usar Cloudflare R2 (gratis hasta 10GB)
+  minio:
+    image: minio/minio:latest
+    container_name: invoices-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin123}
+    volumes:
+      - minio-data:/data
+    ports:
+      - "9000:9000"   # API
+      - "9001:9001"   # Console
+    networks:
+      - invoices-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MinIO Client - Crear bucket inicial automáticamente
+  minio-setup:
+    image: minio/mc:latest
+    container_name: invoices-minio-setup
+    depends_on:
+      minio:
+        condition: service_healthy
+    networks:
+      - invoices-network
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set myminio http://minio:9000 ${MINIO_ACCESS_KEY:-minioadmin} ${MINIO_SECRET_KEY:-minioadmin123};
+      mc mb myminio/${MINIO_BUCKET_NAME:-invoices-documents} --ignore-existing;
+      mc anonymous set download myminio/${MINIO_BUCKET_NAME:-invoices-documents};
+      exit 0;
+      "
+
+  # ===================================================================
+  # MONOLITH APPLICATION
+  # ===================================================================
+
+  invoices-monolith:
+    build:
+      context: ./invoices-monolith
+      dockerfile: Dockerfile
+    container_name: invoices-monolith
+    environment:
+      # Spring Profile
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
+
+      # Database Configuration
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/invoices
+      - DB_USERNAME=${DB_USERNAME:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres}
+
+      # Redis Configuration
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - REDIS_STREAM_INVOICE_EVENTS=${REDIS_STREAM_INVOICE_EVENTS:-invoice-events}
+      - REDIS_STREAM_INVOICE_DLQ=${REDIS_STREAM_INVOICE_DLQ:-invoice-events-dlq}
+      - REDIS_CONSUMER_GROUP=${REDIS_CONSUMER_GROUP:-trace-group}
+
+      # S3/MinIO Configuration
+      - S3_ENDPOINT=http://minio:9000
+      - S3_ACCESS_KEY=${MINIO_ACCESS_KEY:-minioadmin}
+      - S3_SECRET_KEY=${MINIO_SECRET_KEY:-minioadmin123}
+      - S3_BUCKET_NAME=${MINIO_BUCKET_NAME:-invoices-documents}
+      - S3_REGION=${S3_REGION:-us-east-1}
+
+      # JWT Security
+      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-min-32-chars-base64-encoded-change-in-production}
+      - JWT_EXPIRATION_MS=${JWT_EXPIRATION_MS:-3600000}
+      - JWT_ISSUER=${JWT_ISSUER:-invoices-monolith}
+
+      # CORS Configuration
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:5173}
+      - CORS_ALLOWED_METHODS=${CORS_ALLOWED_METHODS:-GET,POST,PUT,DELETE,OPTIONS,PATCH}
+      - CORS_ALLOWED_HEADERS=${CORS_ALLOWED_HEADERS:-*}
+      - CORS_EXPOSED_HEADERS=${CORS_EXPOSED_HEADERS:-Authorization}
+      - CORS_ALLOW_CREDENTIALS=${CORS_ALLOW_CREDENTIALS:-true}
+      - CORS_MAX_AGE=${CORS_MAX_AGE:-3600}
+
+      # Application Port
+      - SERVER_PORT=8080
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      minio-setup:
+        condition: service_completed_successfully
+    networks:
+      - invoices-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
+
+# =====================================================================
+# NETWORKS
+# =====================================================================
+networks:
+  invoices-network:
+    driver: bridge
+    name: invoices-network
+
+# =====================================================================
+# VOLUMES (Persistencia de datos)
+# =====================================================================
+volumes:
+  postgres-data:
+    name: invoices-postgres-data
+  redis-data:
+    name: invoices-redis-data
+  minio-data:
+    name: invoices-minio-data

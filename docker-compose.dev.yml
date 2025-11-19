@@ -1,0 +1,97 @@
+version: '3.8'
+
+# =====================================================================
+# Docker Compose for LOCAL DEVELOPMENT ONLY
+# Starts only infrastructure services (PostgreSQL, Redis, MinIO)
+# Run the Spring Boot app separately with: mvn spring-boot:run
+# =====================================================================
+
+services:
+  # PostgreSQL - Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: invoices-postgres-dev
+    environment:
+      POSTGRES_DB: invoices
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres-dev-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - invoices-dev-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d invoices"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis - Event streaming and cache
+  redis:
+    image: redis:7-alpine
+    container_name: invoices-redis-dev
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-dev-data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - invoices-dev-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MinIO - S3-compatible object storage
+  minio:
+    image: minio/minio:latest
+    container_name: invoices-minio-dev
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin123
+    volumes:
+      - minio-dev-data:/data
+    ports:
+      - "9000:9000"   # API
+      - "9001:9001"   # Console UI
+    networks:
+      - invoices-dev-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MinIO Client - Create initial bucket
+  minio-setup:
+    image: minio/mc:latest
+    container_name: invoices-minio-setup-dev
+    depends_on:
+      minio:
+        condition: service_healthy
+    networks:
+      - invoices-dev-network
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set myminio http://minio:9000 minioadmin minioadmin123;
+      mc mb myminio/invoices-documents --ignore-existing;
+      mc anonymous set download myminio/invoices-documents;
+      echo 'MinIO bucket created successfully';
+      exit 0;
+      "
+
+networks:
+  invoices-dev-network:
+    driver: bridge
+    name: invoices-dev-network
+
+volumes:
+  postgres-dev-data:
+    name: invoices-postgres-dev-data
+  redis-dev-data:
+    name: invoices-redis-dev-data
+  minio-dev-data:
+    name: invoices-minio-dev-data
