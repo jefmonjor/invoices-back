@@ -76,7 +76,14 @@ S3_BUCKET_NAME=invoices-documents
 JAVA_OPTS=-XX:+UseContainerSupport -XX:MaxRAMPercentage=70.0 -XX:+ExitOnOutOfMemoryError
 ```
 
-### Desde CLI
+### Configuración Automática (Más Fácil)
+
+```bash
+# Script interactivo que configura todas las variables de Neon
+./configure-railway-neon.sh
+```
+
+### Configuración Manual (CLI)
 
 ```bash
 railway variables set SPRING_DATASOURCE_URL="jdbc:postgresql://..."
@@ -87,26 +94,48 @@ railway variables set SPRING_PROFILES_ACTIVE="prod"
 
 ---
 
-## 🗄️ Base de Datos en Railway
+## 🗄️ Base de Datos - Usando Neon PostgreSQL
 
-### Opción A: PostgreSQL de Railway (Más Fácil)
+### Configurar Neon en Railway (Recomendado)
 
-1. En Railway → **+ New** → **Database** → **PostgreSQL**
-2. Railway auto-configura las variables `DATABASE_URL`
-3. Copia y adapta a formato JDBC:
+Usaremos **Neon PostgreSQL** (ya configurado) con Railway:
+
+1. **Obtén tu connection string de Neon**
+   - Ve a [console.neon.tech](https://console.neon.tech)
+   - Selecciona tu proyecto
+   - Copia el **Connection String**
+   - Ejemplo: `postgresql://user:password@ep-xxx.us-east-2.aws.neon.tech/neondb?sslmode=require`
+
+2. **Configura las variables en Railway**
+
+   En Railway → Variables:
+
    ```bash
-   # Railway te da:
-   DATABASE_URL=postgresql://user:pass@host:5432/railway
+   # Opción 1: URL completa (más fácil)
+   SPRING_DATASOURCE_URL=jdbc:postgresql://ep-xxx.us-east-2.aws.neon.tech:5432/neondb?sslmode=require
+   SPRING_DATASOURCE_USERNAME=tu-usuario-neon
+   SPRING_DATASOURCE_PASSWORD=tu-password-neon
 
-   # Convierte a:
-   SPRING_DATASOURCE_URL=jdbc:postgresql://host:5432/railway
-   SPRING_DATASOURCE_USERNAME=user
-   SPRING_DATASOURCE_PASSWORD=pass
+   # Opción 2: Desde Neon pooled connection (mejor rendimiento)
+   SPRING_DATASOURCE_URL=jdbc:postgresql://ep-xxx-pooler.us-east-2.aws.neon.tech:5432/neondb?sslmode=require
+   SPRING_DATASOURCE_USERNAME=tu-usuario-neon
+   SPRING_DATASOURCE_PASSWORD=tu-password-neon
    ```
 
-### Opción B: Base de Datos Externa (Neon, etc.)
+3. **Variables adicionales de Neon (opcional)**
+   ```bash
+   # Para conexiones SSL
+   SPRING_DATASOURCE_HIKARI_CONNECTION_TIMEOUT=30000
+   SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE=5
+   ```
 
-Usa las mismas variables que antes.
+### Alternativa: PostgreSQL de Railway
+
+Si prefieres usar el addon de Railway:
+
+1. En Railway → **+ New** → **Database** → **PostgreSQL**
+2. Railway auto-configura `DATABASE_URL`
+3. Adapta a formato JDBC como arriba
 
 ---
 
@@ -131,14 +160,14 @@ railway variables
 
 ---
 
-## 🆓 Servicios Recomendados
+## 🆓 Servicios Configurados
 
-| Servicio | Proveedor | Free Tier | Nota |
-|----------|-----------|-----------|------|
-| **Hosting** | [Railway](https://railway.app) | $5/mes gratis | FÁCIL ✅ |
-| **PostgreSQL** | Railway addon | Incluido | O [Neon](https://neon.tech) 512MB |
-| **Redis** | [Upstash](https://upstash.com) | 10K cmd/día | |
-| **Storage** | [Cloudflare R2](https://cloudflare.com/r2) | 10GB | |
+| Servicio | Proveedor | Free Tier | Estado |
+|----------|-----------|-----------|--------|
+| **Hosting** | [Railway](https://railway.app) | $5/mes gratis | ⚙️ Configurar |
+| **PostgreSQL** | [Neon](https://neon.tech) | 512MB | ✅ Ya configurado |
+| **Redis** | [Upstash](https://upstash.com) | 10K cmd/día | ✅ Ya configurado |
+| **Storage** | [Cloudflare R2](https://cloudflare.com/r2) | 10GB | ✅ Ya configurado |
 
 ---
 
@@ -187,11 +216,12 @@ invoices-back/
 ## 🔧 Stack
 
 - Java 21 + Spring Boot 3.4
-- PostgreSQL (Railway o Neon)
+- PostgreSQL (Neon - Serverless)
 - Redis (Upstash)
 - Cloudflare R2 (S3)
 - JasperReports
 - JWT + Spring Security
+- Railway (Hosting)
 
 ---
 
@@ -208,9 +238,10 @@ invoices-back/
 ## 📝 Scripts
 
 ```bash
-./build-local-fast.sh       # Build local optimizado (2-3 min)
-./deploy-railway.sh         # Deploy completo a Railway
-./configure-secrets.sh      # Config secrets (legacy Fly.io)
+./build-local-fast.sh          # Build local optimizado (2-3 min)
+./deploy-railway.sh            # Deploy completo a Railway
+./configure-railway-neon.sh    # Configurar variables de Neon en Railway
+./configure-secrets.sh         # Config secrets (legacy Fly.io)
 ```
 
 ---
@@ -258,15 +289,21 @@ mvn clean      # Limpiar caché
 ./build-local-fast.sh
 ```
 
-### Conexión a DB falla
+### Conexión a Neon falla
 
 ```bash
 # Verificar formato JDBC correcto:
-SPRING_DATASOURCE_URL=jdbc:postgresql://host:port/dbname
+SPRING_DATASOURCE_URL=jdbc:postgresql://ep-xxx.us-east-2.aws.neon.tech:5432/neondb?sslmode=require
 
-# NO usar el formato postgresql:// directo
-# Railway da: postgresql://...
-# Tú necesitas: jdbc:postgresql://...
+# IMPORTANTE:
+# 1. Añade el prefijo "jdbc:" antes de "postgresql://"
+# 2. Incluye "?sslmode=require" al final
+# 3. Usa el puerto 5432
+# 4. Para mejor rendimiento usa pooled connection:
+#    ep-xxx-pooler.us-east-2.aws.neon.tech
+
+# Verificar en Railway:
+railway variables | grep DATASOURCE
 ```
 
 ---
