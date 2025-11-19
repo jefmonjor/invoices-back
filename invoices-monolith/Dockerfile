@@ -7,17 +7,19 @@ WORKDIR /app
 
 # Copy pom.xml and download dependencies (cached layer)
 COPY pom.xml .
-RUN mvn dependency:go-offline -B
+RUN mvn dependency:go-offline -B || mvn dependency:resolve -B
 
 # Copy source code
 COPY src ./src
 
 # Build the application with optimizations:
 # - Skip tests for faster builds
-# - Use multiple threads for parallel compilation
+# - Use multiple threads for parallel compilation (2 threads)
 # - Batch mode for non-interactive builds
-# - Offline mode to use cached dependencies
-RUN mvn clean package -DskipTests -B -T 1C --offline
+# - Increased memory for Maven to prevent OOM during compilation
+# - Quick compilation mode for faster builds
+RUN MAVEN_OPTS="-Xmx1024m -XX:+TieredCompilation -XX:TieredStopAtLevel=1" \
+    mvn clean package -DskipTests -B -T 2C -Dmaven.compiler.debug=false -Dmaven.compiler.debuglevel=none
 
 # Stage 2: Runtime
 FROM eclipse-temurin:21-jre-alpine
