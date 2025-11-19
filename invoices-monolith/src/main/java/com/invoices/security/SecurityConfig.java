@@ -96,6 +96,7 @@ public class SecurityConfig {
                                 "/actuator/health",
                                 "/actuator/info",
                                 "/v3/api-docs/**",
+                                "/api-docs/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html"
                         ).permitAll()
