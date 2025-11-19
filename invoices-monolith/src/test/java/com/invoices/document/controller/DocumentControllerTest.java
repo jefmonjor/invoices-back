@@ -1,5 +1,6 @@
 package com.invoices.document.controller;
 
+import com.invoices.config.TestConfig;
 import com.invoices.document.domain.entities.Document;
 import com.invoices.document.domain.usecases.*;
 import com.invoices.document.presentation.dto.DocumentDTO;
@@ -16,8 +17,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
@@ -39,6 +42,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Mocks DocumentService dependency.
  */
 @WebMvcTest(DocumentController.class)
+@ActiveProfiles("test")
+@Import(TestConfig.class)
 @DisplayName("DocumentController Integration Tests")
 class DocumentControllerTest {
 
