@@ -14,6 +14,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 @Configuration
+@Profile("!test")  // Don't load MinioConfig in test profile - mocks are provided by TestConfig
 @Slf4j
 public class MinioConfig {
 
