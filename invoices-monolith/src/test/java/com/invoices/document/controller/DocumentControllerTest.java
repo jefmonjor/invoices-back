@@ -41,7 +41,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Uses @WebMvcTest to load only web layer.
  * Mocks DocumentService dependency.
  */
-@WebMvcTest(DocumentController.class)
+@WebMvcTest(
+        controllers = DocumentController.class,
+        excludeAutoConfiguration = {
+                org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration.class,
+                org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration.class
+        }
+)
 @ActiveProfiles("test")
 @Import(TestConfig.class)
 @DisplayName("DocumentController Integration Tests")
