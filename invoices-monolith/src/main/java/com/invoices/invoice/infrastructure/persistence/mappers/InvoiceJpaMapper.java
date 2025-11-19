@@ -24,6 +24,9 @@ public class InvoiceJpaMapper {
 
         InvoiceJpaEntity jpaEntity = new InvoiceJpaEntity();
         jpaEntity.setId(invoice.getId());
+        // TODO: Set userId from SecurityContext when authentication is implemented
+        // For now, default to user ID 1 (admin user)
+        jpaEntity.setUserId(1L);
         jpaEntity.setCompanyId(invoice.getCompanyId());
         jpaEntity.setClientId(invoice.getClientId());
         jpaEntity.setInvoiceNumber(invoice.getInvoiceNumber());
