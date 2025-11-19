@@ -16,7 +16,7 @@
 
 	<properties>
 		<java.version>21</java.version>
-		<aws-java-sdk.version>1.12.529</aws-java-sdk.version>
+		<!-- Removed aws-java-sdk.version - not using AWS SDK -->
 	</properties>
 
 	<dependencies>
@@ -68,10 +68,7 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-redis</artifactId>
 		</dependency>
-		<dependency>
-			<groupId>io.lettuce</groupId>
-			<artifactId>lettuce-core</artifactId>
-		</dependency>
+		<!-- lettuce-core is already included in spring-boot-starter-data-redis -->
 
 		<!-- Database -->
 		<dependency>
@@ -90,14 +87,8 @@
 			<artifactId>flyway-database-postgresql</artifactId>
 		</dependency>
 
-		<!-- AWS SDK for S3 (Cloudflare R2 compatible) -->
-		<dependency>
-			<groupId>com.amazonaws</groupId>
-			<artifactId>aws-java-sdk-s3</artifactId>
-			<version>${aws-java-sdk.version}</version>
-		</dependency>
-
 		<!-- MinIO Client (S3 compatible, works with Cloudflare R2) -->
+		<!-- AWS SDK removed - MinIO client is lighter and sufficient -->
 		<dependency>
 			<groupId>io.minio</groupId>
 			<artifactId>minio</artifactId>
@@ -109,6 +100,21 @@
 			<groupId>net.sf.jasperreports</groupId>
 			<artifactId>jasperreports</artifactId>
 			<version>7.0.2</version>
+			<exclusions>
+				<!-- Exclude unnecessary dependencies to reduce JAR size -->
+				<exclusion>
+					<groupId>org.apache.lucene</groupId>
+					<artifactId>lucene-*</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.eclipse.jdt</groupId>
+					<artifactId>ecj</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>com.lowagie</groupId>
+					<artifactId>itext</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 
 		<!-- Apache Tika for file type detection and content extraction -->
@@ -178,12 +184,7 @@
 			<artifactId>h2</artifactId>
 			<scope>test</scope>
 		</dependency>
-		<dependency>
-			<groupId>it.ozimov</groupId>
-			<artifactId>embedded-redis</artifactId>
-			<version>0.7.3</version>
-			<scope>test</scope>
-		</dependency>
+		<!-- embedded-redis removed - not needed with current test configuration -->
 		<dependency>
 			<groupId>org.mockito</groupId>
 			<artifactId>mockito-core</artifactId>
@@ -233,6 +234,10 @@
 							<artifactId>lombok</artifactId>
 						</exclude>
 					</excludes>
+					<!-- Optimize JAR for faster builds -->
+					<layers>
+						<enabled>true</enabled>
+					</layers>
 				</configuration>
 			</plugin>
 
