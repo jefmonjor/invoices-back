@@ -3,7 +3,7 @@ package com.invoices.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.invoices.security.JwtAuthenticationFilter;
-import com.invoices.security.JwtService;
+import com.invoices.security.JwtUtil;
 import io.minio.MinioClient;
 import org.mockito.Mockito;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -55,12 +55,12 @@ public class TestConfig {
     }
 
     /**
-     * Mock JwtService for tests that require JWT functionality.
+     * Mock JwtUtil for tests that require JWT functionality.
      */
     @Bean
     @Primary
-    public JwtService testJwtService() {
-        return Mockito.mock(JwtService.class);
+    public JwtUtil testJwtUtil() {
+        return Mockito.mock(JwtUtil.class);
     }
 
     /**
