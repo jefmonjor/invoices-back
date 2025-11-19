@@ -20,16 +20,16 @@ public class OpenApiConfig {
     @Value("${server.port:8080}")
     private String serverPort;
 
-    @Value("${app.api.base-url:http://localhost:${server.port:8080}}")
-    private String apiBaseUrl;
-
     @Value("${app.api.production-url:}")
     private String productionUrl;
 
     @Bean
     public OpenAPI invoiceServiceOpenAPI() {
+        // Build base URL dynamically
+        String baseUrl = "http://localhost:" + serverPort;
+
         Server localServer = new Server();
-        localServer.setUrl(apiBaseUrl);
+        localServer.setUrl(baseUrl);
         localServer.setDescription("Servidor de desarrollo/Railway");
 
         // Only add production server if URL is configured
