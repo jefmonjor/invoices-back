@@ -2,67 +2,111 @@
 
 Sistema monolítico de gestión de facturas con Spring Boot 3.4 + Java 21
 
+Optimizado para **MacBook M1 Pro** y **Railway**
+
 ---
 
-## 🚀 Deploy Rápido (MacBook M1 Pro)
+## 🚂 Deploy a Railway (2 Opciones)
 
-### Paso 1: Build Local (2-3 min)
+### Opción 1: Desde GitHub (Recomendado - Más Fácil)
+
+1. **Push tu código a GitHub**
+   ```bash
+   git push origin main
+   ```
+
+2. **Crear proyecto en Railway**
+   - Ve a [railway.app](https://railway.app)
+   - Click **+ New Project** → **Deploy from GitHub repo**
+   - Selecciona `invoices-back`
+   - Railway detecta el `Dockerfile` automáticamente
+   - Deploy completo en 3-5 minutos ⚡
+
+3. **Configurar Variables** (ver sección abajo)
+
+---
+
+### Opción 2: Desde CLI (Para Desarrollo)
 
 ```bash
+# 1. Instalar Railway CLI
+bash <(curl -fsSL https://railway.app/install.sh)
+
+# 2. Login
+railway login
+
+# 3. Build local (opcional pero más rápido)
 ./build-local-fast.sh
-```
 
-### Paso 2: Deploy a Fly.io (1-2 min)
-
-```bash
-cd invoices-monolith
-fly deploy --dockerfile Dockerfile.prebuilt
-```
-
-**Total: 3-5 minutos** ⚡
-
----
-
-## ⚙️ Configuración Inicial
-
-### 1. Instalar Fly CLI
-
-```bash
-brew install flyctl
-fly auth login
-```
-
-### 2. Configurar Secrets
-
-```bash
-# Usar script automático
-./configure-secrets.sh
-
-# O manualmente:
-fly secrets set SPRING_DATASOURCE_URL="jdbc:postgresql://..."
-fly secrets set DB_USERNAME="usuario"
-fly secrets set DB_PASSWORD="password"
-fly secrets set JWT_SECRET="$(openssl rand -base64 32)"
-fly secrets set REDIS_HOST="tu-redis.upstash.io"
-fly secrets set REDIS_PORT="6379"
-fly secrets set REDIS_PASSWORD="tu-password"
-fly secrets set REDIS_SSL="true"
-fly secrets set S3_ENDPOINT="https://..."
-fly secrets set S3_ACCESS_KEY="key"
-fly secrets set S3_SECRET_KEY="secret"
-fly secrets set S3_BUCKET_NAME="invoices-documents"
+# 4. Deploy
+./deploy-railway.sh
 ```
 
 ---
 
-## 🆓 Servicios Externos (Gratis)
+## ⚙️ Configurar Variables en Railway
 
-| Servicio | Proveedor | Free Tier |
-|----------|-----------|-----------|
-| **PostgreSQL** | [Neon](https://neon.tech) | 512MB |
-| **Redis** | [Upstash](https://upstash.com) | 10K cmd/día |
-| **Storage** | [Cloudflare R2](https://cloudflare.com/r2) | 10GB |
-| **Hosting** | [Fly.io](https://fly.io) | 3 VMs |
+### Variables Esenciales
+
+En Railway → Tu Proyecto → Variables, añade:
+
+```bash
+# Spring Boot
+SPRING_PROFILES_ACTIVE=prod
+SPRING_DATASOURCE_URL=jdbc:postgresql://<HOST>:<PORT>/<DB>
+SPRING_DATASOURCE_USERNAME=usuario
+SPRING_DATASOURCE_PASSWORD=password
+
+# JWT (generar con: openssl rand -base64 32)
+JWT_SECRET=tu-secreto-de-32-caracteres-minimo
+
+# Redis (Upstash o Railway addon)
+REDIS_HOST=tu-redis.upstash.io
+REDIS_PORT=6379
+REDIS_PASSWORD=tu-password
+REDIS_SSL=true
+
+# S3/R2 (Cloudflare R2)
+S3_ENDPOINT=https://tu-cuenta.r2.cloudflarestorage.com
+S3_ACCESS_KEY=tu-access-key
+S3_SECRET_KEY=tu-secret-key
+S3_BUCKET_NAME=invoices-documents
+
+# JVM (Railway optimizado)
+JAVA_OPTS=-XX:+UseContainerSupport -XX:MaxRAMPercentage=70.0 -XX:+ExitOnOutOfMemoryError
+```
+
+### Desde CLI
+
+```bash
+railway variables set SPRING_DATASOURCE_URL="jdbc:postgresql://..."
+railway variables set JWT_SECRET="$(openssl rand -base64 32)"
+railway variables set SPRING_PROFILES_ACTIVE="prod"
+# ... etc
+```
+
+---
+
+## 🗄️ Base de Datos en Railway
+
+### Opción A: PostgreSQL de Railway (Más Fácil)
+
+1. En Railway → **+ New** → **Database** → **PostgreSQL**
+2. Railway auto-configura las variables `DATABASE_URL`
+3. Copia y adapta a formato JDBC:
+   ```bash
+   # Railway te da:
+   DATABASE_URL=postgresql://user:pass@host:5432/railway
+
+   # Convierte a:
+   SPRING_DATASOURCE_URL=jdbc:postgresql://host:5432/railway
+   SPRING_DATASOURCE_USERNAME=user
+   SPRING_DATASOURCE_PASSWORD=pass
+   ```
+
+### Opción B: Base de Datos Externa (Neon, etc.)
+
+Usa las mismas variables que antes.
 
 ---
 
@@ -70,17 +114,31 @@ fly secrets set S3_BUCKET_NAME="invoices-documents"
 
 ```bash
 # Logs en tiempo real
-fly logs -a invoices-monolith
+railway logs
 
 # Status
-fly status -a invoices-monolith
+railway status
 
-# Abrir app
-fly open -a invoices-monolith
+# Abrir app en navegador
+railway open
 
-# SSH
-fly ssh console -a invoices-monolith
+# Shell SSH
+railway run bash
+
+# Ver variables
+railway variables
 ```
+
+---
+
+## 🆓 Servicios Recomendados
+
+| Servicio | Proveedor | Free Tier | Nota |
+|----------|-----------|-----------|------|
+| **Hosting** | [Railway](https://railway.app) | $5/mes gratis | FÁCIL ✅ |
+| **PostgreSQL** | Railway addon | Incluido | O [Neon](https://neon.tech) 512MB |
+| **Redis** | [Upstash](https://upstash.com) | 10K cmd/día | |
+| **Storage** | [Cloudflare R2](https://cloudflare.com/r2) | 10GB | |
 
 ---
 
@@ -111,14 +169,17 @@ java -jar target/invoices-monolith-1.0.0.jar
 ## 📁 Estructura
 
 ```
-invoices-monolith/
-├── src/main/java/com/invoices/
-│   ├── user/          # Usuarios y auth
-│   ├── invoice/       # Facturas
-│   ├── document/      # PDFs
-│   ├── trace/         # Auditoría
-│   └── security/      # JWT
-└── fly.toml          # Config Fly.io
+invoices-back/
+├── invoices-monolith/
+│   ├── src/main/java/com/invoices/
+│   │   ├── user/          # Usuarios y auth
+│   │   ├── invoice/       # Facturas
+│   │   ├── document/      # PDFs
+│   │   ├── trace/         # Auditoría
+│   │   └── security/      # JWT
+│   └── Dockerfile         # Railway build
+├── railway.json           # Config Railway
+└── deploy-railway.sh      # Script deploy
 ```
 
 ---
@@ -126,7 +187,7 @@ invoices-monolith/
 ## 🔧 Stack
 
 - Java 21 + Spring Boot 3.4
-- PostgreSQL (Neon)
+- PostgreSQL (Railway o Neon)
 - Redis (Upstash)
 - Cloudflare R2 (S3)
 - JasperReports
@@ -137,56 +198,116 @@ invoices-monolith/
 ## 🍎 Optimizado M1 Pro
 
 - Build paralelo (16 threads)
-- 2GB RAM para JVM
-- Quick compilation
-- Docker build en cloud (ARM64 → AMD64)
+- 2GB RAM para JVM local
+- Docker multi-stage optimizado
+- Railway lee PORT dinámico
+- MaxRAMPercentage 70% en producción
 
 ---
 
 ## 📝 Scripts
 
 ```bash
-./build-local-fast.sh       # Build optimizado
-./configure-secrets.sh       # Config secrets
-./deploy-macos.sh           # Deploy completo
-./quick-deploy.sh           # Deploy rápido
+./build-local-fast.sh       # Build local optimizado (2-3 min)
+./deploy-railway.sh         # Deploy completo a Railway
+./configure-secrets.sh      # Config secrets (legacy Fly.io)
 ```
 
 ---
 
 ## 🌐 URLs
 
-- **App**: https://invoices-monolith.fly.dev
-- **Swagger**: https://invoices-monolith.fly.dev/swagger-ui.html
-- **Health**: https://invoices-monolith.fly.dev/actuator/health
+Después del deploy, Railway te da:
+
+- **App**: `https://tu-proyecto.up.railway.app`
+- **Swagger**: `https://tu-proyecto.up.railway.app/swagger-ui.html`
+- **Health**: `https://tu-proyecto.up.railway.app/actuator/health`
 
 ---
 
 ## ❓ Troubleshooting
 
-### Build falla
+### Build falla en Railway
 
 ```bash
-java -version  # Verificar Java 21
+# Ver logs en Railway dashboard o:
+railway logs
+
+# Verificar que Dockerfile esté en la ruta correcta
+# railway.json → "dockerfilePath": "invoices-monolith/Dockerfile"
+```
+
+### App no arranca
+
+```bash
+# Verificar variables
+railway variables
+
+# Verificar que PORT se lee correctamente
+# El Dockerfile usa: --server.port=${PORT:-8080}
+
+# Ver logs
+railway logs
+```
+
+### Build local falla
+
+```bash
+java -version  # Debe ser Java 21
 mvn clean      # Limpiar caché
 ./build-local-fast.sh
 ```
 
-### Deploy falla
+### Conexión a DB falla
 
 ```bash
-fly auth whoami              # Verificar auth
-fly logs -a invoices-monolith # Ver logs
-fly secrets list             # Verificar secrets
+# Verificar formato JDBC correcto:
+SPRING_DATASOURCE_URL=jdbc:postgresql://host:port/dbname
+
+# NO usar el formato postgresql:// directo
+# Railway da: postgresql://...
+# Tú necesitas: jdbc:postgresql://...
+```
+
+---
+
+## 🚀 Flujo Completo de Deploy
+
+```bash
+# 1. Build local
+./build-local-fast.sh
+
+# 2. Commit y push
+git add -A
+git commit -m "Ready for Railway deployment"
+git push origin main
+
+# 3. Deploy desde Railway UI
+# O desde CLI:
+railway login
+railway link  # Primera vez
+railway up    # Deploy
 ```
 
 ---
 
 ## 📚 Docs
 
-- [Fly.io](https://fly.io/docs/)
+- [Railway](https://docs.railway.app/)
 - [Spring Boot](https://docs.spring.io/spring-boot/)
+- [Railway CLI](https://docs.railway.app/develop/cli)
 
 ---
 
-**README antiguo completo**: `README.old.md`
+## 📌 Notas Importantes
+
+- ✅ Railway lee `PORT` dinámico (configurado en Dockerfile)
+- ✅ `railway.json` define ruta del Dockerfile
+- ✅ Health check en `/actuator/health`
+- ✅ Build optimizado para M1 Pro (16 threads)
+- ⚠️ Después de $5 gratis, Railway cobra ~$5-10/mes
+- 📝 README antiguo completo: `README.old.md`
+
+---
+
+**¿Problemas?** Revisa los logs: `railway logs`
