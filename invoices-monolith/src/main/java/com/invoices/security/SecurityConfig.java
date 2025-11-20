@@ -2,6 +2,7 @@ package com.invoices.security;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -18,6 +19,12 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Security configuration for the monolithic application.
@@ -33,6 +40,18 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final UserDetailsService userDetailsService;
 
+    @Value("${cors.allowed-origins}")
+    private String[] allowedOrigins;
+
+    @Value("${cors.allowed-methods}")
+    private String[] allowedMethods;
+
+    @Value("${cors.allowed-headers}")
+    private String[] allowedHeaders;
+
+    @Value("${cors.allow-credentials}")
+    private boolean allowCredentials;
+
     /**
      * Configures the security filter chain.
      *
@@ -47,6 +66,9 @@ public class SecurityConfig {
         http
                 // Disable CSRF as we're using JWT (stateless)
                 .csrf(AbstractHttpConfigurer::disable)
+
+                // Enable CORS with custom configuration
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 
                 // Configure security headers
                 .headers(headers -> headers
@@ -167,5 +189,32 @@ public class SecurityConfig {
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         log.debug("Creating authentication manager");
         return config.getAuthenticationManager();
+    }
+
+    /**
+     * Configures CORS (Cross-Origin Resource Sharing) settings.
+     * This is required for Spring Security to properly handle CORS preflight requests.
+     * Uses setAllowedOriginPatterns to support wildcard patterns like https://*.vercel.app
+     *
+     * @return the CORS configuration source
+     */
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        log.info("Configuring CORS in Spring Security for origin patterns: {}", String.join(", ", allowedOrigins));
+
+        CorsConfiguration configuration = new CorsConfiguration();
+        // Use setAllowedOriginPatterns instead of setAllowedOrigins to support wildcards
+        configuration.setAllowedOriginPatterns(Arrays.asList(allowedOrigins));
+        configuration.setAllowedMethods(Arrays.asList(allowedMethods));
+        configuration.setAllowedHeaders(Arrays.asList(allowedHeaders));
+        configuration.setAllowCredentials(allowCredentials);
+        configuration.setExposedHeaders(Arrays.asList("Authorization", "X-Rate-Limit-Remaining", "X-Rate-Limit-Reset"));
+        configuration.setMaxAge(3600L); // 1 hour
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+
+        log.info("CORS configured - Allow credentials: {}, Methods: {}", allowCredentials, String.join(", ", allowedMethods));
+        return source;
     }
 }
