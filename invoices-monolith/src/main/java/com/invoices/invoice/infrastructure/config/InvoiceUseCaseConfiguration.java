@@ -4,7 +4,6 @@ import com.invoices.invoice.domain.ports.ClientRepository;
 import com.invoices.invoice.domain.ports.CompanyRepository;
 import com.invoices.invoice.domain.ports.InvoiceEventPublisher;
 import com.invoices.invoice.domain.ports.InvoiceRepository;
-import com.invoices.invoice.domain.ports.PdfGeneratorService;
 import com.invoices.invoice.domain.usecases.*;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -58,25 +57,5 @@ public class InvoiceUseCaseConfiguration {
             InvoiceEventPublisher eventPublisher
     ) {
         return new DeleteInvoiceUseCase(repository, clientRepository, eventPublisher);
-    }
-
-    @Bean
-    public GeneratePdfUseCase generatePdfUseCase(PdfGeneratorService pdfGeneratorService) {
-        return new GeneratePdfUseCase(pdfGeneratorService);
-    }
-
-    @Bean
-    public GenerateInvoicePdfUseCase generateInvoicePdfUseCase(
-        InvoiceRepository invoiceRepository,
-        CompanyRepository companyRepository,
-        ClientRepository clientRepository,
-        PdfGeneratorService pdfGeneratorService
-    ) {
-        return new GenerateInvoicePdfUseCase(
-            invoiceRepository,
-            companyRepository,
-            clientRepository,
-            pdfGeneratorService
-        );
     }
 }
