@@ -6,6 +6,7 @@ import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -33,7 +34,11 @@ public class CreateInvoiceRequest {
 
     @NotBlank(message = "Invoice number is required")
     @Size(max = 50, message = "Invoice number must not exceed 50 characters")
+    @Pattern(regexp = "^[A-Za-z0-9./-]+$", message = "Formato inválido (solo letras, números, guiones, puntos y barras)")
     private String invoiceNumber;
+
+    @Size(max = 50, message = "Settlement number must not exceed 50 characters")
+    private String settlementNumber;
 
     @DecimalMin(value = "0.0", message = "IRPF percentage must be non-negative")
     @DecimalMax(value = "100.0", message = "IRPF percentage cannot exceed 100%")

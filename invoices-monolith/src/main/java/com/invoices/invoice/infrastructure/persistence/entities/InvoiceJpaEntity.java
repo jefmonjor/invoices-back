@@ -28,8 +28,11 @@ public class InvoiceJpaEntity {
     @Column(name = "client_id", nullable = false)
     private Long clientId;
 
-    @Column(name = "invoice_number", nullable = false, unique = true, length = 20)
+    @Column(name = "invoice_number", nullable = false, unique = true, length = 50)
     private String invoiceNumber;
+
+    @Column(name = "settlement_number", length = 50)
+    private String settlementNumber;
 
     @Column(name = "issue_date", nullable = false)
     private LocalDateTime issueDate;
@@ -121,6 +124,14 @@ public class InvoiceJpaEntity {
 
     public void setInvoiceNumber(String invoiceNumber) {
         this.invoiceNumber = invoiceNumber;
+    }
+
+    public String getSettlementNumber() {
+        return settlementNumber;
+    }
+
+    public void setSettlementNumber(String settlementNumber) {
+        this.settlementNumber = settlementNumber;
     }
 
     public LocalDateTime getIssueDate() {
