@@ -426,7 +426,8 @@ public class GlobalExceptionHandler {
 
     /**
      * Handles InvalidInvoiceNumberFormatException (400 Bad Request).
-     * Thrown when the invoice number doesn't match the required format (YYYY-XXX).
+     * Thrown when the invoice number doesn't match the required format.
+     * Accepts: YYYY-XXX or PREFIX-YYYY-XXX formats.
      */
     @ExceptionHandler(InvalidInvoiceNumberFormatException.class)
     public ResponseEntity<ErrorResponse> handleInvalidInvoiceNumberFormatException(
@@ -439,7 +440,7 @@ public class GlobalExceptionHandler {
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.BAD_REQUEST.value())
                 .error("Bad Request")
-                .message("Invalid invoice number format. Expected format: YYYY-XXX (e.g., 2024-001)")
+                .message("Invalid invoice number format. Expected format: YYYY-XXX (e.g., 2024-001) or PREFIX-YYYY-XXX (e.g., INV-2025-001)")
                 .path(request.getRequestURI())
                 .build();
 
