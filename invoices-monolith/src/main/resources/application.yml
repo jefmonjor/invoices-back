@@ -101,14 +101,6 @@ s3:
   region: ${S3_REGION:auto}
   path-style-access: ${S3_PATH_STYLE_ACCESS:true}
 
-# Invoice PDF Configuration
-invoice:
-  pdf:
-    # Enable JasperReports fallback when no stored PDF is found
-    # Default: false (returns 404 with message to generate from frontend)
-    # Set to true to enable legacy JasperReports generation as fallback
-    enable-jasper-fallback: ${INVOICE_PDF_ENABLE_JASPER_FALLBACK:false}
-
 # CORS Configuration
 cors:
   # Add your Vercel deployment URLs here (both production and preview deployments)
