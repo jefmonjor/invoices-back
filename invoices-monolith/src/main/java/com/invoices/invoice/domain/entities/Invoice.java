@@ -17,7 +17,8 @@ import java.util.regex.Pattern;
  * NO dependencies on frameworks (JPA, Spring, etc.).
  */
 public class Invoice {
-    private static final Pattern INVOICE_NUMBER_PATTERN = Pattern.compile("\\d{4}-\\d{3}");
+    // Accept formats: 2025-001 or INV-2025-001 or PREFIX-2025-001
+    private static final Pattern INVOICE_NUMBER_PATTERN = Pattern.compile("^([A-Z]+-)?\\d{4}-\\d{3}$");
     private static final int DECIMAL_SCALE = 2;
     private static final BigDecimal ONE_HUNDRED = new BigDecimal("100");
 
