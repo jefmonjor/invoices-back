@@ -83,6 +83,7 @@ public class InvoiceController {
             request.getClientId(),
             request.getInvoiceNumber(),
             request.getSettlementNumber(),
+            request.getDate(),
             request.getIrpfPercentage(),
             request.getRePercentage(),
             items,

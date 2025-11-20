@@ -14,6 +14,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -39,6 +40,9 @@ public class CreateInvoiceRequest {
 
     @Size(max = 50, message = "Settlement number must not exceed 50 characters")
     private String settlementNumber;
+
+    @NotNull(message = "Invoice date is required")
+    private LocalDateTime date;
 
     @DecimalMin(value = "0.0", message = "IRPF percentage must be non-negative")
     @DecimalMax(value = "100.0", message = "IRPF percentage cannot exceed 100%")
