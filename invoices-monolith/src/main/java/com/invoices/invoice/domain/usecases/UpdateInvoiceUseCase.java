@@ -11,6 +11,8 @@ import com.invoices.invoice.domain.exceptions.ClientNotFoundException;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Use case: Update existing invoice.
@@ -63,7 +65,7 @@ public class UpdateInvoiceUseCase {
                     "Cannot change company ID. Current: " + invoice.getCompanyId() + ", Requested: " + companyId);
         }
 
-        if (invoiceNumber != null && !invoiceNumber.equals(invoice.getInvoiceNumber())) {
+        if (invoiceNumber != null && !areInvoiceNumbersEquivalent(invoice.getInvoiceNumber(), invoiceNumber)) {
             throw new IllegalArgumentException(
                     "Cannot change invoice number. Current: " + invoice.getInvoiceNumber() + ", Requested: "
                             + invoiceNumber);
@@ -117,5 +119,54 @@ public class UpdateInvoiceUseCase {
         eventPublisher.publishInvoiceUpdated(updatedInvoice, client.getEmail());
 
         return updatedInvoice;
+    }
+
+    /**
+     * Compares two invoice numbers for equivalence, normalizing optional letter prefixes.
+     * This allows invoice numbers like "058/2025" and "A058/2025" to be considered equivalent
+     * for validation purposes, since the prefix is optional and doesn't change the core number.
+     *
+     * Examples:
+     * - "058/2025" and "A058/2025" are equivalent
+     * - "047/2025" and "047/2025" are equivalent
+     * - "A057/2025" and "B057/2025" are NOT equivalent (different prefixes)
+     * - "058/2025" and "059/2025" are NOT equivalent (different numbers)
+     *
+     * @param existing the existing invoice number in the database
+     * @param requested the requested invoice number from the update request
+     * @return true if the invoice numbers are equivalent, false otherwise
+     */
+    private boolean areInvoiceNumbersEquivalent(String existing, String requested) {
+        if (existing == null || requested == null) {
+            return existing == null && requested == null;
+        }
+
+        // Direct match - most common case
+        if (existing.equals(requested)) {
+            return true;
+        }
+
+        // Normalize both numbers by extracting the numeric part with separators
+        // Pattern matches: optional letter prefix + numeric part with separators (/, -, .)
+        Pattern pattern = Pattern.compile("^([A-Za-z]*)(.*)$");
+
+        Matcher existingMatcher = pattern.matcher(existing);
+        Matcher requestedMatcher = pattern.matcher(requested);
+
+        if (existingMatcher.matches() && requestedMatcher.matches()) {
+            String existingPrefix = existingMatcher.group(1);
+            String existingCore = existingMatcher.group(2);
+            String requestedPrefix = requestedMatcher.group(1);
+            String requestedCore = requestedMatcher.group(2);
+
+            // If core numbers match, check if one has no prefix (allowing prefix to be added/removed)
+            if (existingCore.equals(requestedCore)) {
+                // Allow if one has no prefix and the other does (e.g., "058/2025" <-> "A058/2025")
+                // or if both have the same prefix
+                return existingPrefix.isEmpty() || requestedPrefix.isEmpty() || existingPrefix.equals(requestedPrefix);
+            }
+        }
+
+        return false;
     }
 }
