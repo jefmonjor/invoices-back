@@ -28,4 +28,22 @@ public class ClientDtoMapper {
             .email(client.getEmail())
             .build();
     }
+
+    public Client toDomain(ClientDTO dto) {
+        if (dto == null) {
+            return null;
+        }
+
+        return new Client(
+            dto.getId(),
+            dto.getBusinessName(),
+            dto.getTaxId(),
+            dto.getAddress(),
+            dto.getCity(),
+            dto.getPostalCode(),
+            dto.getProvince(),
+            dto.getPhone(),
+            dto.getEmail()
+        );
+    }
 }
