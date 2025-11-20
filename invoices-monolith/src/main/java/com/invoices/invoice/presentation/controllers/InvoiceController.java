@@ -35,6 +35,7 @@ public class InvoiceController {
     private final UpdateInvoiceUseCase updateInvoiceUseCase;
     private final DeleteInvoiceUseCase deleteInvoiceUseCase;
     private final GeneratePdfUseCase generatePdfUseCase;
+    private final GenerateInvoicePdfUseCase generateInvoicePdfUseCase;
     private final InvoiceDtoMapper dtoMapper;
 
     public InvoiceController(
@@ -44,6 +45,7 @@ public class InvoiceController {
         UpdateInvoiceUseCase updateInvoiceUseCase,
         DeleteInvoiceUseCase deleteInvoiceUseCase,
         GeneratePdfUseCase generatePdfUseCase,
+        GenerateInvoicePdfUseCase generateInvoicePdfUseCase,
         InvoiceDtoMapper dtoMapper
     ) {
         this.getInvoiceByIdUseCase = getInvoiceByIdUseCase;
@@ -52,6 +54,7 @@ public class InvoiceController {
         this.updateInvoiceUseCase = updateInvoiceUseCase;
         this.deleteInvoiceUseCase = deleteInvoiceUseCase;
         this.generatePdfUseCase = generatePdfUseCase;
+        this.generateInvoicePdfUseCase = generateInvoicePdfUseCase;
         this.dtoMapper = dtoMapper;
     }
 
@@ -123,6 +126,12 @@ public class InvoiceController {
         // Execute use case
         Invoice invoice = updateInvoiceUseCase.execute(
             id,
+            request.getCompanyId(),
+            request.getClientId(),
+            request.getInvoiceNumber(),
+            request.getSettlementNumber(),
+            request.getIrpfPercentage(),
+            request.getRePercentage(),
             updatedItems,
             request.getNotes()
         );
@@ -139,6 +148,19 @@ public class InvoiceController {
     public ResponseEntity<Void> deleteInvoice(@PathVariable Long id) {
         deleteInvoiceUseCase.execute(id);
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * GET /invoices/{id}/pdf - Generate PDF for invoice
+     */
+    @GetMapping("/{id}/pdf")
+    public ResponseEntity<byte[]> generateInvoicePdf(@PathVariable Long id) {
+        byte[] pdfContent = generateInvoicePdfUseCase.execute(id);
+
+        return ResponseEntity.ok()
+            .header("Content-Type", "application/pdf")
+            .header("Content-Disposition", "inline; filename=invoice-" + id + ".pdf")
+            .body(pdfContent);
     }
 
     /**

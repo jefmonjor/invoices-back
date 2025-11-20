@@ -7,6 +7,16 @@ spring:
   application:
     name: invoices-monolith
 
+  # Jackson Configuration - Date/Time Serialization
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+      write-date-timestamps-as-nanoseconds: false
+    deserialization:
+      read-date-timestamps-as-nanoseconds: false
+    time-zone: UTC
+    date-format: yyyy-MM-dd'T'HH:mm:ss
+
   # Database Configuration - Single database with multiple schemas
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/invoices}
