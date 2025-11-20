@@ -44,6 +44,19 @@ public class TestConfig {
     }
 
     /**
+     * Mock MinioProperties for tests.
+     */
+    @Bean
+    public com.invoices.document.config.MinioConfig.MinioProperties minioProperties() {
+        com.invoices.document.config.MinioConfig.MinioProperties properties = new com.invoices.document.config.MinioConfig.MinioProperties();
+        properties.setBucketName("test-bucket");
+        properties.setEndpoint("http://localhost:9000");
+        properties.setAccessKey("test");
+        properties.setSecretKey("test");
+        return properties;
+    }
+
+    /**
      * ObjectMapper for JSON serialization in tests.
      * Since RedisConfig won't load in test profile, we provide this here.
      */

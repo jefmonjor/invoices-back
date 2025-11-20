@@ -17,6 +17,11 @@ spring:
     time-zone: UTC
     date-format: yyyy-MM-dd'T'HH:mm:ss
 
+  # MVC Configuration - Fix error timestamp format (Spring Boot 3 returns array by default)
+  mvc:
+    format:
+      date-time: iso
+
   # Database Configuration - Single database with multiple schemas
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/invoices}

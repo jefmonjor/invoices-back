@@ -16,8 +16,17 @@ import java.util.List;
  * Use case: Update existing invoice.
  * Business logic for updating invoice details.
  *
- * Note: Core invoice fields (companyId, clientId, invoiceNumber, irpfPercentage, rePercentage)
- * are immutable and cannot be changed after creation. Only notes, settlementNumber, and items can be updated.
+ * IMMUTABLE FIELDS (cannot be changed after creation):
+ * - companyId: Locked at creation
+ * - invoiceNumber: Locked at creation
+ *
+ * UPDATABLE FIELDS:
+ * - clientId: Can be changed (validates client exists)
+ * - irpfPercentage: Can be changed (affects invoice calculations)
+ * - rePercentage: Can be changed (affects invoice calculations)
+ * - settlementNumber: Can be changed
+ * - notes: Can be changed
+ * - items: Can be replaced entirely
  */
 public class UpdateInvoiceUseCase {
 
@@ -28,57 +37,54 @@ public class UpdateInvoiceUseCase {
     public UpdateInvoiceUseCase(
             InvoiceRepository invoiceRepository,
             ClientRepository clientRepository,
-            InvoiceEventPublisher eventPublisher
-    ) {
+            InvoiceEventPublisher eventPublisher) {
         this.invoiceRepository = invoiceRepository;
         this.clientRepository = clientRepository;
         this.eventPublisher = eventPublisher;
     }
 
     public Invoice execute(
-        Long invoiceId,
-        Long companyId,
-        Long clientId,
-        String invoiceNumber,
-        String settlementNumber,
-        BigDecimal irpfPercentage,
-        BigDecimal rePercentage,
-        List<InvoiceItem> updatedItems,
-        String notes
-    ) {
+            Long invoiceId,
+            Long companyId,
+            Long clientId,
+            String invoiceNumber,
+            String settlementNumber,
+            BigDecimal irpfPercentage,
+            BigDecimal rePercentage,
+            List<InvoiceItem> updatedItems,
+            String notes) {
         // Find existing invoice
         Invoice invoice = invoiceRepository.findById(invoiceId)
-            .orElseThrow(() -> new InvoiceNotFoundException(invoiceId));
+                .orElseThrow(() -> new InvoiceNotFoundException(invoiceId));
 
-        // Validate immutable fields haven't changed (if provided)
+        // Validate truly immutable fields haven't changed (if provided)
         if (companyId != null && !companyId.equals(invoice.getCompanyId())) {
             throw new IllegalArgumentException(
-                "Cannot change company ID. Current: " + invoice.getCompanyId() + ", Requested: " + companyId
-            );
-        }
-
-        if (clientId != null && !clientId.equals(invoice.getClientId())) {
-            throw new IllegalArgumentException(
-                "Cannot change client ID. Current: " + invoice.getClientId() + ", Requested: " + clientId
-            );
+                    "Cannot change company ID. Current: " + invoice.getCompanyId() + ", Requested: " + companyId);
         }
 
         if (invoiceNumber != null && !invoiceNumber.equals(invoice.getInvoiceNumber())) {
             throw new IllegalArgumentException(
-                "Cannot change invoice number. Current: " + invoice.getInvoiceNumber() + ", Requested: " + invoiceNumber
-            );
+                    "Cannot change invoice number. Current: " + invoice.getInvoiceNumber() + ", Requested: "
+                            + invoiceNumber);
         }
 
+        // Update client ID if provided and different
+        if (clientId != null && !clientId.equals(invoice.getClientId())) {
+            // Validate client exists
+            clientRepository.findById(clientId)
+                    .orElseThrow(() -> new ClientNotFoundException(clientId));
+            invoice.setClientId(clientId);
+        }
+
+        // Update IRPF percentage if provided and different
         if (irpfPercentage != null && invoice.getIrpfPercentage().compareTo(irpfPercentage) != 0) {
-            throw new IllegalArgumentException(
-                "Cannot change IRPF percentage. Current: " + invoice.getIrpfPercentage() + "%, Requested: " + irpfPercentage + "%"
-            );
+            invoice.setIrpfPercentage(irpfPercentage);
         }
 
+        // Update RE percentage if provided and different
         if (rePercentage != null && invoice.getRePercentage().compareTo(rePercentage) != 0) {
-            throw new IllegalArgumentException(
-                "Cannot change RE percentage. Current: " + invoice.getRePercentage() + "%, Requested: " + rePercentage + "%"
-            );
+            invoice.setRePercentage(rePercentage);
         }
 
         // Update settlement number if provided

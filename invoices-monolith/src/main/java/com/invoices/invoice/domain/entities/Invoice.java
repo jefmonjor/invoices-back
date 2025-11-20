@@ -17,37 +17,38 @@ import java.util.regex.Pattern;
  * NO dependencies on frameworks (JPA, Spring, etc.).
  */
 public class Invoice {
-    // Accept formats matching frontend: letters (upper/lower), numbers, hyphens, dots
-    // Examples: FacturaA057.pdf, 4592JBZ-SEP-25.pdf, INV-2025-001, 047/2025, A057/2025
+    // Accept formats matching frontend: letters (upper/lower), numbers, hyphens,
+    // dots
+    // Examples: FacturaA057.pdf, 4592JBZ-SEP-25.pdf, INV-2025-001, 047/2025,
+    // A057/2025
     private static final Pattern INVOICE_NUMBER_PATTERN = Pattern.compile("^[A-Za-z0-9./-]+$");
     private static final int DECIMAL_SCALE = 2;
     private static final BigDecimal ONE_HUNDRED = new BigDecimal("100");
 
     private final Long id;
-    private final Long companyId;    // ID de la empresa emisora
-    private final Long clientId;     // ID del cliente
-    private Company company;         // Datos completos del emisor (opcional, para PDFs)
-    private Client client;           // Datos completos del cliente (opcional, para PDFs)
+    private final Long companyId; // ID de la empresa emisora
+    private Long clientId; // ID del cliente
+    private Company company; // Datos completos del emisor (opcional, para PDFs)
+    private Client client; // Datos completos del cliente (opcional, para PDFs)
     private final String invoiceNumber;
     private String settlementNumber; // Número de liquidación (opcional)
     private final LocalDateTime issueDate;
     private final List<InvoiceItem> items;
-    private final BigDecimal irpfPercentage;
-    private final BigDecimal rePercentage;
+    private BigDecimal irpfPercentage;
+    private BigDecimal rePercentage;
     private InvoiceStatus status;
     private String notes;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
     public Invoice(
-        Long id,
-        Long companyId,
-        Long clientId,
-        String invoiceNumber,
-        LocalDateTime issueDate,
-        BigDecimal irpfPercentage,
-        BigDecimal rePercentage
-    ) {
+            Long id,
+            Long companyId,
+            Long clientId,
+            String invoiceNumber,
+            LocalDateTime issueDate,
+            BigDecimal irpfPercentage,
+            BigDecimal rePercentage) {
         validateInvoiceNumber(invoiceNumber);
         validatePercentages(irpfPercentage, rePercentage);
 
@@ -58,11 +59,11 @@ public class Invoice {
         this.issueDate = issueDate;
         this.items = new ArrayList<>();
         this.irpfPercentage = irpfPercentage != null
-            ? irpfPercentage.setScale(DECIMAL_SCALE, RoundingMode.HALF_UP)
-            : BigDecimal.ZERO;
+                ? irpfPercentage.setScale(DECIMAL_SCALE, RoundingMode.HALF_UP)
+                : BigDecimal.ZERO;
         this.rePercentage = rePercentage != null
-            ? rePercentage.setScale(DECIMAL_SCALE, RoundingMode.HALF_UP)
-            : BigDecimal.ZERO;
+                ? rePercentage.setScale(DECIMAL_SCALE, RoundingMode.HALF_UP)
+                : BigDecimal.ZERO;
         this.status = InvoiceStatus.DRAFT;
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
@@ -71,8 +72,7 @@ public class Invoice {
     public void addItem(InvoiceItem item) {
         if (status == InvoiceStatus.FINALIZED || status == InvoiceStatus.PAID) {
             throw new InvalidInvoiceStateException(
-                "Cannot modify invoice in " + status.getDisplayName() + " status"
-            );
+                    "Cannot modify invoice in " + status.getDisplayName() + " status");
         }
         items.add(item);
         updateTimestamp();
@@ -80,9 +80,11 @@ public class Invoice {
 
     /**
      * Adds an item without validating invoice state.
-     * FOR INTERNAL USE ONLY - Used by persistence layer when reconstructing entities from database.
+     * FOR INTERNAL USE ONLY - Used by persistence layer when reconstructing
+     * entities from database.
      * DO NOT use this method in business logic.
-     * WARNING: Bypasses all state validations. Only use in mapper/reconstruction context.
+     * WARNING: Bypasses all state validations. Only use in mapper/reconstruction
+     * context.
      *
      * @param item the item to add
      */
@@ -93,8 +95,7 @@ public class Invoice {
     public void removeItem(InvoiceItem item) {
         if (status == InvoiceStatus.FINALIZED || status == InvoiceStatus.PAID) {
             throw new InvalidInvoiceStateException(
-                "Cannot modify invoice in " + status.getDisplayName() + " status"
-            );
+                    "Cannot modify invoice in " + status.getDisplayName() + " status");
         }
         items.remove(item);
         updateTimestamp();
@@ -108,8 +109,7 @@ public class Invoice {
     public void clearItems() {
         if (status == InvoiceStatus.FINALIZED || status == InvoiceStatus.PAID) {
             throw new InvalidInvoiceStateException(
-                "Cannot modify invoice in " + status.getDisplayName() + " status"
-            );
+                    "Cannot modify invoice in " + status.getDisplayName() + " status");
         }
         items.clear();
         updateTimestamp();
@@ -122,13 +122,11 @@ public class Invoice {
     public void markAsPending() {
         if (status != InvoiceStatus.DRAFT) {
             throw new InvalidInvoiceStateException(
-                "Can only mark draft invoices as pending. Current status: " + status.getDisplayName()
-            );
+                    "Can only mark draft invoices as pending. Current status: " + status.getDisplayName());
         }
         if (items.isEmpty()) {
             throw new InvalidInvoiceStateException(
-                "Cannot mark invoice as pending without items"
-            );
+                    "Cannot mark invoice as pending without items");
         }
         this.status = InvoiceStatus.PENDING;
         updateTimestamp();
@@ -141,8 +139,7 @@ public class Invoice {
     public void markAsFinalized() {
         if (status != InvoiceStatus.PENDING) {
             throw new InvalidInvoiceStateException(
-                "Can only finalize pending invoices. Current status: " + status.getDisplayName()
-            );
+                    "Can only finalize pending invoices. Current status: " + status.getDisplayName());
         }
         this.status = InvoiceStatus.FINALIZED;
         updateTimestamp();
@@ -155,8 +152,7 @@ public class Invoice {
     public void markAsPaid() {
         if (status != InvoiceStatus.PENDING && status != InvoiceStatus.FINALIZED) {
             throw new InvalidInvoiceStateException(
-                "Can only mark pending or finalized invoices as paid. Current status: " + status.getDisplayName()
-            );
+                    "Can only mark pending or finalized invoices as paid. Current status: " + status.getDisplayName());
         }
         this.status = InvoiceStatus.PAID;
         updateTimestamp();
@@ -165,8 +161,7 @@ public class Invoice {
     public void cancel() {
         if (status == InvoiceStatus.PAID) {
             throw new InvalidInvoiceStateException(
-                "Cannot cancel paid invoices"
-            );
+                    "Cannot cancel paid invoices");
         }
         this.status = InvoiceStatus.CANCELLED;
         updateTimestamp();
@@ -174,33 +169,33 @@ public class Invoice {
 
     public BigDecimal calculateBaseAmount() {
         return items.stream()
-            .map(InvoiceItem::calculateSubtotal)
-            .reduce(BigDecimal.ZERO, BigDecimal::add)
-            .setScale(DECIMAL_SCALE, RoundingMode.HALF_UP);
+                .map(InvoiceItem::calculateSubtotal)
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .setScale(DECIMAL_SCALE, RoundingMode.HALF_UP);
     }
 
     public BigDecimal calculateIrpfAmount() {
         BigDecimal baseAmount = calculateBaseAmount();
         return baseAmount.multiply(irpfPercentage)
-            .divide(ONE_HUNDRED, DECIMAL_SCALE, RoundingMode.HALF_UP);
+                .divide(ONE_HUNDRED, DECIMAL_SCALE, RoundingMode.HALF_UP);
     }
 
     public BigDecimal calculateReAmount() {
         BigDecimal baseAmount = calculateBaseAmount();
         return baseAmount.multiply(rePercentage)
-            .divide(ONE_HUNDRED, DECIMAL_SCALE, RoundingMode.HALF_UP);
+                .divide(ONE_HUNDRED, DECIMAL_SCALE, RoundingMode.HALF_UP);
     }
 
     public BigDecimal calculateTotalAmount() {
         BigDecimal itemsTotal = items.stream()
-            .map(InvoiceItem::calculateTotal)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                .map(InvoiceItem::calculateTotal)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         BigDecimal irpfAmount = calculateIrpfAmount();
         BigDecimal reAmount = calculateReAmount();
 
         return itemsTotal.subtract(irpfAmount).add(reAmount)
-            .setScale(DECIMAL_SCALE, RoundingMode.HALF_UP);
+                .setScale(DECIMAL_SCALE, RoundingMode.HALF_UP);
     }
 
     public void setNotes(String notes) {
@@ -215,9 +210,12 @@ public class Invoice {
 
     /**
      * Sets the invoice status without validation.
-     * FOR INTERNAL USE ONLY - Used by persistence layer when reconstructing entities from database.
-     * DO NOT use this method in business logic. Use markAsPending(), markAsPaid(), cancel() instead.
-     * WARNING: Bypasses all state transition validations. Only use in mapper/reconstruction context.
+     * FOR INTERNAL USE ONLY - Used by persistence layer when reconstructing
+     * entities from database.
+     * DO NOT use this method in business logic. Use markAsPending(), markAsPaid(),
+     * cancel() instead.
+     * WARNING: Bypasses all state transition validations. Only use in
+     * mapper/reconstruction context.
      *
      * @param status the status to set
      */
@@ -227,8 +225,10 @@ public class Invoice {
 
     /**
      * Sets timestamps without validation.
-     * FOR INTERNAL USE ONLY - Used by persistence layer when reconstructing entities from database.
-     * WARNING: Directly sets timestamps from database. Only use in mapper/reconstruction context.
+     * FOR INTERNAL USE ONLY - Used by persistence layer when reconstructing
+     * entities from database.
+     * WARNING: Directly sets timestamps from database. Only use in
+     * mapper/reconstruction context.
      *
      * @param createdAt the creation timestamp
      * @param updatedAt the update timestamp
@@ -242,8 +242,10 @@ public class Invoice {
 
     /**
      * Sets notes without updating timestamp.
-     * FOR INTERNAL USE ONLY - Used by persistence layer when reconstructing entities from database.
-     * WARNING: Does not update timestamp. Only use in mapper/reconstruction context.
+     * FOR INTERNAL USE ONLY - Used by persistence layer when reconstructing
+     * entities from database.
+     * WARNING: Does not update timestamp. Only use in mapper/reconstruction
+     * context.
      *
      * @param notes the notes to set
      */
@@ -253,8 +255,10 @@ public class Invoice {
 
     /**
      * Sets settlement number without updating timestamp.
-     * FOR INTERNAL USE ONLY - Used by persistence layer when reconstructing entities from database.
-     * WARNING: Does not update timestamp. Only use in mapper/reconstruction context.
+     * FOR INTERNAL USE ONLY - Used by persistence layer when reconstructing
+     * entities from database.
+     * WARNING: Does not update timestamp. Only use in mapper/reconstruction
+     * context.
      *
      * @param settlementNumber the settlement number to set
      */
@@ -300,6 +304,51 @@ public class Invoice {
 
     public void setClient(Client client) {
         this.client = client;
+    }
+
+    /**
+     * Sets the client ID.
+     * Updates the clientId reference. Does not validate the client exists.
+     * Caller should ensure the client exists before calling this method.
+     *
+     * @param clientId the new client ID
+     */
+    public void setClientId(Long clientId) {
+        if (clientId == null) {
+            throw new IllegalArgumentException("Client ID cannot be null");
+        }
+        this.clientId = clientId;
+        updateTimestamp();
+    }
+
+    /**
+     * Sets the IRPF percentage.
+     * Validates percentage is between 0 and 100.
+     * This will affect invoice calculations.
+     *
+     * @param irpfPercentage the new IRPF percentage
+     */
+    public void setIrpfPercentage(BigDecimal irpfPercentage) {
+        validatePercentages(irpfPercentage, null);
+        this.irpfPercentage = irpfPercentage != null
+                ? irpfPercentage.setScale(DECIMAL_SCALE, RoundingMode.HALF_UP)
+                : BigDecimal.ZERO;
+        updateTimestamp();
+    }
+
+    /**
+     * Sets the RE percentage.
+     * Validates percentage is between 0 and 100.
+     * This will affect invoice calculations.
+     *
+     * @param rePercentage the new RE percentage
+     */
+    public void setRePercentage(BigDecimal rePercentage) {
+        validatePercentages(null, rePercentage);
+        this.rePercentage = rePercentage != null
+                ? rePercentage.setScale(DECIMAL_SCALE, RoundingMode.HALF_UP)
+                : BigDecimal.ZERO;
+        updateTimestamp();
     }
 
     // Getters (no setters - prefer immutability)

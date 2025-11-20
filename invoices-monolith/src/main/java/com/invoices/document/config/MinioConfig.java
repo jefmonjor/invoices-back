@@ -6,7 +6,6 @@ import io.minio.MinioClient;
 import jakarta.annotation.PostConstruct;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -14,7 +13,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 @Configuration
-@Profile("!test")  // Don't load MinioConfig in test profile - mocks are provided by TestConfig
+@Profile("!test") // Don't load MinioConfig in test profile - mocks are provided by TestConfig
 @Slf4j
 public class MinioConfig {
 
@@ -41,7 +40,7 @@ public class MinioConfig {
 
     @Component
     @Slf4j
-    @Profile("!test")  // Don't run in test profile
+    @Profile("!test") // Don't run in test profile
     public static class MinioInitializer {
 
         private final MinioClient minioClient;
@@ -59,16 +58,14 @@ public class MinioConfig {
                 boolean exists = minioClient.bucketExists(
                         BucketExistsArgs.builder()
                                 .bucket(bucketName)
-                                .build()
-                );
+                                .build());
 
                 if (!exists) {
                     log.info("Creating MinIO bucket: {}", bucketName);
                     minioClient.makeBucket(
                             MakeBucketArgs.builder()
                                     .bucket(bucketName)
-                                    .build()
-                    );
+                                    .build());
                     log.info("MinIO bucket '{}' created successfully", bucketName);
                 } else {
                     log.info("MinIO bucket '{}' already exists", bucketName);

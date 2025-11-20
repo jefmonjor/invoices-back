@@ -2,14 +2,12 @@ package com.invoices.invoice.presentation.controllers;
 
 import com.invoices.invoice.domain.entities.Invoice;
 import com.invoices.invoice.domain.entities.InvoiceItem;
-import com.invoices.invoice.domain.exceptions.InvalidInvoiceStateException;
 import com.invoices.invoice.domain.exceptions.InvoiceNotFoundException;
 import com.invoices.invoice.domain.usecases.*;
 import com.invoices.invoice.dto.CreateInvoiceItemRequest;
 import com.invoices.invoice.dto.CreateInvoiceRequest;
 import com.invoices.invoice.dto.InvoiceDTO;
 import com.invoices.invoice.dto.UpdateInvoiceRequest;
-import com.invoices.invoice.domain.exceptions.ClientNotFoundException;
 import com.invoices.invoice.presentation.mappers.InvoiceDtoMapper;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -34,26 +32,22 @@ public class InvoiceController {
     private final CreateInvoiceUseCase createInvoiceUseCase;
     private final UpdateInvoiceUseCase updateInvoiceUseCase;
     private final DeleteInvoiceUseCase deleteInvoiceUseCase;
-    private final GeneratePdfUseCase generatePdfUseCase;
     private final GenerateInvoicePdfUseCase generateInvoicePdfUseCase;
     private final InvoiceDtoMapper dtoMapper;
 
     public InvoiceController(
-        GetInvoiceByIdUseCase getInvoiceByIdUseCase,
-        GetAllInvoicesUseCase getAllInvoicesUseCase,
-        CreateInvoiceUseCase createInvoiceUseCase,
-        UpdateInvoiceUseCase updateInvoiceUseCase,
-        DeleteInvoiceUseCase deleteInvoiceUseCase,
-        GeneratePdfUseCase generatePdfUseCase,
-        GenerateInvoicePdfUseCase generateInvoicePdfUseCase,
-        InvoiceDtoMapper dtoMapper
-    ) {
+            GetInvoiceByIdUseCase getInvoiceByIdUseCase,
+            GetAllInvoicesUseCase getAllInvoicesUseCase,
+            CreateInvoiceUseCase createInvoiceUseCase,
+            UpdateInvoiceUseCase updateInvoiceUseCase,
+            DeleteInvoiceUseCase deleteInvoiceUseCase,
+            GenerateInvoicePdfUseCase generateInvoicePdfUseCase,
+            InvoiceDtoMapper dtoMapper) {
         this.getInvoiceByIdUseCase = getInvoiceByIdUseCase;
         this.getAllInvoicesUseCase = getAllInvoicesUseCase;
         this.createInvoiceUseCase = createInvoiceUseCase;
         this.updateInvoiceUseCase = updateInvoiceUseCase;
         this.deleteInvoiceUseCase = deleteInvoiceUseCase;
-        this.generatePdfUseCase = generatePdfUseCase;
         this.generateInvoicePdfUseCase = generateInvoicePdfUseCase;
         this.dtoMapper = dtoMapper;
     }
@@ -65,8 +59,8 @@ public class InvoiceController {
     public ResponseEntity<List<InvoiceDTO>> getAllInvoices() {
         List<Invoice> invoices = getAllInvoicesUseCase.execute();
         List<InvoiceDTO> dtos = invoices.stream()
-            .map(dtoMapper::toDto)
-            .collect(Collectors.toList());
+                .map(dtoMapper::toDto)
+                .collect(Collectors.toList());
         return ResponseEntity.ok(dtos);
     }
 
@@ -77,20 +71,19 @@ public class InvoiceController {
     public ResponseEntity<InvoiceDTO> createInvoice(@Valid @RequestBody CreateInvoiceRequest request) {
         // Convert DTO items to domain InvoiceItems
         List<InvoiceItem> items = request.getItems().stream()
-            .map(this::toDomainItem)
-            .collect(Collectors.toList());
+                .map(this::toDomainItem)
+                .collect(Collectors.toList());
 
         // Execute use case
         Invoice invoice = createInvoiceUseCase.execute(
-            request.getCompanyId(),
-            request.getClientId(),
-            request.getInvoiceNumber(),
-            request.getSettlementNumber(),
-            request.getIrpfPercentage(),
-            request.getRePercentage(),
-            items,
-            request.getNotes()
-        );
+                request.getCompanyId(),
+                request.getClientId(),
+                request.getInvoiceNumber(),
+                request.getSettlementNumber(),
+                request.getIrpfPercentage(),
+                request.getRePercentage(),
+                items,
+                request.getNotes());
 
         // Convert to DTO and return
         InvoiceDTO dto = dtoMapper.toDto(invoice);
@@ -112,29 +105,27 @@ public class InvoiceController {
      */
     @PutMapping("/{id}")
     public ResponseEntity<InvoiceDTO> updateInvoice(
-        @PathVariable Long id,
-        @Valid @RequestBody UpdateInvoiceRequest request
-    ) {
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateInvoiceRequest request) {
         // Convert DTO items to domain InvoiceItems
         List<InvoiceItem> updatedItems = null;
         if (request.getItems() != null) {
             updatedItems = request.getItems().stream()
-                .map(this::toDomainItem)
-                .collect(Collectors.toList());
+                    .map(this::toDomainItem)
+                    .collect(Collectors.toList());
         }
 
         // Execute use case
         Invoice invoice = updateInvoiceUseCase.execute(
-            id,
-            request.getCompanyId(),
-            request.getClientId(),
-            request.getInvoiceNumber(),
-            request.getSettlementNumber(),
-            request.getIrpfPercentage(),
-            request.getRePercentage(),
-            updatedItems,
-            request.getNotes()
-        );
+                id,
+                request.getCompanyId(),
+                request.getClientId(),
+                request.getInvoiceNumber(),
+                request.getSettlementNumber(),
+                request.getIrpfPercentage(),
+                request.getRePercentage(),
+                updatedItems,
+                request.getNotes());
 
         // Convert to DTO and return
         InvoiceDTO dto = dtoMapper.toDto(invoice);
@@ -155,12 +146,25 @@ public class InvoiceController {
      */
     @GetMapping("/{id}/pdf")
     public ResponseEntity<byte[]> generateInvoicePdf(@PathVariable Long id) {
-        byte[] pdfContent = generateInvoicePdfUseCase.execute(id);
+        try {
+            byte[] pdfContent = generateInvoicePdfUseCase.execute(id);
 
-        return ResponseEntity.ok()
-            .header("Content-Type", "application/pdf")
-            .header("Content-Disposition", "inline; filename=invoice-" + id + ".pdf")
-            .body(pdfContent);
+            return ResponseEntity.ok()
+                    .header("Content-Type", "application/pdf")
+                    .header("Content-Disposition", "inline; filename=invoice-" + id + ".pdf")
+                    .body(pdfContent);
+        } catch (InvoiceNotFoundException e) {
+            // Return 404 for invoice not found
+            return ResponseEntity.notFound().build();
+        } catch (IllegalStateException e) {
+            // Return 500 for data integrity issues (company/client not found)
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(null);
+        } catch (Exception e) {
+            // Return 500 for any other errors
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(null);
+        }
     }
 
     /**
@@ -168,16 +172,15 @@ public class InvoiceController {
      */
     private InvoiceItem toDomainItem(CreateInvoiceItemRequest itemRequest) {
         InvoiceItem item = new InvoiceItem(
-            null, // ID will be generated
-            null, // Invoice ID will be set by Invoice.addItem()
-            itemRequest.getDescription(),
-            itemRequest.getUnits(),
-            itemRequest.getPrice(),
-            itemRequest.getVatPercentage(),
-            itemRequest.getDiscountPercentage() != null
-                ? itemRequest.getDiscountPercentage()
-                : BigDecimal.ZERO
-        );
+                null, // ID will be generated
+                null, // Invoice ID will be set by Invoice.addItem()
+                itemRequest.getDescription(),
+                itemRequest.getUnits(),
+                itemRequest.getPrice(),
+                itemRequest.getVatPercentage(),
+                itemRequest.getDiscountPercentage() != null
+                        ? itemRequest.getDiscountPercentage()
+                        : BigDecimal.ZERO);
 
         // Set extended fields if present
         if (itemRequest.getItemDate() != null) {

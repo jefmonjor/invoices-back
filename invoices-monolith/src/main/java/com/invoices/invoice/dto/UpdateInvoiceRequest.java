@@ -17,8 +17,23 @@ import java.util.List;
  * Request DTO for updating an existing invoice.
  * Matches OpenAPI specification v2.0.
  *
- * Note: companyId and invoiceNumber are immutable and will be ignored if provided.
- * Ignores unknown fields (like 'id', 'status', 'createdAt', etc.) from frontend.
+ * IMMUTABLE FIELDS (validated by backend):
+ * - companyId: Cannot be changed after invoice creation
+ * - invoiceNumber: Cannot be changed after invoice creation
+ *
+ * These fields can be sent in the request but if they differ from the
+ * existing invoice values, an IllegalArgumentException will be thrown.
+ *
+ * UPDATABLE FIELDS:
+ * - clientId: Can be updated (backend validates client exists)
+ * - irpfPercentage: Can be updated (affects invoice calculations)
+ * - rePercentage: Can be updated (affects invoice calculations)
+ * - settlementNumber: Can be updated
+ * - notes: Can be updated
+ * - items: Can be updated (replaces all items)
+ *
+ * Ignores unknown fields (like 'id', 'status', 'createdAt', etc.) from
+ * frontend.
  */
 @Data
 @Builder

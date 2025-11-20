@@ -31,8 +31,7 @@ public class MinioFileStorageService implements FileStorageService {
 
     public MinioFileStorageService(
             MinioClient minioClient,
-            MinioConfig.MinioProperties minioProperties
-    ) {
+            MinioConfig.MinioProperties minioProperties) {
         this.minioClient = minioClient;
         this.minioProperties = minioProperties;
     }
@@ -49,8 +48,7 @@ public class MinioFileStorageService implements FileStorageService {
                             .object(objectName)
                             .stream(fileContent.getInputStream(), fileContent.getSize(), -1)
                             .contentType(fileContent.getContentType())
-                            .build()
-            );
+                            .build());
 
             log.info("File stored successfully in MinIO: {}", objectName);
 
@@ -63,6 +61,7 @@ public class MinioFileStorageService implements FileStorageService {
     /**
      * Fallback method for storeFile when MinIO circuit is open.
      */
+    @SuppressWarnings("unused") // Called by CircuitBreaker via reflection
     private void storeFileFallback(String objectName, FileContent fileContent, Exception e) {
         log.error("Circuit breaker activated for file storage. MinIO service is unavailable", e);
         throw new FileUploadException("Storage service temporarily unavailable. Please try again later.", e);
@@ -78,8 +77,7 @@ public class MinioFileStorageService implements FileStorageService {
                     GetObjectArgs.builder()
                             .bucket(minioProperties.getBucketName())
                             .object(objectName)
-                            .build()
-            );
+                            .build());
 
             log.info("File retrieved successfully from MinIO: {}", objectName);
             return stream;
@@ -108,8 +106,7 @@ public class MinioFileStorageService implements FileStorageService {
                     RemoveObjectArgs.builder()
                             .bucket(minioProperties.getBucketName())
                             .object(objectName)
-                            .build()
-            );
+                            .build());
 
             log.info("File deleted successfully from MinIO: {}", objectName);
 
@@ -134,8 +131,7 @@ public class MinioFileStorageService implements FileStorageService {
                     StatObjectArgs.builder()
                             .bucket(minioProperties.getBucketName())
                             .object(objectName)
-                            .build()
-            );
+                            .build());
             return true;
 
         } catch (Exception e) {

@@ -110,10 +110,7 @@
 					<groupId>org.eclipse.jdt</groupId>
 					<artifactId>ecj</artifactId>
 				</exclusion>
-				<exclusion>
-					<groupId>com.lowagie</groupId>
-					<artifactId>itext</artifactId>
-				</exclusion>
+				<!-- iText is required for PDF generation - DO NOT EXCLUDE -->
 			</exclusions>
 		</dependency>
 

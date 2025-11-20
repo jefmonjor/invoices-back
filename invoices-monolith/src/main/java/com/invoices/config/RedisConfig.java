@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
+import org.springframework.data.redis.connection.lettuce.LettuceClientConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
@@ -20,7 +21,7 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
  */
 @Configuration
 @Slf4j
-@Profile("!test")  // Don't run in test profile
+@Profile("!test") // Don't run in test profile
 public class RedisConfig {
 
     @Value("${spring.redis.host:localhost}")
@@ -48,8 +49,16 @@ public class RedisConfig {
             redisConfig.setPassword(redisPassword);
         }
 
-        LettuceConnectionFactory factory = new LettuceConnectionFactory(redisConfig);
-        factory.setUseSsl(redisSsl);
+        LettuceClientConfiguration.LettuceClientConfigurationBuilder clientConfigBuilder = LettuceClientConfiguration
+                .builder();
+
+        if (redisSsl) {
+            clientConfigBuilder.useSsl();
+        }
+
+        LettuceClientConfiguration clientConfig = clientConfigBuilder.build();
+
+        LettuceConnectionFactory factory = new LettuceConnectionFactory(redisConfig, clientConfig);
 
         log.info("Configuring Redis connection: {}:{} (SSL: {})", redisHost, redisPort, redisSsl);
 
