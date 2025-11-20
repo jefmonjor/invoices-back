@@ -107,6 +107,8 @@ public class SecurityConfig {
                         // Protected endpoints - require authentication
                         .requestMatchers("/api/users/**").authenticated()
                         .requestMatchers("/api/invoices/**").authenticated()
+                        .requestMatchers("/api/companies/**").authenticated()
+                        .requestMatchers("/api/clients/**").authenticated()
                         .requestMatchers("/api/documents/**").authenticated()
                         .requestMatchers("/api/audit/**").authenticated()
 
