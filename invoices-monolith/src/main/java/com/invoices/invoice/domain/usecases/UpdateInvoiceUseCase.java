@@ -122,19 +122,24 @@ public class UpdateInvoiceUseCase {
     }
 
     /**
-     * Compares two invoice numbers for equivalence, normalizing optional letter prefixes.
-     * This allows invoice numbers like "058/2025" and "A058/2025" to be considered equivalent
-     * for validation purposes, since the prefix is optional and doesn't change the core number.
+     * Compares two invoice numbers for equivalence by checking if they share the same core number.
+     * The letter prefix is considered mutable and can be added, removed, or changed freely.
+     * Only the core numeric part (numbers and separators) is immutable.
      *
-     * Examples:
-     * - "058/2025" and "A058/2025" are equivalent
-     * - "047/2025" and "047/2025" are equivalent
-     * - "A057/2025" and "B057/2025" are NOT equivalent (different prefixes)
-     * - "058/2025" and "059/2025" are NOT equivalent (different numbers)
+     * Examples of ALLOWED updates (same core number):
+     * - "058/2025" → "A058/2025" ✓ (adding prefix)
+     * - "058/2025" → "JKAS058/2025" ✓ (adding multi-letter prefix)
+     * - "A058/2025" → "B058/2025" ✓ (changing prefix)
+     * - "A058/2025" → "058/2025" ✓ (removing prefix)
+     * - "JKAS058/2025" → "XYZ058/2025" ✓ (changing prefix)
+     *
+     * Examples of REJECTED updates (different core numbers):
+     * - "058/2025" → "059/2025" ✗ (different numbers)
+     * - "A058/2025" → "A059/2025" ✗ (different numbers)
      *
      * @param existing the existing invoice number in the database
      * @param requested the requested invoice number from the update request
-     * @return true if the invoice numbers are equivalent, false otherwise
+     * @return true if the invoice numbers have the same core, false otherwise
      */
     private boolean areInvoiceNumbersEquivalent(String existing, String requested) {
         if (existing == null || requested == null) {
@@ -146,25 +151,19 @@ public class UpdateInvoiceUseCase {
             return true;
         }
 
-        // Normalize both numbers by extracting the numeric part with separators
-        // Pattern matches: optional letter prefix + numeric part with separators (/, -, .)
+        // Extract core numbers by removing any leading letter prefix
+        // Pattern matches: optional letter prefix + core number (with any separators)
         Pattern pattern = Pattern.compile("^([A-Za-z]*)(.*)$");
 
         Matcher existingMatcher = pattern.matcher(existing);
         Matcher requestedMatcher = pattern.matcher(requested);
 
         if (existingMatcher.matches() && requestedMatcher.matches()) {
-            String existingPrefix = existingMatcher.group(1);
             String existingCore = existingMatcher.group(2);
-            String requestedPrefix = requestedMatcher.group(1);
             String requestedCore = requestedMatcher.group(2);
 
-            // If core numbers match, check if one has no prefix (allowing prefix to be added/removed)
-            if (existingCore.equals(requestedCore)) {
-                // Allow if one has no prefix and the other does (e.g., "058/2025" <-> "A058/2025")
-                // or if both have the same prefix
-                return existingPrefix.isEmpty() || requestedPrefix.isEmpty() || existingPrefix.equals(requestedPrefix);
-            }
+            // Allow update if core numbers match (prefix can be different)
+            return existingCore.equals(requestedCore);
         }
 
         return false;
