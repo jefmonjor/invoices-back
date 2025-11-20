@@ -18,9 +18,9 @@ import java.util.List;
  *
  * IMMUTABLE FIELDS (cannot be changed after creation):
  * - companyId: Locked at creation
- * - invoiceNumber: Locked at creation
  *
  * UPDATABLE FIELDS:
+ * - invoiceNumber: Can be changed to any valid format
  * - clientId: Can be changed (validates client exists)
  * - irpfPercentage: Can be changed (affects invoice calculations)
  * - rePercentage: Can be changed (affects invoice calculations)
@@ -63,10 +63,9 @@ public class UpdateInvoiceUseCase {
                     "Cannot change company ID. Current: " + invoice.getCompanyId() + ", Requested: " + companyId);
         }
 
+        // Update invoice number if provided and different
         if (invoiceNumber != null && !invoiceNumber.equals(invoice.getInvoiceNumber())) {
-            throw new IllegalArgumentException(
-                    "Cannot change invoice number. Current: " + invoice.getInvoiceNumber() + ", Requested: "
-                            + invoiceNumber);
+            invoice.setInvoiceNumber(invoiceNumber);
         }
 
         // Update client ID if provided and different

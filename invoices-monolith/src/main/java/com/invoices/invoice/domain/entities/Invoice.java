@@ -30,7 +30,7 @@ public class Invoice {
     private Long clientId; // ID del cliente
     private Company company; // Datos completos del emisor (opcional, para PDFs)
     private Client client; // Datos completos del cliente (opcional, para PDFs)
-    private final String invoiceNumber;
+    private String invoiceNumber; // Mutable - can be updated
     private String settlementNumber; // Número de liquidación (opcional)
     private final LocalDateTime issueDate;
     private final List<InvoiceItem> items;
@@ -205,6 +205,19 @@ public class Invoice {
 
     public void setSettlementNumber(String settlementNumber) {
         this.settlementNumber = settlementNumber;
+        updateTimestamp();
+    }
+
+    /**
+     * Sets the invoice number.
+     * Validates the format and updates the invoice number.
+     * This field is now mutable to support business requirements.
+     *
+     * @param invoiceNumber the new invoice number
+     */
+    public void setInvoiceNumber(String invoiceNumber) {
+        validateInvoiceNumber(invoiceNumber);
+        this.invoiceNumber = invoiceNumber;
         updateTimestamp();
     }
 
