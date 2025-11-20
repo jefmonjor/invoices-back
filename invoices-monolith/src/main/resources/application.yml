@@ -15,10 +15,12 @@ spring:
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 20
-      minimum-idle: 5
-      connection-timeout: 30000
+      minimum-idle: 2
+      connection-timeout: 10000
       idle-timeout: 600000
       max-lifetime: 1800000
+      initialization-fail-timeout: 10000
+      connection-test-query: SELECT 1
 
   # JPA Configuration
   jpa:
@@ -33,6 +35,10 @@ spring:
           batch_size: 20
         order_inserts: true
         order_updates: true
+        # JTA Configuration - Use NoJtaPlatform for Spring-managed transactions
+        transaction:
+          jta:
+            platform: org.hibernate.engine.transaction.jta.platform.internal.NoJtaPlatform
 
   # Flyway Configuration
   flyway:
@@ -132,7 +138,7 @@ management:
         enabled: true
       group:
         readiness:
-          include: db, diskSpace
+          include: db
           show-details: always
         liveness:
           include: ping
@@ -146,6 +152,9 @@ management:
       enabled: true  # Keep enabled for monitoring, but exclude from readiness probe
     db:
       enabled: true
+      validation-query-timeout: 5  # Timeout for database health check (seconds)
+    diskspace:
+      enabled: false  # Disable diskspace check to speed up readiness probe
 
 # Resilience4j Configuration (Circuit Breaker)
 resilience4j:
