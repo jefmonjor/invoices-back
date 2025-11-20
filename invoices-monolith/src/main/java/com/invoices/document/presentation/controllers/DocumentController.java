@@ -45,12 +45,13 @@ public class DocumentController {
     private final DeleteDocumentUseCase deleteDocumentUseCase;
     private final DocumentDtoMapper mapper;
 
-    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @Operation(summary = "Upload a document", description = "Upload a PDF document and optionally associate it with an invoice")
+    @PostMapping
+    @Operation(summary = "Upload a document", description = "Upload a PDF document and optionally associate it with an invoice. Accepts multipart/form-data")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Document uploaded successfully",
                     content = @Content(mediaType = "application/json", schema = @Schema(implementation = UploadDocumentResponse.class))),
             @ApiResponse(responseCode = "400", description = "Invalid file type or file too large"),
+            @ApiResponse(responseCode = "405", description = "Wrong Content-Type - must be multipart/form-data"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     public ResponseEntity<UploadDocumentResponse> uploadDocument(
@@ -63,9 +64,15 @@ public class DocumentController {
             @Parameter(description = "Username of the uploader")
             @RequestParam(value = "uploadedBy", required = false, defaultValue = "system") String uploadedBy
     ) {
-        log.info("POST /api/documents - Uploading document: {}", file.getOriginalFilename());
+        log.info("POST /api/documents - Uploading document: {}, size: {} bytes, contentType: {}",
+                file.getOriginalFilename(), file.getSize(), file.getContentType());
 
         try {
+            // Validate file is not empty
+            if (file.isEmpty()) {
+                log.error("Upload failed: File is empty");
+                throw new IllegalArgumentException("File cannot be empty");
+            }
             // Convert MultipartFile to domain FileContent
             FileContent fileContent = new FileContent(
                     file.getInputStream(),
@@ -90,6 +97,12 @@ public class DocumentController {
         } catch (IOException e) {
             log.error("Failed to read file input stream", e);
             throw new IllegalArgumentException("Failed to read uploaded file: " + e.getMessage());
+        } catch (IllegalArgumentException e) {
+            log.error("Invalid request: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            log.error("Unexpected error uploading document", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
