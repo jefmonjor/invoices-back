@@ -94,6 +94,7 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/api/auth/**",
                                 "/actuator/health",
+                                "/actuator/health/**",  // Allow readiness/liveness probes
                                 "/actuator/info",
                                 "/v3/api-docs/**",
                                 "/api-docs/**",
