@@ -41,7 +41,6 @@ public class CreateInvoiceUseCase {
         Long clientId,
         String invoiceNumber,
         String settlementNumber,
-        LocalDateTime issueDate,
         BigDecimal irpfPercentage,
         BigDecimal rePercentage,
         List<InvoiceItem> items,
@@ -62,7 +61,7 @@ public class CreateInvoiceUseCase {
             companyId,
             clientId,
             invoiceNumber,
-            issueDate != null ? issueDate : LocalDateTime.now(),
+            LocalDateTime.now(),
             irpfPercentage != null ? irpfPercentage : BigDecimal.ZERO,
             rePercentage != null ? rePercentage : BigDecimal.ZERO
         );
