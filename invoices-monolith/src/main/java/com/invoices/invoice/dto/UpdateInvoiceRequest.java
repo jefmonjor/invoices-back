@@ -19,12 +19,9 @@ import java.util.List;
  *
  * IMMUTABLE FIELDS (validated by backend):
  * - companyId: Cannot be changed after invoice creation
- * - invoiceNumber: Cannot be changed after invoice creation
- *
- * These fields can be sent in the request but if they differ from the
- * existing invoice values, an IllegalArgumentException will be thrown.
  *
  * UPDATABLE FIELDS:
+ * - invoiceNumber: Can be updated to any valid format
  * - clientId: Can be updated (backend validates client exists)
  * - irpfPercentage: Can be updated (affects invoice calculations)
  * - rePercentage: Can be updated (affects invoice calculations)
@@ -44,9 +41,9 @@ public class UpdateInvoiceRequest {
 
     // Immutable fields (included for deserialization but not updated)
     private Long companyId;
-    private String invoiceNumber;
 
     // Updatable fields
+    private String invoiceNumber;
     private Long clientId;
 
     @Size(max = 50, message = "Settlement number must not exceed 50 characters")
