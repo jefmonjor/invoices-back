@@ -22,6 +22,7 @@
     <parameter name="iban" class="java.lang.String"/>
     <parameter name="notes" class="java.lang.String"/>
     <parameter name="items" class="net.sf.jasperreports.engine.data.JRBeanCollectionDataSource"/>
+    <parameter name="SUBREPORT_ITEMS" class="net.sf.jasperreports.engine.JasperReport"/>
 
     <!-- Title Band - Factura Header -->
     <title>
@@ -168,7 +169,7 @@
             <subreport>
                 <reportElement x="0" y="0" width="535" height="30"/>
                 <dataSourceExpression><![CDATA[$P{items}]]></dataSourceExpression>
-                <subreportExpression><![CDATA["invoice-items-subreport.jasper"]]></subreportExpression>
+                <subreportExpression><![CDATA[$P{SUBREPORT_ITEMS}]]></subreportExpression>
             </subreport>
         </band>
     </detail>

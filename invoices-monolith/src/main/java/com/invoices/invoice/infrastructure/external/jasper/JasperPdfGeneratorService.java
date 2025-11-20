@@ -19,18 +19,29 @@ import java.util.Map;
 public class JasperPdfGeneratorService implements PdfGeneratorService {
 
     private static final String INVOICE_TEMPLATE_PATH = "/jasper-templates/invoice-template.jrxml";
+    private static final String ITEMS_SUBREPORT_PATH = "/jasper-templates/invoice-items-subreport.jrxml";
 
     @Override
     public byte[] generatePdf(Invoice invoice) {
         try {
+            // Load and compile main template
             InputStream templateStream = getClass().getResourceAsStream(INVOICE_TEMPLATE_PATH);
             if (templateStream == null) {
                 throw new RuntimeException("Template not found: " + INVOICE_TEMPLATE_PATH);
             }
-
             JasperReport jasperReport = JasperCompileManager.compileReport(templateStream);
 
+            // Load and compile subreport from classpath
+            InputStream subreportStream = getClass().getResourceAsStream(ITEMS_SUBREPORT_PATH);
+            if (subreportStream == null) {
+                throw new RuntimeException("Subreport not found: " + ITEMS_SUBREPORT_PATH);
+            }
+            JasperReport itemsSubreport = JasperCompileManager.compileReport(subreportStream);
+
+            // Build parameters and add compiled subreport
             Map<String, Object> parameters = buildParameters(invoice);
+            parameters.put("SUBREPORT_ITEMS", itemsSubreport);
+
             JRBeanCollectionDataSource dataSource = new JRBeanCollectionDataSource(
                 List.of(invoice)
             );
