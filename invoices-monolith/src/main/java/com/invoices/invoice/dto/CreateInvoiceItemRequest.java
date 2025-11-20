@@ -13,6 +13,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 /**
  * Request DTO for creating an invoice item.
@@ -46,4 +47,20 @@ public class CreateInvoiceItemRequest {
     @DecimalMin(value = "0.0", message = "Discount percentage must be non-negative")
     @DecimalMax(value = "100.0", message = "Discount percentage cannot exceed 100%")
     private BigDecimal discountPercentage;
+
+    // Extended fields for detailed invoices
+    private LocalDate itemDate;
+
+    @Size(max = 50, message = "Vehicle plate must not exceed 50 characters")
+    private String vehiclePlate;
+
+    @Size(max = 50, message = "Order number must not exceed 50 characters")
+    private String orderNumber;
+
+    @Size(max = 100, message = "Zone must not exceed 100 characters")
+    private String zone;
+
+    @DecimalMin(value = "0.0", message = "Gas percentage must be non-negative")
+    @DecimalMax(value = "100.0", message = "Gas percentage cannot exceed 100%")
+    private BigDecimal gasPercentage;
 }

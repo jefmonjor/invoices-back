@@ -17,8 +17,9 @@ import java.util.regex.Pattern;
  * NO dependencies on frameworks (JPA, Spring, etc.).
  */
 public class Invoice {
-    // Accept formats: 2025-001 or INV-2025-001 or PREFIX-2025-001
-    private static final Pattern INVOICE_NUMBER_PATTERN = Pattern.compile("^([A-Z]+-)?\\d{4}-\\d{3}$");
+    // Accept formats matching frontend: letters (upper/lower), numbers, hyphens, dots
+    // Examples: FacturaA057.pdf, 4592JBZ-SEP-25.pdf, INV-2025-001, 047/2025, A057/2025
+    private static final Pattern INVOICE_NUMBER_PATTERN = Pattern.compile("^[A-Za-z0-9./-]+$");
     private static final int DECIMAL_SCALE = 2;
     private static final BigDecimal ONE_HUNDRED = new BigDecimal("100");
 
@@ -28,6 +29,7 @@ public class Invoice {
     private Company company;         // Datos completos del emisor (opcional, para PDFs)
     private Client client;           // Datos completos del cliente (opcional, para PDFs)
     private final String invoiceNumber;
+    private String settlementNumber; // Número de liquidación (opcional)
     private final LocalDateTime issueDate;
     private final List<InvoiceItem> items;
     private final BigDecimal irpfPercentage;
@@ -206,6 +208,11 @@ public class Invoice {
         updateTimestamp();
     }
 
+    public void setSettlementNumber(String settlementNumber) {
+        this.settlementNumber = settlementNumber;
+        updateTimestamp();
+    }
+
     /**
      * Sets the invoice status without validation.
      * FOR INTERNAL USE ONLY - Used by persistence layer when reconstructing entities from database.
@@ -242,6 +249,17 @@ public class Invoice {
      */
     public void setNotesInternal(String notes) {
         this.notes = notes;
+    }
+
+    /**
+     * Sets settlement number without updating timestamp.
+     * FOR INTERNAL USE ONLY - Used by persistence layer when reconstructing entities from database.
+     * WARNING: Does not update timestamp. Only use in mapper/reconstruction context.
+     *
+     * @param settlementNumber the settlement number to set
+     */
+    public void setSettlementNumberInternal(String settlementNumber) {
+        this.settlementNumber = settlementNumber;
     }
 
     private void validateInvoiceNumber(String number) {
@@ -307,6 +325,10 @@ public class Invoice {
 
     public String getInvoiceNumber() {
         return invoiceNumber;
+    }
+
+    public String getSettlementNumber() {
+        return settlementNumber;
     }
 
     public LocalDateTime getIssueDate() {

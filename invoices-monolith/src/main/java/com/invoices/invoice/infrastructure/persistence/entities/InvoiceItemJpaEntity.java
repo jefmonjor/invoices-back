@@ -2,6 +2,7 @@ package com.invoices.invoice.infrastructure.persistence.entities;
 
 import jakarta.persistence.*;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
@@ -34,6 +35,22 @@ public class InvoiceItemJpaEntity {
 
     @Column(name = "discount_percentage", precision = 5, scale = 2)
     private BigDecimal discountPercentage;
+
+    // Extended fields for detailed invoices
+    @Column(name = "item_date")
+    private LocalDate itemDate;
+
+    @Column(name = "vehicle_plate", length = 50)
+    private String vehiclePlate;
+
+    @Column(name = "order_number", length = 50)
+    private String orderNumber;
+
+    @Column(name = "zone", length = 100)
+    private String zone;
+
+    @Column(name = "gas_percentage", precision = 5, scale = 2)
+    private BigDecimal gasPercentage;
 
     @Column(name = "subtotal", precision = 10, scale = 2, nullable = false)
     private BigDecimal subtotal;
@@ -149,5 +166,46 @@ public class InvoiceItemJpaEntity {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    // Getters and Setters for extended fields
+    public LocalDate getItemDate() {
+        return itemDate;
+    }
+
+    public void setItemDate(LocalDate itemDate) {
+        this.itemDate = itemDate;
+    }
+
+    public String getVehiclePlate() {
+        return vehiclePlate;
+    }
+
+    public void setVehiclePlate(String vehiclePlate) {
+        this.vehiclePlate = vehiclePlate;
+    }
+
+    public String getOrderNumber() {
+        return orderNumber;
+    }
+
+    public void setOrderNumber(String orderNumber) {
+        this.orderNumber = orderNumber;
+    }
+
+    public String getZone() {
+        return zone;
+    }
+
+    public void setZone(String zone) {
+        this.zone = zone;
+    }
+
+    public BigDecimal getGasPercentage() {
+        return gasPercentage;
+    }
+
+    public void setGasPercentage(BigDecimal gasPercentage) {
+        this.gasPercentage = gasPercentage;
     }
 }

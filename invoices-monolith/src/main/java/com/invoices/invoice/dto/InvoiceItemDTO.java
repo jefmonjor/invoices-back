@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
@@ -26,6 +27,12 @@ public class InvoiceItemDTO {
     private BigDecimal vatPercentage;
     private BigDecimal subtotal;
     private BigDecimal total;
+    // Extended fields for detailed invoices
+    private LocalDate itemDate;
+    private String vehiclePlate;
+    private String orderNumber;
+    private String zone;
+    private BigDecimal gasPercentage;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

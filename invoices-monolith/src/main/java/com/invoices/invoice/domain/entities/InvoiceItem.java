@@ -2,6 +2,7 @@ package com.invoices.invoice.domain.entities;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
@@ -20,6 +21,12 @@ public class InvoiceItem {
     private final BigDecimal price;
     private final BigDecimal vatPercentage;
     private final BigDecimal discountPercentage;
+    // Extended fields for detailed invoices
+    private LocalDate itemDate;           // Fecha específica del item (FECHA)
+    private String vehiclePlate;          // Matrícula del vehículo (MATRÍCULA)
+    private String orderNumber;           // Número de pedido (PEDIDO)
+    private String zone;                  // Zona de trabajo (ZONA)
+    private BigDecimal gasPercentage;     // Porcentaje de gas (% GAS)
     private final LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -103,6 +110,42 @@ public class InvoiceItem {
         this.updatedAt = LocalDateTime.now();
     }
 
+    // Setters for extended fields
+    public void setItemDate(LocalDate itemDate) {
+        this.itemDate = itemDate;
+        updateTimestamp();
+    }
+
+    public void setVehiclePlate(String vehiclePlate) {
+        this.vehiclePlate = vehiclePlate;
+        updateTimestamp();
+    }
+
+    public void setOrderNumber(String orderNumber) {
+        this.orderNumber = orderNumber;
+        updateTimestamp();
+    }
+
+    public void setZone(String zone) {
+        this.zone = zone;
+        updateTimestamp();
+    }
+
+    public void setGasPercentage(BigDecimal gasPercentage) {
+        if (gasPercentage != null) {
+            if (gasPercentage.compareTo(BigDecimal.ZERO) < 0) {
+                throw new IllegalArgumentException("Gas percentage cannot be negative");
+            }
+            if (gasPercentage.compareTo(ONE_HUNDRED) > 0) {
+                throw new IllegalArgumentException("Gas percentage cannot exceed 100%");
+            }
+            this.gasPercentage = gasPercentage.setScale(DECIMAL_SCALE, RoundingMode.HALF_UP);
+        } else {
+            this.gasPercentage = null;
+        }
+        updateTimestamp();
+    }
+
     // Getters (no setters - immutability preferred)
     public Long getId() {
         return id;
@@ -138,5 +181,26 @@ public class InvoiceItem {
 
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
+    }
+
+    // Getters for extended fields
+    public LocalDate getItemDate() {
+        return itemDate;
+    }
+
+    public String getVehiclePlate() {
+        return vehiclePlate;
+    }
+
+    public String getOrderNumber() {
+        return orderNumber;
+    }
+
+    public String getZone() {
+        return zone;
+    }
+
+    public BigDecimal getGasPercentage() {
+        return gasPercentage;
     }
 }

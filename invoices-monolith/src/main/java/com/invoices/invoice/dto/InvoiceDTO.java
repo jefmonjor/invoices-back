@@ -24,6 +24,7 @@ public class InvoiceDTO {
     private CompanyDTO company;
     private ClientDTO client;
     private String invoiceNumber;
+    private String settlementNumber;
     private LocalDateTime issueDate;
     private BigDecimal baseAmount;
     private BigDecimal irpfPercentage;

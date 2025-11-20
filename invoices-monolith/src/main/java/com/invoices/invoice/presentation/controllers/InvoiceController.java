@@ -82,6 +82,7 @@ public class InvoiceController {
             request.getCompanyId(),
             request.getClientId(),
             request.getInvoiceNumber(),
+            request.getSettlementNumber(),
             request.getIrpfPercentage(),
             request.getRePercentage(),
             items,
@@ -144,7 +145,7 @@ public class InvoiceController {
      * Helper method: Convert CreateInvoiceItemRequest to domain InvoiceItem
      */
     private InvoiceItem toDomainItem(CreateInvoiceItemRequest itemRequest) {
-        return new InvoiceItem(
+        InvoiceItem item = new InvoiceItem(
             null, // ID will be generated
             null, // Invoice ID will be set by Invoice.addItem()
             itemRequest.getDescription(),
@@ -155,5 +156,24 @@ public class InvoiceController {
                 ? itemRequest.getDiscountPercentage()
                 : BigDecimal.ZERO
         );
+
+        // Set extended fields if present
+        if (itemRequest.getItemDate() != null) {
+            item.setItemDate(itemRequest.getItemDate());
+        }
+        if (itemRequest.getVehiclePlate() != null) {
+            item.setVehiclePlate(itemRequest.getVehiclePlate());
+        }
+        if (itemRequest.getOrderNumber() != null) {
+            item.setOrderNumber(itemRequest.getOrderNumber());
+        }
+        if (itemRequest.getZone() != null) {
+            item.setZone(itemRequest.getZone());
+        }
+        if (itemRequest.getGasPercentage() != null) {
+            item.setGasPercentage(itemRequest.getGasPercentage());
+        }
+
+        return item;
     }
 }

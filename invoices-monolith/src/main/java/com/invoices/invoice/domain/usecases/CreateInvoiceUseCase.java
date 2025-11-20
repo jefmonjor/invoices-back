@@ -40,6 +40,7 @@ public class CreateInvoiceUseCase {
         Long companyId,
         Long clientId,
         String invoiceNumber,
+        String settlementNumber,
         BigDecimal irpfPercentage,
         BigDecimal rePercentage,
         List<InvoiceItem> items,
@@ -68,6 +69,11 @@ public class CreateInvoiceUseCase {
         // Add items
         if (items != null) {
             items.forEach(invoice::addItem);
+        }
+
+        // Set settlement number
+        if (settlementNumber != null && !settlementNumber.trim().isEmpty()) {
+            invoice.setSettlementNumber(settlementNumber);
         }
 
         // Set notes

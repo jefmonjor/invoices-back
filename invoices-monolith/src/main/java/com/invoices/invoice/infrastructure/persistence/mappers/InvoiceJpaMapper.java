@@ -30,6 +30,7 @@ public class InvoiceJpaMapper {
         jpaEntity.setCompanyId(invoice.getCompanyId());
         jpaEntity.setClientId(invoice.getClientId());
         jpaEntity.setInvoiceNumber(invoice.getInvoiceNumber());
+        jpaEntity.setSettlementNumber(invoice.getSettlementNumber());
         jpaEntity.setIssueDate(invoice.getIssueDate());
         jpaEntity.setBaseAmount(invoice.calculateBaseAmount());
         jpaEntity.setIrpfPercentage(invoice.getIrpfPercentage());
@@ -80,6 +81,11 @@ public class InvoiceJpaMapper {
             invoice.setNotesInternal(jpaEntity.getNotes());
         }
 
+        // Set settlement number if present (using internal method to avoid updating timestamp)
+        if (jpaEntity.getSettlementNumber() != null) {
+            invoice.setSettlementNumberInternal(jpaEntity.getSettlementNumber());
+        }
+
         // Add items without state validation (using internal method)
         // This is necessary to reconstruct invoices in FINALIZED or PAID status
         jpaEntity.getItems().forEach(itemJpa -> {
@@ -99,6 +105,12 @@ public class InvoiceJpaMapper {
         jpaItem.setPrice(item.getPrice());
         jpaItem.setVatPercentage(item.getVatPercentage());
         jpaItem.setDiscountPercentage(item.getDiscountPercentage());
+        // Extended fields
+        jpaItem.setItemDate(item.getItemDate());
+        jpaItem.setVehiclePlate(item.getVehiclePlate());
+        jpaItem.setOrderNumber(item.getOrderNumber());
+        jpaItem.setZone(item.getZone());
+        jpaItem.setGasPercentage(item.getGasPercentage());
         jpaItem.setSubtotal(item.calculateSubtotal());
         jpaItem.setTotal(item.calculateTotal());
         jpaItem.setCreatedAt(item.getCreatedAt());
@@ -107,7 +119,7 @@ public class InvoiceJpaMapper {
     }
 
     private InvoiceItem toDomainItemEntity(InvoiceItemJpaEntity jpaItem) {
-        return new InvoiceItem(
+        InvoiceItem item = new InvoiceItem(
             jpaItem.getId(),
             jpaItem.getInvoice().getId(),
             jpaItem.getDescription(),
@@ -116,5 +128,24 @@ public class InvoiceJpaMapper {
             jpaItem.getVatPercentage(),
             jpaItem.getDiscountPercentage() != null ? jpaItem.getDiscountPercentage() : java.math.BigDecimal.ZERO
         );
+
+        // Set extended fields if present
+        if (jpaItem.getItemDate() != null) {
+            item.setItemDate(jpaItem.getItemDate());
+        }
+        if (jpaItem.getVehiclePlate() != null) {
+            item.setVehiclePlate(jpaItem.getVehiclePlate());
+        }
+        if (jpaItem.getOrderNumber() != null) {
+            item.setOrderNumber(jpaItem.getOrderNumber());
+        }
+        if (jpaItem.getZone() != null) {
+            item.setZone(jpaItem.getZone());
+        }
+        if (jpaItem.getGasPercentage() != null) {
+            item.setGasPercentage(jpaItem.getGasPercentage());
+        }
+
+        return item;
     }
 }
