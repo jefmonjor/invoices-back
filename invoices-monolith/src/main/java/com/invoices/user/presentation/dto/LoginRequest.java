@@ -25,4 +25,18 @@ public class LoginRequest {
 
     @NotBlank(message = "Password is required")
     private String password;
+
+    /**
+     * Trim email to remove leading/trailing whitespace.
+     */
+    public void setEmail(String email) {
+        this.email = email != null ? email.trim() : null;
+    }
+
+    /**
+     * Trim password to remove leading/trailing whitespace.
+     */
+    public void setPassword(String password) {
+        this.password = password != null ? password.trim() : null;
+    }
 }
