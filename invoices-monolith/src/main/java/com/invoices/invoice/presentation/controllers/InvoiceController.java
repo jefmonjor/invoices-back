@@ -123,6 +123,12 @@ public class InvoiceController {
         // Execute use case
         Invoice invoice = updateInvoiceUseCase.execute(
             id,
+            request.getCompanyId(),
+            request.getClientId(),
+            request.getInvoiceNumber(),
+            request.getSettlementNumber(),
+            request.getIrpfPercentage(),
+            request.getRePercentage(),
             updatedItems,
             request.getNotes()
         );

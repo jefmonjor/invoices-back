@@ -9,11 +9,15 @@ import com.invoices.invoice.domain.ports.InvoiceEventPublisher;
 import com.invoices.invoice.domain.ports.InvoiceRepository;
 import com.invoices.invoice.domain.exceptions.ClientNotFoundException;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
  * Use case: Update existing invoice.
  * Business logic for updating invoice details.
+ *
+ * Note: Core invoice fields (companyId, clientId, invoiceNumber, irpfPercentage, rePercentage)
+ * are immutable and cannot be changed after creation. Only notes, settlementNumber, and items can be updated.
  */
 public class UpdateInvoiceUseCase {
 
@@ -33,12 +37,54 @@ public class UpdateInvoiceUseCase {
 
     public Invoice execute(
         Long invoiceId,
+        Long companyId,
+        Long clientId,
+        String invoiceNumber,
+        String settlementNumber,
+        BigDecimal irpfPercentage,
+        BigDecimal rePercentage,
         List<InvoiceItem> updatedItems,
         String notes
     ) {
         // Find existing invoice
         Invoice invoice = invoiceRepository.findById(invoiceId)
             .orElseThrow(() -> new InvoiceNotFoundException(invoiceId));
+
+        // Validate immutable fields haven't changed (if provided)
+        if (companyId != null && !companyId.equals(invoice.getCompanyId())) {
+            throw new IllegalArgumentException(
+                "Cannot change company ID. Current: " + invoice.getCompanyId() + ", Requested: " + companyId
+            );
+        }
+
+        if (clientId != null && !clientId.equals(invoice.getClientId())) {
+            throw new IllegalArgumentException(
+                "Cannot change client ID. Current: " + invoice.getClientId() + ", Requested: " + clientId
+            );
+        }
+
+        if (invoiceNumber != null && !invoiceNumber.equals(invoice.getInvoiceNumber())) {
+            throw new IllegalArgumentException(
+                "Cannot change invoice number. Current: " + invoice.getInvoiceNumber() + ", Requested: " + invoiceNumber
+            );
+        }
+
+        if (irpfPercentage != null && invoice.getIrpfPercentage().compareTo(irpfPercentage) != 0) {
+            throw new IllegalArgumentException(
+                "Cannot change IRPF percentage. Current: " + invoice.getIrpfPercentage() + "%, Requested: " + irpfPercentage + "%"
+            );
+        }
+
+        if (rePercentage != null && invoice.getRePercentage().compareTo(rePercentage) != 0) {
+            throw new IllegalArgumentException(
+                "Cannot change RE percentage. Current: " + invoice.getRePercentage() + "%, Requested: " + rePercentage + "%"
+            );
+        }
+
+        // Update settlement number if provided
+        if (settlementNumber != null) {
+            invoice.setSettlementNumber(settlementNumber);
+        }
 
         // Update items if provided
         if (updatedItems != null) {
