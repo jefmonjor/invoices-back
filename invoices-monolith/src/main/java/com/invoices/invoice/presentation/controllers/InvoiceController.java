@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
  * Implements complete CRUD operations.
  */
 @RestController
-@RequestMapping("/invoices")
+@RequestMapping("/api/invoices")
 public class InvoiceController {
 
     private final GetInvoiceByIdUseCase getInvoiceByIdUseCase;
