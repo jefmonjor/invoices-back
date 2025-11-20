@@ -10,7 +10,6 @@ import com.invoices.user.exception.InvalidTokenException;
 import com.invoices.user.exception.TokenExpiredException;
 
 // INVOICE MODULE EXCEPTIONS
-import com.invoices.invoice.exception.PdfGenerationException;
 import com.invoices.invoice.domain.exceptions.InvoiceNotFoundException;
 import com.invoices.invoice.domain.exceptions.ClientNotFoundException;
 import com.invoices.invoice.domain.exceptions.InvalidInvoiceStateException;
@@ -217,27 +216,6 @@ public class GlobalExceptionHandler {
                 .build();
 
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
-    }
-
-    /**
-     * Handles PdfGenerationException (500 Internal Server Error).
-     */
-    @ExceptionHandler(PdfGenerationException.class)
-    public ResponseEntity<ErrorResponse> handlePdfGenerationException(
-            PdfGenerationException ex,
-            HttpServletRequest request) {
-
-        log.error("Error generating PDF: {}", ex.getMessage(), ex);
-
-        ErrorResponse errorResponse = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now())
-                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
-                .error("Error Interno del Servidor")
-                .message("Error al generar el PDF de la factura. Por favor, inténtelo de nuevo más tarde.")
-                .path(request.getRequestURI())
-                .build();
-
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
     }
 
     // ==================== DOCUMENT MODULE EXCEPTIONS ====================

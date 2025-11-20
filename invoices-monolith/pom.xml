@@ -95,25 +95,6 @@
 			<version>8.5.7</version>
 		</dependency>
 
-		<!-- JasperReports for PDF generation -->
-		<dependency>
-			<groupId>net.sf.jasperreports</groupId>
-			<artifactId>jasperreports</artifactId>
-			<version>7.0.2</version>
-			<exclusions>
-				<!-- Exclude unnecessary dependencies to reduce JAR size -->
-				<exclusion>
-					<groupId>org.apache.lucene</groupId>
-					<artifactId>lucene-*</artifactId>
-				</exclusion>
-				<exclusion>
-					<groupId>org.eclipse.jdt</groupId>
-					<artifactId>ecj</artifactId>
-				</exclusion>
-				<!-- iText is required for PDF generation - DO NOT EXCLUDE -->
-			</exclusions>
-		</dependency>
-
 		<!-- Apache Tika for file type detection and content extraction -->
 		<dependency>
 			<groupId>org.apache.tika</groupId>
