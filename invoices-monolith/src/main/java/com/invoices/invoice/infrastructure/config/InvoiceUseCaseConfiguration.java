@@ -64,4 +64,19 @@ public class InvoiceUseCaseConfiguration {
     public GeneratePdfUseCase generatePdfUseCase(PdfGeneratorService pdfGeneratorService) {
         return new GeneratePdfUseCase(pdfGeneratorService);
     }
+
+    @Bean
+    public GenerateInvoicePdfUseCase generateInvoicePdfUseCase(
+        InvoiceRepository invoiceRepository,
+        CompanyRepository companyRepository,
+        ClientRepository clientRepository,
+        PdfGeneratorService pdfGeneratorService
+    ) {
+        return new GenerateInvoicePdfUseCase(
+            invoiceRepository,
+            companyRepository,
+            clientRepository,
+            pdfGeneratorService
+        );
+    }
 }
