@@ -93,8 +93,10 @@ public class SecurityConfig {
                         // Public endpoints - authentication not required
                         .requestMatchers(
                                 "/api/auth/**",
+                                "/health/simple",           // Simple health check for Railway
+                                "/health/ready",            // Lightweight readiness probe
                                 "/actuator/health",
-                                "/actuator/health/**",  // Allow readiness/liveness probes
+                                "/actuator/health/**",      // Allow readiness/liveness probes
                                 "/actuator/info",
                                 "/v3/api-docs/**",
                                 "/api-docs/**",
