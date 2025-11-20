@@ -1,5 +1,6 @@
 package com.invoices.invoice.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
@@ -17,11 +18,13 @@ import java.util.List;
  * Matches OpenAPI specification v2.0.
  *
  * Note: companyId and invoiceNumber are immutable and will be ignored if provided.
+ * Ignores unknown fields (like 'id', 'status', 'createdAt', etc.) from frontend.
  */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class UpdateInvoiceRequest {
 
     // Immutable fields (included for deserialization but not updated)
