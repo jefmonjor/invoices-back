@@ -1,5 +1,6 @@
 package com.invoices.invoice.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Max;
@@ -18,11 +19,15 @@ import java.time.LocalDate;
 /**
  * Request DTO for creating an invoice item.
  * Matches OpenAPI specification v2.0.
+ *
+ * Note: Ignores unknown fields (like 'id') to support both CREATE and UPDATE operations.
+ * Frontend can send item IDs when updating, but they will be ignored.
  */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class CreateInvoiceItemRequest {
 
     @NotBlank(message = "Description is required")

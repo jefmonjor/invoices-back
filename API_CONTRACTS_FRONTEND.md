@@ -413,6 +413,55 @@ type InvoiceStatus =
 
 El backend genera `issueDate` automáticamente con `LocalDateTime.now()`
 
+### 2.1 ✅ NUEVO - Backend Ignora Campos Desconocidos
+**Ahora puedes enviar el objeto completo del GET sin limpiar campos extra:**
+```json
+// ✅ Esto funciona PERFECTO (campos extra serán ignorados)
+PUT /api/invoices/2
+{
+  "id": 2,                    // IGNORADO (viene del GET, no hace nada)
+  "status": "DRAFT",          // IGNORADO
+  "createdAt": "...",         // IGNORADO
+  "updatedAt": "...",         // IGNORADO
+  "company": {...},           // IGNORADO
+  "client": {...},            // IGNORADO
+  "baseAmount": 100,          // IGNORADO (se calcula automáticamente)
+  "totalAmount": 121,         // IGNORADO (se calcula automáticamente)
+
+  // Campos que SÍ se procesan:
+  "companyId": 1,
+  "clientId": 1,
+  "invoiceNumber": "047/2025",
+  "settlementNumber": "LIQ-002",
+  "notes": "Actualizado",
+  "items": [
+    {
+      "id": 1,              // IGNORADO (items se reemplazan completamente)
+      "invoiceId": 2,       // IGNORADO
+      "subtotal": 100,      // IGNORADO (se calcula)
+      "total": 121,         // IGNORADO (se calcula)
+      "createdAt": "...",   // IGNORADO
+      "updatedAt": "...",   // IGNORADO
+
+      // Campos que SÍ se procesan:
+      "description": "Item actualizado",
+      "units": 5,
+      "price": 20.00,
+      "vatPercentage": 21.00,
+      "discountPercentage": 0.00,
+      "itemDate": "2025-11-20",
+      "vehiclePlate": "1234ABC"
+    }
+  ]
+}
+```
+
+**Ventajas para el Frontend:**
+- ✅ No necesitas limpiar el objeto antes de enviarlo
+- ✅ Puedes hacer `PUT` con el mismo objeto que obtuviste del `GET`
+- ✅ Solo asegúrate de modificar los campos que quieres actualizar
+- ✅ Los campos calculados (baseAmount, totalAmount, subtotal) se regeneran automáticamente
+
 ### 3. ✅ UpdateInvoiceRequest ahora acepta todos los campos
 **Antes:**
 ```json
@@ -557,6 +606,11 @@ const pdfBlob = await pdfResponse.blob();
 **Síntoma:** `Cannot change company ID. Current: 1, Requested: 2`
 **Solución:** En PUT, enviar el mismo valor que GET o no enviar el campo
 
+### Error 6: Campo "id" no reconocido en items
+**Síntoma:** `Unrecognized field "id" (class CreateInvoiceItemRequest)`
+**Solución:** ✅ YA ARREGLADO - Backend ahora ignora campos desconocidos con @JsonIgnoreProperties
+**Ahora puedes enviar:** El objeto completo del GET sin limpiar campos extra
+
 ---
 
 ## Resumen de Cambios Realizados
@@ -567,6 +621,7 @@ const pdfBlob = await pdfResponse.blob();
 4. ✅ **Endpoint PDF implementado** - GET /api/invoices/{id}/pdf funcional
 5. ✅ **Campo `date` eliminado** - Backend genera `issueDate` automáticamente
 6. ✅ **Campos extendidos soportados** - itemDate, vehiclePlate, orderNumber, zone, gasPercentage
+7. ✅ **@JsonIgnoreProperties agregado** - Backend ignora campos desconocidos (id, status, createdAt, etc.)
 
 ---
 
