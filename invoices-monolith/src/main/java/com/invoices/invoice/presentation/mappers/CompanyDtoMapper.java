@@ -29,4 +29,23 @@ public class CompanyDtoMapper {
             .iban(company.getIban())
             .build();
     }
+
+    public Company toDomain(CompanyDTO dto) {
+        if (dto == null) {
+            return null;
+        }
+
+        return new Company(
+            dto.getId(),
+            dto.getBusinessName(),
+            dto.getTaxId(),
+            dto.getAddress(),
+            dto.getCity(),
+            dto.getPostalCode(),
+            dto.getProvince(),
+            dto.getPhone(),
+            dto.getEmail(),
+            dto.getIban()
+        );
+    }
 }
