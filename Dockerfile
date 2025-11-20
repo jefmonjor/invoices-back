@@ -1,6 +1,7 @@
 # Multi-stage Dockerfile for Invoices Monolith
 # Optimized for Railway deployment
 # Build context: repository root
+# Updated: 2025-11-20 - JTA platform configured
 
 # Stage 1: Build
 FROM maven:3.9-eclipse-temurin-21-alpine AS build
