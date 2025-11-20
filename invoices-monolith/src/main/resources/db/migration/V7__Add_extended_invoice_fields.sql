@@ -1,8 +1,8 @@
 -- Add settlement_number to invoices table
 ALTER TABLE invoices ADD COLUMN settlement_number VARCHAR(50);
 
--- Extend invoice_number length to support more formats
-ALTER TABLE invoices MODIFY COLUMN invoice_number VARCHAR(50) NOT NULL;
+-- Extend invoice_number length to support more formats (PostgreSQL syntax)
+ALTER TABLE invoices ALTER COLUMN invoice_number TYPE VARCHAR(50);
 
 -- Add extended fields to invoice_items table
 ALTER TABLE invoice_items ADD COLUMN item_date DATE;
