@@ -9,14 +9,13 @@ import java.io.InputStream;
 
 /**
  * Domain service for PDF file validation.
- * This encapsulates all validation logic for PDF files without framework dependencies.
+ * This encapsulates all validation logic for PDF files without framework
+ * dependencies.
  */
 public class PdfValidator {
 
     private static final String ALLOWED_CONTENT_TYPE = "application/pdf";
     private static final long MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-    private static final String PDF_SIGNATURE = "%PDF-";
-    private static final int PDF_HEADER_SIZE = 5;
 
     private final Tika tika;
 
@@ -35,7 +34,6 @@ public class PdfValidator {
         validateFileSize(fileContent.getSize());
         validateDeclaredContentType(fileContent.getContentType());
         validateActualContentType(fileContent);
-        validatePdfSignature(fileContent);
     }
 
     /**
@@ -54,8 +52,7 @@ public class PdfValidator {
         if (fileSize > MAX_FILE_SIZE) {
             throw new IllegalArgumentException(
                     String.format("File size exceeds maximum allowed (10MB). Size: %.2f MB",
-                            fileSize / (1024.0 * 1024.0))
-            );
+                            fileSize / (1024.0 * 1024.0)));
         }
     }
 
@@ -65,13 +62,13 @@ public class PdfValidator {
     private void validateDeclaredContentType(String contentType) {
         if (!ALLOWED_CONTENT_TYPE.equals(contentType)) {
             throw new IllegalArgumentException(
-                    "Invalid file type: " + contentType + ". Only PDF files are allowed."
-            );
+                    "Invalid file type: " + contentType + ". Only PDF files are allowed.");
         }
     }
 
     /**
-     * Validates the actual file content using Apache Tika to detect the real MIME type.
+     * Validates the actual file content using Apache Tika to detect the real MIME
+     * type.
      * This prevents fake PDF files (e.g., renamed .txt files).
      */
     private void validateActualContentType(FileContent fileContent) {
@@ -95,56 +92,12 @@ public class PdfValidator {
 
             if (!ALLOWED_CONTENT_TYPE.equals(detectedType)) {
                 throw new IllegalArgumentException(
-                        "File content does not match PDF format. Detected type: " + detectedType
-                );
+                        "File content does not match PDF format. Detected type: " + detectedType);
             }
 
         } catch (IOException e) {
             throw new IllegalArgumentException("Failed to validate file content: " + e.getMessage(), e);
         }
-    }
-
-    /**
-     * Validates the PDF file signature (magic bytes).
-     * All valid PDF files must start with "%PDF-".
-     */
-    private void validatePdfSignature(FileContent fileContent) {
-        try {
-            InputStream originalStream = fileContent.getInputStream();
-
-            // Wrap in BufferedInputStream to guarantee mark/reset support
-            BufferedInputStream bufferedStream = new BufferedInputStream(originalStream);
-
-            // Mark the stream so we can reset it after reading header
-            bufferedStream.mark(PDF_HEADER_SIZE);
-
-            byte[] header = new byte[PDF_HEADER_SIZE];
-            int bytesRead = bufferedStream.read(header);
-
-            // Reset stream to beginning
-            bufferedStream.reset();
-
-            if (bytesRead < PDF_HEADER_SIZE) {
-                throw new IllegalArgumentException("File is too small to be a valid PDF");
-            }
-
-            String headerString = new String(header);
-            if (!headerString.startsWith(PDF_SIGNATURE)) {
-                throw new IllegalArgumentException(
-                        "File does not have a valid PDF signature. Expected: " + PDF_SIGNATURE
-                );
-            }
-
-        } catch (IOException e) {
-            throw new IllegalArgumentException("Failed to read PDF signature: " + e.getMessage(), e);
-        }
-    }
-
-    /**
-     * Gets the maximum allowed file size.
-     */
-    public long getMaxFileSize() {
-        return MAX_FILE_SIZE;
     }
 
     /**
