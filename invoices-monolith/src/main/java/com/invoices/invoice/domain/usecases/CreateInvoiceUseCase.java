@@ -23,29 +23,30 @@ public class CreateInvoiceUseCase {
     private final CompanyRepository companyRepository;
     private final ClientRepository clientRepository;
     private final InvoiceEventPublisher eventPublisher;
+    private final com.invoices.invoice.domain.services.InvoiceNumberGenerator invoiceNumberGenerator;
 
     public CreateInvoiceUseCase(
-        InvoiceRepository invoiceRepository,
-        CompanyRepository companyRepository,
-        ClientRepository clientRepository,
-        InvoiceEventPublisher eventPublisher
-    ) {
+            InvoiceRepository invoiceRepository,
+            CompanyRepository companyRepository,
+            ClientRepository clientRepository,
+            InvoiceEventPublisher eventPublisher,
+            com.invoices.invoice.domain.services.InvoiceNumberGenerator invoiceNumberGenerator) {
         this.invoiceRepository = invoiceRepository;
         this.companyRepository = companyRepository;
         this.clientRepository = clientRepository;
         this.eventPublisher = eventPublisher;
+        this.invoiceNumberGenerator = invoiceNumberGenerator;
     }
 
     public Invoice execute(
-        Long companyId,
-        Long clientId,
-        String invoiceNumber,
-        String settlementNumber,
-        BigDecimal irpfPercentage,
-        BigDecimal rePercentage,
-        List<InvoiceItem> items,
-        String notes
-    ) {
+            Long companyId,
+            Long clientId,
+            // invoiceNumber is now generated internally
+            String settlementNumber,
+            BigDecimal irpfPercentage,
+            BigDecimal rePercentage,
+            List<InvoiceItem> items,
+            String notes) {
         // Validate company and client exist
         if (!companyRepository.existsById(companyId)) {
             throw new IllegalArgumentException("Company not found with id: " + companyId);
@@ -55,16 +56,18 @@ public class CreateInvoiceUseCase {
             throw new ClientNotFoundException(clientId);
         }
 
+        // Generate invoice number
+        String invoiceNumber = invoiceNumberGenerator.generateNextNumber();
+
         // Create invoice
         Invoice invoice = new Invoice(
-            null, // ID will be generated
-            companyId,
-            clientId,
-            invoiceNumber,
-            LocalDateTime.now(),
-            irpfPercentage != null ? irpfPercentage : BigDecimal.ZERO,
-            rePercentage != null ? rePercentage : BigDecimal.ZERO
-        );
+                null, // ID will be generated
+                companyId,
+                clientId,
+                invoiceNumber,
+                LocalDateTime.now(),
+                irpfPercentage != null ? irpfPercentage : BigDecimal.ZERO,
+                rePercentage != null ? rePercentage : BigDecimal.ZERO);
 
         // Add items
         if (items != null) {

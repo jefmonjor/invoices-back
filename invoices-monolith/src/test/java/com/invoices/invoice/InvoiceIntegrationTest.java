@@ -45,6 +45,7 @@ class InvoiceIntegrationTest {
                         return properties;
                 }
 
+                @SuppressWarnings("unchecked") // Mockito.mock returns raw type
                 @org.springframework.context.annotation.Bean
                 public org.springframework.data.redis.core.RedisTemplate<String, Object> redisTemplate() {
                         return org.mockito.Mockito.mock(org.springframework.data.redis.core.RedisTemplate.class);

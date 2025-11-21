@@ -23,38 +23,34 @@ public class DocumentUseCaseConfiguration {
     public UploadDocumentUseCase uploadDocumentUseCase(
             DocumentRepository documentRepository,
             FileStorageService fileStorageService,
-            PdfValidator pdfValidator
-    ) {
-        return new UploadDocumentUseCase(documentRepository, fileStorageService, pdfValidator);
+            PdfValidator pdfValidator,
+            com.invoices.invoice.domain.ports.InvoiceRepository invoiceRepository) {
+        return new UploadDocumentUseCase(documentRepository, fileStorageService, pdfValidator, invoiceRepository);
     }
 
     @Bean
     public DownloadDocumentUseCase downloadDocumentUseCase(
             DocumentRepository documentRepository,
-            FileStorageService fileStorageService
-    ) {
+            FileStorageService fileStorageService) {
         return new DownloadDocumentUseCase(documentRepository, fileStorageService);
     }
 
     @Bean
     public GetDocumentByIdUseCase getDocumentByIdUseCase(
-            DocumentRepository documentRepository
-    ) {
+            DocumentRepository documentRepository) {
         return new GetDocumentByIdUseCase(documentRepository);
     }
 
     @Bean
     public GetDocumentsByInvoiceUseCase getDocumentsByInvoiceUseCase(
-            DocumentRepository documentRepository
-    ) {
+            DocumentRepository documentRepository) {
         return new GetDocumentsByInvoiceUseCase(documentRepository);
     }
 
     @Bean
     public DeleteDocumentUseCase deleteDocumentUseCase(
             DocumentRepository documentRepository,
-            FileStorageService fileStorageService
-    ) {
+            FileStorageService fileStorageService) {
         return new DeleteDocumentUseCase(documentRepository, fileStorageService);
     }
 }

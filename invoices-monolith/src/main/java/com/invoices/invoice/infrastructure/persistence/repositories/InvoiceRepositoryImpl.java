@@ -29,21 +29,21 @@ public class InvoiceRepositoryImpl implements InvoiceRepository {
     @Override
     public Optional<Invoice> findById(Long id) {
         return jpaRepository.findById(id)
-            .map(mapper::toDomainEntity);
+                .map(mapper::toDomainEntity);
     }
 
     @Override
     public List<Invoice> findByUserId(Long userId) {
         return jpaRepository.findByUserId(userId).stream()
-            .map(mapper::toDomainEntity)
-            .collect(Collectors.toList());
+                .map(mapper::toDomainEntity)
+                .collect(Collectors.toList());
     }
 
     @Override
     public List<Invoice> findAll() {
         return jpaRepository.findAll().stream()
-            .map(mapper::toDomainEntity)
-            .collect(Collectors.toList());
+                .map(mapper::toDomainEntity)
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -67,5 +67,10 @@ public class InvoiceRepositoryImpl implements InvoiceRepository {
     @Override
     public boolean existsById(Long id) {
         return jpaRepository.existsById(id);
+    }
+
+    @Override
+    public Optional<String> findLastInvoiceNumberByYear(int year) {
+        return jpaRepository.findLastInvoiceNumberByYear(year);
     }
 }

@@ -5,6 +5,11 @@ import com.invoices.invoice.domain.entities.InvoiceItem;
 import com.invoices.invoice.domain.entities.InvoiceStatus;
 import com.invoices.invoice.infrastructure.persistence.entities.InvoiceItemJpaEntity;
 import com.invoices.invoice.infrastructure.persistence.entities.InvoiceJpaEntity;
+import com.invoices.user.domain.ports.UserRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -15,7 +20,39 @@ import java.util.stream.Collectors;
  * Keeps domain and infrastructure layers decoupled.
  */
 @Component
+@RequiredArgsConstructor
+@Slf4j
 public class InvoiceJpaMapper {
+
+    private final UserRepository userRepository;
+
+    /**
+     * Gets the current authenticated user's ID from SecurityContext.
+     * Falls back to user ID 1 (admin) if no authentication is present.
+     *
+     * @return the current user's ID
+     */
+    private Long getCurrentUserId() {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+            if (authentication == null || !authentication.isAuthenticated()) {
+                log.warn("No authentication found in SecurityContext, defaulting to user ID 1");
+                return 1L;
+            }
+
+            String email = authentication.getName();
+            return userRepository.findByEmail(email)
+                    .map(user -> user.getId())
+                    .orElseGet(() -> {
+                        log.warn("User not found for email: {}, defaulting to user ID 1", email);
+                        return 1L;
+                    });
+        } catch (Exception e) {
+            log.error("Error getting current user ID from SecurityContext", e);
+            return 1L;
+        }
+    }
 
     public InvoiceJpaEntity toJpaEntity(Invoice invoice) {
         if (invoice == null) {
@@ -24,9 +61,7 @@ public class InvoiceJpaMapper {
 
         InvoiceJpaEntity jpaEntity = new InvoiceJpaEntity();
         jpaEntity.setId(invoice.getId());
-        // TODO: Set userId from SecurityContext when authentication is implemented
-        // For now, default to user ID 1 (admin user)
-        jpaEntity.setUserId(1L);
+        jpaEntity.setUserId(getCurrentUserId());
         jpaEntity.setCompanyId(invoice.getCompanyId());
         jpaEntity.setClientId(invoice.getClientId());
         jpaEntity.setInvoiceNumber(invoice.getInvoiceNumber());
@@ -44,8 +79,8 @@ public class InvoiceJpaMapper {
         jpaEntity.setUpdatedAt(invoice.getUpdatedAt());
 
         List<InvoiceItemJpaEntity> itemEntities = invoice.getItems().stream()
-            .map(item -> toJpaItemEntity(item, jpaEntity))
-            .collect(Collectors.toList());
+                .map(item -> toJpaItemEntity(item, jpaEntity))
+                .collect(Collectors.toList());
         jpaEntity.setItems(itemEntities);
 
         return jpaEntity;
@@ -57,14 +92,13 @@ public class InvoiceJpaMapper {
         }
 
         Invoice invoice = new Invoice(
-            jpaEntity.getId(),
-            jpaEntity.getCompanyId(),
-            jpaEntity.getClientId(),
-            jpaEntity.getInvoiceNumber(),
-            jpaEntity.getIssueDate(),
-            jpaEntity.getIrpfPercentage(),
-            jpaEntity.getRePercentage()
-        );
+                jpaEntity.getId(),
+                jpaEntity.getCompanyId(),
+                jpaEntity.getClientId(),
+                jpaEntity.getInvoiceNumber(),
+                jpaEntity.getIssueDate(),
+                jpaEntity.getIrpfPercentage(),
+                jpaEntity.getRePercentage());
 
         // Set status from database without validation (using internal method)
         if (jpaEntity.getStatus() != null) {
@@ -81,7 +115,8 @@ public class InvoiceJpaMapper {
             invoice.setNotesInternal(jpaEntity.getNotes());
         }
 
-        // Set settlement number if present (using internal method to avoid updating timestamp)
+        // Set settlement number if present (using internal method to avoid updating
+        // timestamp)
         if (jpaEntity.getSettlementNumber() != null) {
             invoice.setSettlementNumberInternal(jpaEntity.getSettlementNumber());
         }
@@ -120,14 +155,13 @@ public class InvoiceJpaMapper {
 
     private InvoiceItem toDomainItemEntity(InvoiceItemJpaEntity jpaItem) {
         InvoiceItem item = new InvoiceItem(
-            jpaItem.getId(),
-            jpaItem.getInvoice().getId(),
-            jpaItem.getDescription(),
-            jpaItem.getUnits(),
-            jpaItem.getPrice(),
-            jpaItem.getVatPercentage(),
-            jpaItem.getDiscountPercentage() != null ? jpaItem.getDiscountPercentage() : java.math.BigDecimal.ZERO
-        );
+                jpaItem.getId(),
+                jpaItem.getInvoice().getId(),
+                jpaItem.getDescription(),
+                jpaItem.getUnits(),
+                jpaItem.getPrice(),
+                jpaItem.getVatPercentage(),
+                jpaItem.getDiscountPercentage() != null ? jpaItem.getDiscountPercentage() : java.math.BigDecimal.ZERO);
 
         // Set extended fields if present
         if (jpaItem.getItemDate() != null) {

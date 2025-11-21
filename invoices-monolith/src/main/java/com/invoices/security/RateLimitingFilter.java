@@ -25,7 +25,8 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * Configuration loaded from application.yml (rate-limit.* properties):
  * - General endpoints: Configurable requests/minute per IP (default: 100)
- * - Auth endpoints (/api/auth/*): Configurable requests/minute per IP (default: 10)
+ * - Auth endpoints (/api/auth/*): Configurable requests/minute per IP (default:
+ * 10)
  */
 @Component
 @Order(1)
@@ -48,10 +49,10 @@ public class RateLimitingFilter implements Filter {
     @ConfigurationProperties(prefix = "rate-limit")
     @Data
     public static class RateLimitProperties {
-        private long generalCapacity = 100;  // Default: 100 requests/minute
-        private long generalRefillMinutes = 1;  // Default: 1 minute
-        private long authCapacity = 10;  // Default: 10 requests/minute
-        private long authRefillMinutes = 1;  // Default: 1 minute
+        private long generalCapacity = 100; // Default: 100 requests/minute
+        private long generalRefillMinutes = 1; // Default: 1 minute
+        private long authCapacity = 10; // Default: 10 requests/minute
+        private long authRefillMinutes = 1; // Default: 1 minute
     }
 
     @Override
@@ -76,7 +77,7 @@ public class RateLimitingFilter implements Filter {
             long remainingTokens = bucket.getAvailableTokens();
             httpResponse.setHeader("X-Rate-Limit-Remaining", String.valueOf(remainingTokens));
             httpResponse.setHeader("X-Rate-Limit-Limit",
-                String.valueOf(isAuthEndpoint ? properties.getAuthCapacity() : properties.getGeneralCapacity()));
+                    String.valueOf(isAuthEndpoint ? properties.getAuthCapacity() : properties.getGeneralCapacity()));
 
             chain.doFilter(request, response);
         } else {
@@ -88,11 +89,10 @@ public class RateLimitingFilter implements Filter {
             httpResponse.setHeader("X-Rate-Limit-Retry-After-Seconds", "60");
 
             String jsonResponse = String.format(
-                "{\"timestamp\":\"%s\",\"status\":429,\"error\":\"Too Many Requests\"," +
-                "\"message\":\"Rate limit exceeded. Please try again later.\",\"path\":\"%s\"}",
-                java.time.LocalDateTime.now().toString(),
-                requestPath
-            );
+                    "{\"timestamp\":\"%s\",\"status\":429,\"error\":\"Too Many Requests\"," +
+                            "\"message\":\"Rate limit exceeded. Please try again later.\",\"path\":\"%s\"}",
+                    java.time.LocalDateTime.now().toString(),
+                    requestPath);
 
             httpResponse.getWriter().write(jsonResponse);
         }
@@ -109,17 +109,16 @@ public class RateLimitingFilter implements Filter {
         return cache.computeIfAbsent(clientIp, key -> {
             long capacity = isAuthEndpoint ? properties.getAuthCapacity() : properties.getGeneralCapacity();
             Duration refillDuration = isAuthEndpoint
-                ? Duration.ofMinutes(properties.getAuthRefillMinutes())
-                : Duration.ofMinutes(properties.getGeneralRefillMinutes());
+                    ? Duration.ofMinutes(properties.getAuthRefillMinutes())
+                    : Duration.ofMinutes(properties.getGeneralRefillMinutes());
 
             Bandwidth limit = Bandwidth.classic(
-                capacity,
-                Refill.intervally(capacity, refillDuration)
-            );
+                    capacity,
+                    Refill.intervally(capacity, refillDuration));
 
             return Bucket.builder()
-                .addLimit(limit)
-                .build();
+                    .addLimit(limit)
+                    .build();
         });
     }
 
@@ -146,8 +145,8 @@ public class RateLimitingFilter implements Filter {
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
         log.info("Rate limiting filter initialized with limits: General={}/{} min, Auth={}/{} min",
-            properties.getGeneralCapacity(), properties.getGeneralRefillMinutes(),
-            properties.getAuthCapacity(), properties.getAuthRefillMinutes());
+                properties.getGeneralCapacity(), properties.getGeneralRefillMinutes(),
+                properties.getAuthCapacity(), properties.getAuthRefillMinutes());
     }
 
     @Override

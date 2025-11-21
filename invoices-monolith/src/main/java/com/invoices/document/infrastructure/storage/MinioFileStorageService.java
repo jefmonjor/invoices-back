@@ -68,7 +68,7 @@ public class MinioFileStorageService implements FileStorageService {
     }
 
     @Override
-    @CircuitBreaker(name = "minio", fallbackMethod = "retrieveFileFallback")
+    @CircuitBreaker(name = "minio")
     public InputStream retrieveFile(String objectName) {
         try {
             log.info("Retrieving file from MinIO: {}", objectName);
@@ -88,16 +88,8 @@ public class MinioFileStorageService implements FileStorageService {
         }
     }
 
-    /**
-     * Fallback method for retrieveFile when MinIO circuit is open.
-     */
-    private InputStream retrieveFileFallback(String objectName, Exception e) {
-        log.error("Circuit breaker activated for file retrieval. MinIO service is unavailable", e);
-        throw new FileUploadException("Storage service temporarily unavailable. Please try again later.", e);
-    }
-
     @Override
-    @CircuitBreaker(name = "minio", fallbackMethod = "deleteFileFallback")
+    @CircuitBreaker(name = "minio")
     public void deleteFile(String objectName) {
         try {
             log.info("Deleting file from MinIO: {}", objectName);
@@ -114,14 +106,6 @@ public class MinioFileStorageService implements FileStorageService {
             log.error("Failed to delete file from MinIO: {}", objectName, e);
             throw new FileUploadException("Failed to delete file from storage", e);
         }
-    }
-
-    /**
-     * Fallback method for deleteFile when MinIO circuit is open.
-     */
-    private void deleteFileFallback(String objectName, Exception e) {
-        log.error("Circuit breaker activated for file deletion. MinIO service is unavailable", e);
-        throw new FileUploadException("Storage service temporarily unavailable. Please try again later.", e);
     }
 
     @Override

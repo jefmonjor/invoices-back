@@ -88,7 +88,6 @@ public class InvoiceController {
         Invoice invoice = createInvoiceUseCase.execute(
                 request.getCompanyId(),
                 request.getClientId(),
-                request.getInvoiceNumber(),
                 request.getSettlementNumber(),
                 request.getIrpfPercentage(),
                 request.getRePercentage(),
@@ -172,7 +171,7 @@ public class InvoiceController {
                 // Get the first PDF document (assuming one PDF per invoice)
                 Document pdfDocument = documents.stream()
                         .filter(doc -> doc.getOriginalFilename() != null &&
-                                     doc.getOriginalFilename().toLowerCase().endsWith(".pdf"))
+                                doc.getOriginalFilename().toLowerCase().endsWith(".pdf"))
                         .findFirst()
                         .orElse(null);
 
@@ -199,7 +198,7 @@ public class InvoiceController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .header("Content-Type", "application/json")
                     .body(("{\"error\": \"PDF not found\", \"message\": \"No PDF document found for invoice " + id +
-                          ". Please generate the PDF from the frontend first.\"}").getBytes());
+                            ". Please generate the PDF from the frontend first.\"}").getBytes());
 
         } catch (InvoiceNotFoundException e) {
             log.error("Invoice not found: {}", id);

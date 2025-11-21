@@ -27,26 +27,31 @@ public class InvoiceUseCaseConfiguration {
     }
 
     @Bean
+    public com.invoices.invoice.domain.services.InvoiceNumberGenerator invoiceNumberGenerator(
+            InvoiceRepository repository) {
+        return new com.invoices.invoice.domain.services.InvoiceNumberGenerator(repository);
+    }
+
+    @Bean
     public CreateInvoiceUseCase createInvoiceUseCase(
-        InvoiceRepository invoiceRepository,
-        CompanyRepository companyRepository,
-        ClientRepository clientRepository,
-        InvoiceEventPublisher eventPublisher
-    ) {
+            InvoiceRepository invoiceRepository,
+            CompanyRepository companyRepository,
+            ClientRepository clientRepository,
+            InvoiceEventPublisher eventPublisher,
+            com.invoices.invoice.domain.services.InvoiceNumberGenerator invoiceNumberGenerator) {
         return new CreateInvoiceUseCase(
-            invoiceRepository,
-            companyRepository,
-            clientRepository,
-            eventPublisher
-        );
+                invoiceRepository,
+                companyRepository,
+                clientRepository,
+                eventPublisher,
+                invoiceNumberGenerator);
     }
 
     @Bean
     public UpdateInvoiceUseCase updateInvoiceUseCase(
             InvoiceRepository repository,
             ClientRepository clientRepository,
-            InvoiceEventPublisher eventPublisher
-    ) {
+            InvoiceEventPublisher eventPublisher) {
         return new UpdateInvoiceUseCase(repository, clientRepository, eventPublisher);
     }
 
@@ -54,8 +59,7 @@ public class InvoiceUseCaseConfiguration {
     public DeleteInvoiceUseCase deleteInvoiceUseCase(
             InvoiceRepository repository,
             ClientRepository clientRepository,
-            InvoiceEventPublisher eventPublisher
-    ) {
+            InvoiceEventPublisher eventPublisher) {
         return new DeleteInvoiceUseCase(repository, clientRepository, eventPublisher);
     }
 }

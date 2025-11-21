@@ -25,4 +25,6 @@ public interface InvoiceRepository {
     void deleteById(Long id);
 
     boolean existsById(Long id);
+
+    Optional<String> findLastInvoiceNumberByYear(int year);
 }
