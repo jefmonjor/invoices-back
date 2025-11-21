@@ -9,13 +9,17 @@ import java.util.Objects;
  */
 public class FileContent {
 
-    private final InputStream inputStream;
+    public interface InputStreamSupplier {
+        InputStream get() throws java.io.IOException;
+    }
+
+    private final InputStreamSupplier inputStreamSupplier;
     private final long size;
     private final String contentType;
 
-    public FileContent(InputStream inputStream, long size, String contentType) {
-        if (inputStream == null) {
-            throw new IllegalArgumentException("InputStream cannot be null");
+    public FileContent(InputStreamSupplier inputStreamSupplier, long size, String contentType) {
+        if (inputStreamSupplier == null) {
+            throw new IllegalArgumentException("InputStreamSupplier cannot be null");
         }
         if (size <= 0) {
             throw new IllegalArgumentException("Size must be greater than zero");
@@ -24,13 +28,17 @@ public class FileContent {
             throw new IllegalArgumentException("Content type cannot be null or empty");
         }
 
-        this.inputStream = inputStream;
+        this.inputStreamSupplier = inputStreamSupplier;
         this.size = size;
         this.contentType = contentType;
     }
 
     public InputStream getInputStream() {
-        return inputStream;
+        try {
+            return inputStreamSupplier.get();
+        } catch (java.io.IOException e) {
+            throw new RuntimeException("Failed to get input stream", e);
+        }
     }
 
     public long getSize() {
@@ -43,11 +51,13 @@ public class FileContent {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         FileContent that = (FileContent) o;
         return size == that.size &&
-               Objects.equals(contentType, that.contentType);
+                Objects.equals(contentType, that.contentType);
     }
 
     @Override
