@@ -44,6 +44,11 @@ class InvoiceIntegrationTest {
                         properties.setSecretKey("test");
                         return properties;
                 }
+
+                @org.springframework.context.annotation.Bean
+                public org.springframework.data.redis.core.RedisTemplate<String, Object> redisTemplate() {
+                        return org.mockito.Mockito.mock(org.springframework.data.redis.core.RedisTemplate.class);
+                }
         }
 
         @Autowired
