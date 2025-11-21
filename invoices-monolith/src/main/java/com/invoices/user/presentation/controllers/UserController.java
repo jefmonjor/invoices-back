@@ -47,6 +47,7 @@ public class UserController {
     private final CreateUserUseCase createUserUseCase;
     private final GetAllUsersUseCase getAllUsersUseCase;
     private final GetUserByIdUseCase getUserByIdUseCase;
+    private final GetUserByEmailUseCase getUserByEmailUseCase;
     private final UpdateUserUseCase updateUserUseCase;
     private final DeleteUserUseCase deleteUserUseCase;
     private final UserDtoMapper mapper;
@@ -216,6 +217,72 @@ public class UserController {
     }
 
     /**
+
+    @GetMapping("/profile")
+    @Operation(
+            summary = "Get current user profile",
+            description = "Retrieves the profile of the currently authenticated user"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Profile retrieved successfully",
+                    content = @Content(schema = @Schema(implementation = UserDTO.class))
+            ),
+            @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content),
+            @ApiResponse(responseCode = "404", description = "User not found", content = @Content)
+    })
+    public ResponseEntity<UserDTO> getCurrentUserProfile() {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        log.info("GET /api/users/profile - Fetching profile for user: {}", email);
+
+        User user = getUserByEmailUseCase.execute(email);
+        UserDTO userDTO = mapper.toDTO(user);
+
+        log.info("Profile retrieved successfully for user: {}", email);
+        return ResponseEntity.ok(userDTO);
+    }
+
+    @PutMapping("/profile")
+    @Operation(
+            summary = "Update current user profile",
+            description = "Updates the profile of the currently authenticated user"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Profile updated successfully",
+                    content = @Content(schema = @Schema(implementation = UserDTO.class))
+            ),
+            @ApiResponse(responseCode = "400", description = "Invalid request data", content = @Content),
+            @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content),
+            @ApiResponse(responseCode = "404", description = "User not found", content = @Content)
+    })
+    public ResponseEntity<UserDTO> updateCurrentUserProfile(@Valid @RequestBody UpdateUserRequest request) {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        log.info("PUT /api/users/profile - Updating profile for user: {}", email);
+
+        User user = getUserByEmailUseCase.execute(email);
+        
+        // Users cannot modify their own roles via profile endpoint
+        if (request.getRoles() != null) {
+            log.warn("User {} attempted to modify roles via profile endpoint", email);
+            throw new AccessDeniedException("Cannot modify roles via profile endpoint");
+        }
+        
+        User updatedUser = updateUserUseCase.execute(
+                user.getId(),
+                request.getFirstName(),
+                request.getLastName(),
+                request.getPassword(),
+                null, // roles cannot be changed via profile
+                request.getEnabled());
+        UserDTO userDTO = mapper.toDTO(updatedUser);
+
+        log.info("Profile updated successfully for user: {}", email);
+        return ResponseEntity.ok(userDTO);
+    }
+
      * Check if the current authenticated user can access the specified user's data.
      * Access is granted if:
      * - The user is an ADMIN

@@ -34,6 +34,11 @@ public class UserUseCaseConfiguration {
     }
 
     @Bean
+    public GetUserByEmailUseCase getUserByEmailUseCase(UserRepository userRepository) {
+        return new GetUserByEmailUseCase(userRepository);
+    }
+
+    @Bean
     public GetAllUsersUseCase getAllUsersUseCase(UserRepository userRepository) {
         return new GetAllUsersUseCase(userRepository);
     }
