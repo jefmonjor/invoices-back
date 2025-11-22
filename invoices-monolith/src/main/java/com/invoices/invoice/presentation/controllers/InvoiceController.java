@@ -246,4 +246,61 @@ public class InvoiceController {
 
         return item;
     }
+
+    /**
+     * GET /invoices/{id}/verification-status - Get VeriFactu verification status
+     */
+    @GetMapping("/{id}/verification-status")
+    public ResponseEntity<com.invoices.invoice.dto.VerificationStatusDTO> getVerificationStatus(@PathVariable Long id) {
+        log.info("Verification status requested for invoice ID: {}", id);
+
+        try {
+            Invoice invoice = getInvoiceByIdUseCase.execute(id);
+
+            com.invoices.invoice.dto.VerificationStatusDTO status = com.invoices.invoice.dto.VerificationStatusDTO
+                    .builder()
+                    .status(invoice.getVerifactuStatus() != null ? invoice.getVerifactuStatus() : "NOT_SENT")
+                    .txId(invoice.getVerifactuTxId())
+                    .rawResponse(invoice.getVerifactuRawResponse())
+                    .errorMessage(extractErrorMessage(invoice.getVerifactuRawResponse(), invoice.getVerifactuStatus()))
+                    .estimatedTimeSeconds(calculateEstimatedTime(invoice.getVerifactuStatus()))
+                    .build();
+
+            return ResponseEntity.ok(status);
+        } catch (InvoiceNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    private String extractErrorMessage(String rawResponse, String status) {
+        if (!"REJECTED".equalsIgnoreCase(status) && !"FAILED".equalsIgnoreCase(status)) {
+            return null;
+        }
+
+        if (rawResponse == null || rawResponse.isEmpty()) {
+            return "Verification failed";
+        }
+
+        try {
+            // Parse JSON to extract error message
+            if (rawResponse.contains("descripcionError")) {
+                int start = rawResponse.indexOf("descripcionError") + 19;
+                int end = rawResponse.indexOf("\"", start);
+                if (end > start) {
+                    return rawResponse.substring(start, end);
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error parsing raw response", e);
+        }
+
+        return "Verification rejected";
+    }
+
+    private Long calculateEstimatedTime(String status) {
+        if ("PENDING".equalsIgnoreCase(status) || "PROCESSING".equalsIgnoreCase(status)) {
+            return 5L; // 5 seconds estimated
+        }
+        return null;
+    }
 }

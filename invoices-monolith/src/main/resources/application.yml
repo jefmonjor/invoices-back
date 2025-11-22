@@ -207,3 +207,213 @@ bucket4j:
             - capacity: 100
               time: 1
               unit: minutes
+
+      read-date-timestamps-as-nanoseconds: false
+    time-zone: UTC
+    date-format: yyyy-MM-dd'T'HH:mm:ss
+
+  # MVC Configuration - Fix error timestamp format (Spring Boot 3 returns array by default)
+  mvc:
+    format:
+      date-time: iso
+
+  # Database Configuration - Single database with multiple schemas
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/invoices}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 2
+      connection-timeout: 10000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      initialization-fail-timeout: 10000
+      connection-test-query: SELECT 1
+
+  # JPA Configuration
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+        # JTA Configuration - Use NoJtaPlatform for Spring-managed transactions
+        transaction:
+          jta:
+            platform: org.hibernate.engine.transaction.jta.platform.internal.NoJtaPlatform
+
+  # Flyway Configuration
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+    validate-on-migrate: true
+
+  # Redis Configuration (for event streaming)
+  redis:
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD:}
+    ssl: ${REDIS_SSL:false}
+    timeout: 60000
+    lettuce:
+      pool:
+        max-active: 8
+        max-idle: 8
+        min-idle: 2
+        max-wait: -1ms
+    stream:
+      invoice-events: ${REDIS_STREAM_INVOICE_EVENTS:invoice-events}
+      invoice-dlq: ${REDIS_STREAM_INVOICE_DLQ:invoice-events-dlq}
+      consumer-group: ${REDIS_CONSUMER_GROUP:trace-group}
+      consumer-name: ${REDIS_CONSUMER_NAME:trace-consumer}
+
+# JWT Configuration
+jwt:
+  # SECURITY: JWT_SECRET is REQUIRED - must be at least 32 characters (256 bits for HS256)
+  # Generate with: openssl rand -base64 32
+  # WARNING: Default value is for LOCAL DEVELOPMENT ONLY - MUST be changed in production
+  secret: ${JWT_SECRET:your-super-secret-jwt-key-min-32-chars-base64-encoded-change-in-production}
+  expiration: ${JWT_EXPIRATION_MS:3600000}
+  issuer: ${JWT_ISSUER:invoices-backend}
+
+# S3 Configuration (Cloudflare R2 or any S3-compatible storage)
+s3:
+  endpoint: ${S3_ENDPOINT:http://localhost:9000}
+  # SECURITY: S3 credentials are REQUIRED for production
+  # WARNING: Default values are for LOCAL DEVELOPMENT with MinIO - MUST be changed in production
+  access-key: ${S3_ACCESS_KEY:minioadmin}
+  secret-key: ${S3_SECRET_KEY:minioadmin123}
+  bucket-name: ${S3_BUCKET_NAME:invoices-documents}
+  region: ${S3_REGION:auto}
+  path-style-access: ${S3_PATH_STYLE_ACCESS:true}
+
+# CORS Configuration
+cors:
+  # Add your Vercel deployment URLs here (both production and preview deployments)
+  # Example: http://localhost:5173,https://your-app.vercel.app,https://your-app-*.vercel.app
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173,https://*.vercel.app,https://*.up.railway.app,https://*.railway.app}
+  allowed-methods: ${CORS_ALLOWED_METHODS:GET,POST,PUT,DELETE,OPTIONS,PATCH}
+  allowed-headers: ${CORS_ALLOWED_HEADERS:*}
+  exposed-headers: ${CORS_EXPOSED_HEADERS:Authorization,X-Rate-Limit-Remaining}
+  allow-credentials: ${CORS_ALLOW_CREDENTIALS:true}
+  max-age: ${CORS_MAX_AGE:3600}
+
+# Rate Limiting Configuration
+rate-limit:
+  general-capacity: ${RATE_LIMIT_GENERAL_CAPACITY:100}
+  general-refill-minutes: ${RATE_LIMIT_GENERAL_REFILL_MINUTES:1}
+  auth-capacity: ${RATE_LIMIT_AUTH_CAPACITY:10}
+  auth-refill-minutes: ${RATE_LIMIT_AUTH_REFILL_MINUTES:1}
+
+# Swagger/OpenAPI Configuration
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+  api-docs:
+    path: /api-docs
+    enabled: true
+
+# Logging Configuration
+logging:
+  level:
+    root: ${LOG_LEVEL_ROOT:INFO}
+    com.invoices: ${LOG_LEVEL_APP:DEBUG}
+    org.springframework.security: INFO
+    org.hibernate.SQL: ${LOG_LEVEL_ROOT:INFO}
+    io.lettuce: INFO
+    org.springframework.data.redis: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# Actuator Configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+      group:
+        readiness:
+          include: db
+          show-details: always
+        liveness:
+          include: ping
+          show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+  health:
+    redis:
+      enabled: true  # Keep enabled for monitoring, but exclude from readiness probe
+    db:
+      enabled: true
+      validation-query-timeout: 5  # Timeout for database health check (seconds)
+    diskspace:
+      enabled: false  # Disable diskspace check to speed up readiness probe
+
+# Resilience4j Configuration (Circuit Breaker)
+resilience4j:
+  circuitbreaker:
+    instances:
+      default:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 60s
+        failureRateThreshold: 50
+        eventConsumerBufferSize: 10
+      minio:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 60s
+        failureRateThreshold: 50
+        eventConsumerBufferSize: 10
+
+# Rate Limiting Configuration
+bucket4j:
+  enabled: true
+  filters:
+    - cache-name: rate-limit-buckets
+      url: /api/.*
+      rate-limits:
+        - bandwidths:
+            - capacity: 100
+              time: 1
+              unit: minutes
+
+# VeriFactu Configuration
+verifactu:
+  stream:
+    key: verifactu-queue
+  consumer:
+    group: verifactu-processor
+  dlq:
+    key: verifactu-dlq  # Dead Letter Queue for failed verifications
+  keystore:
+    path: classpath:keystore.jks
+    password: changeit
+    alias: myalias
+  aeat:
+    endpoint: https://prewww1.aeat.es/wlpl/TIKE-CONT/ws/V1_0/static_files/common/internet/dep/aplicaciones/es/aeat/tike/cont/ws/SuministroLR.xsd

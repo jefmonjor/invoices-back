@@ -1,0 +1,114 @@
+{
+    "meta": {
+        "country": "ES",
+        "description": "Tipos fiscales típicos usados en facturación (IVA, Recargo de Equivalencia, retenciones IRPF) — referencia 2025",
+        "effective_date": "2025-01-01",
+        "notes": "Verificar cambios legales en AEAT. Actualizar al detectarse cambios en normativa.",
+        "last_updated": "2025-01-01"
+    },
+    "iva_rates": [
+        {
+            "code": "IVA_SUPERREDUCIDO",
+            "rate": 4.0,
+            "name": "Superreducido",
+            "applies_to_examples": [
+                "Alimentos de primera necesidad",
+                "Medicamentos, ayudas para movilidad",
+                "Libros (según normativa)"
+            ],
+            "note": "Aplicable a productos/servicios tasados por la normativa. Confirmar clasificación."
+        },
+        {
+            "code": "IVA_REDUCIDO",
+            "rate": 10.0,
+            "name": "Reducido",
+            "applies_to_examples": [
+                "Alimentos no básicos",
+                "Hostelería",
+                "Transporte de viajeros",
+                "Viviendas (obra nueva en algunos casos)"
+            ],
+            "note": "Usar la lista oficial de AEAT para mapear productos/servicios."
+        },
+        {
+            "code": "IVA_GENERAL",
+            "rate": 21.0,
+            "name": "General",
+            "applies_to_examples": [
+                "Mayoría de bienes y servicios",
+                "Servicios profesionales (salvo excepciones)"
+            ],
+            "note": "Tipo por defecto salvo que la actividad/servicio esté explícitamente incluida en otros tipos."
+        }
+    ],
+    "recargo_equivalencia": [
+        {
+            "for_iva_rate": 21.0,
+            "re_rate": 5.2,
+            "description": "Recargo de equivalencia aplicable cuando el cliente minorista está en este régimen."
+        },
+        {
+            "for_iva_rate": 10.0,
+            "re_rate": 1.4,
+            "description": "Recargo de equivalencia para operaciones gravadas al 10%."
+        },
+        {
+            "for_iva_rate": 4.0,
+            "re_rate": 0.5,
+            "description": "Recargo de equivalencia para operaciones gravadas al 4%."
+        }
+    ],
+    "irpf_withholding_common": [
+        {
+            "code": "IRPF_PROFESIONALES_STANDARD",
+            "rate": 15.0,
+            "name": "Retención profesional estándar",
+            "applies_to": [
+                "Prestaciones de servicios por profesionales autónomos",
+                "Facturas por actividades profesionales sujetas a retención"
+            ],
+            "note": "Típico en facturas de profesionales. Verificar si el sujeto tenga obligación de retener."
+        },
+        {
+            "code": "IRPF_PROFESIONALES_REDUCED_FIRST_YEARS",
+            "rate": 7.0,
+            "name": "Retención reducida (nuevos autónomos)",
+            "applies_to": [
+                "Autónomos en inicio de actividad que cumplen requisitos (periodos especiales aplicables)"
+            ],
+            "note": "Aplicable en casos concretos (normativa de reducción temporal). Confirmar requisitos y plazos."
+        },
+        {
+            "code": "IRPF_EXEMPT_OR_ZERO",
+            "rate": 0.0,
+            "name": "Sin retención / exento",
+            "applies_to": [
+                "Operaciones exentas de retención por normativa",
+                "Clientes no sujetos a retención según normativa"
+            ],
+            "note": "Usar con cuidado; requiere comprobar condiciones legales."
+        }
+    ],
+    "usage_recommendations": {
+        "update_frequency": "anual_or_on_legal_change",
+        "update_process": "Mantener en DB tabla tax_rates con campos (id, type, rate, description, applicable_from, applicable_to, source_url, last_checked). Ejecutar job que notifique cambios y permita aprovisionar vía admin.",
+        "validation_checks": [
+            "Cuando se guarde una factura, comprobar que el vatPercentage empleado corresponde a un tipo presente en 'iva_rates'.",
+            "Si se aplica RE, validar que el receptor está en régimen de recargo de equivalencia antes de aplicar.",
+            "Si se aplica IRPF, validar que el concepto y la relación cliente/proveedor permiten retención.",
+            "Registrar fuentes y fecha de verificación (source_url, checked_at)."
+        ],
+        "canonicalization": "Canonicalizar JSON de factura y calcular SHA-256 antes de enviar a VERI*FACTU; guardar canonical y hash en BD."
+    },
+    "sources_and_notes": [
+        {
+            "authority": "Agencia Estatal de Administración Tributaria (AEAT)",
+            "recommended_pages": [
+                "Tipos impositivos de IVA (lista y catálogos de bienes y servicios)",
+                "Régimen especial: Recargo de equivalencia",
+                "Normativa de retenciones IRPF (retenciones a cuenta)"
+            ],
+            "note": "Consultar AEAT para la clasificación exacta por producto/servicio y para confirmación de porcentajes en vigor."
+        }
+    ]
+}

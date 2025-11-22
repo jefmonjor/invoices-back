@@ -33,6 +33,12 @@ public class InvoiceDTO {
     private BigDecimal reAmount;
     private BigDecimal totalAmount;
     private String status;
+    private String verifactuStatus;
+    private String documentHash;
+    private String pdfServerPath;
+    private String documentJson;
+    private String verifactuTxId;
+    private Boolean pdfIsFinal;
     private String notes;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

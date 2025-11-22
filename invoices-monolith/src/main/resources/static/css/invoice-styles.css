@@ -1,0 +1,261 @@
+@page {
+    size: A4;
+    margin: 40pt;
+}
+
+body {
+    font-family: 'Roboto', sans-serif;
+    font-size: 10pt;
+    color: #333;
+    line-height: 1.5;
+    margin: 0;
+    padding: 0;
+}
+
+.container {
+    width: 100%;
+}
+
+/* Top Bar */
+.top-bar {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20pt;
+    border-bottom: 1pt solid #eee;
+    padding-bottom: 10pt;
+}
+
+.invoice-title {
+    font-size: 20pt;
+    font-weight: 700;
+    color: #2c3e50;
+    text-transform: uppercase;
+    margin: 0;
+}
+
+.invoice-meta {
+    text-align: right;
+}
+
+.meta-item {
+    display: inline-block;
+    margin-left: 20pt;
+    text-align: left;
+}
+
+.meta-label {
+    font-size: 8pt;
+    color: #999;
+    text-transform: uppercase;
+    display: block;
+}
+
+.meta-value {
+    font-size: 10pt;
+    font-weight: 700;
+    display: block;
+}
+
+/* Address Section */
+.address-section {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 30pt;
+}
+
+.address-col {
+    width: 45%;
+    float: left;
+    /* OpenHTMLtoPDF supports float better than flex for layout sometimes */
+}
+
+.col-title {
+    font-size: 9pt;
+    font-weight: 700;
+    color: #999;
+    margin-bottom: 5pt;
+    text-transform: uppercase;
+    display: block;
+}
+
+.entity-name {
+    font-size: 12pt;
+    font-weight: 700;
+    color: #2c3e50;
+    margin-bottom: 2pt;
+    display: block;
+}
+
+.entity-info {
+    font-size: 9pt;
+    color: #555;
+    display: block;
+}
+
+/* Clearfix for floats */
+.clearfix::after {
+    content: "";
+    clear: both;
+    display: table;
+}
+
+/* Table */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10pt;
+    margin-bottom: 20pt;
+}
+
+th {
+    text-align: left;
+    font-size: 8pt;
+    font-weight: 700;
+    color: #999;
+    text-transform: uppercase;
+    border-bottom: 1pt solid #2c3e50;
+    padding-bottom: 5pt;
+    padding-top: 5pt;
+}
+
+td {
+    font-size: 10pt;
+    padding-top: 8pt;
+    padding-bottom: 8pt;
+    border-bottom: 1pt solid #eee;
+    vertical-align: top;
+}
+
+/* Column Widths & Alignment */
+.text-right {
+    text-align: right;
+}
+
+.text-center {
+    text-align: center;
+}
+
+/* Normal Invoice Columns */
+.col-desc {
+    width: 40%;
+}
+
+.col-qty {
+    width: 10%;
+    text-align: center;
+}
+
+.col-price {
+    width: 15%;
+    text-align: right;
+}
+
+.col-discount {
+    width: 10%;
+    text-align: right;
+}
+
+.col-vat {
+    width: 10%;
+    text-align: right;
+}
+
+.col-total {
+    width: 15%;
+    text-align: right;
+}
+
+/* Transport Invoice Columns */
+.col-date {
+    width: 10%;
+}
+
+.col-plate {
+    width: 10%;
+}
+
+.col-desc-transport {
+    width: 25%;
+}
+
+.col-zone {
+    width: 10%;
+}
+
+.col-order {
+    width: 10%;
+}
+
+/* Totals Section */
+.totals-section {
+    width: 100%;
+    margin-top: 10pt;
+}
+
+.totals-table-container {
+    width: 35%;
+    float: right;
+}
+
+.total-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 3pt 0;
+}
+
+.total-label {
+    font-size: 9pt;
+    color: #666;
+}
+
+.total-value {
+    font-size: 9pt;
+    font-weight: 500;
+    text-align: right;
+}
+
+.grand-total {
+    display: flex;
+    justify-content: space-between;
+    padding: 8pt 0;
+    border-top: 1pt solid #eee;
+    margin-top: 5pt;
+}
+
+.grand-total-label,
+.grand-total-value {
+    font-size: 11pt;
+    font-weight: 700;
+    color: #2c3e50;
+}
+
+/* Bottom Section */
+.bottom-section {
+    margin-top: 40pt;
+    padding-top: 20pt;
+    border-top: 1pt solid #eee;
+}
+
+.notes-section {
+    width: 60%;
+    float: left;
+}
+
+.iban-section {
+    width: 35%;
+    float: right;
+}
+
+.bottom-label {
+    font-size: 8pt;
+    font-weight: 700;
+    color: #999;
+    margin-bottom: 4pt;
+    text-transform: uppercase;
+    display: block;
+}
+
+.bottom-text {
+    font-size: 9pt;
+    color: #555;
+}

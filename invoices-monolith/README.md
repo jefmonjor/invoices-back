@@ -107,6 +107,77 @@ La aplicación estará disponible en `http://localhost:8080`
 
 Accede a la documentación de la API en: `http://localhost:8080/swagger-ui.html`
 
+## 🎯 VeriFactu - Facturación Electrónica
+
+### Arquitectura Implementada
+
+El sistema incluye una **implementación completa de VeriFactu** (sistema español de facturación electrónica) con:
+
+#### 1. **Servicios Mock y Real**
+- `VerifactuServiceInterface`: Interfaz común
+- `VerifactuMockService`: Servicio mock con respuestas probabilísticas
+  - 70% ACCEPTED (delay 2-3s)
+  - 10% REJECTED "CIF inválido"
+  - 10% REJECTED "Formato XML incorrecto"
+  - 10% TIMEOUT (30s → REJECTED)
+- `VerifactuRealService`: Servicio de producción (SOAP + XAdES signature)
+
+#### 2. **Cola Redis con DLQ**
+- **Stream**: `verifactu-queue`
+- **Consumer Group**: `verifactu-processor`
+- **Dead Letter Queue**: `verifactu-dlq`
+- **Retry Policy**: 0s → 5s → 30s → 2min (backoff exponencial)
+- **Métricas**: Contadores de success/error/dlq en Redis
+
+#### 3. **WebSocket Real-time**
+- Endpoint: `/ws` (STOMP over SockJS)
+- Topics: `/topic/invoice/{id}/status`
+- Notificaciones en tiempo real al frontend
+
+#### 4. **Validación Fiscal**
+- `SpanishTaxIdValidator`: Valida DNI/NIE/CIF
+- Letras de control según algoritmo oficial
+- Integrable con `@Valid` en DTOs
+
+### Flujo de Verificación
+
+```
+1. Usuario crea factura
+   ↓
+2. Backend genera número factura
+   ↓
+3. Publica INVOICE_CREATED → Redis Stream
+   ↓
+4. VerifactuConsumer procesa
+   ↓
+5. Llama a VerifactuMockService (o Real)
+   ↓
+6. Actualiza status en DB
+   ↓
+7. Notifica vía WebSocket al frontend
+   ↓
+8. Frontend muestra badge + toast notification
+```
+
+### Configuración VeriFactu
+
+```yaml
+verifactu:
+  stream:
+    key: verifactu-queue
+  consumer:
+    group: verifactu-processor
+  dlq:
+    key: verifactu-dlq
+  # Para producción con AEAT real:
+  aeat:
+    endpoint: https://prewww1.aeat.es/wlpl/TIKE-CONT/Contribucionesws
+  keystore:
+    path: classpath:certificates/verifactu-cert.p12
+    password: ${VERIFACTU_CERT_PASSWORD}
+    alias: verifactu
+```
+
 ## 🔧 Variables de Entorno
 
 ### Obligatorias
@@ -159,6 +230,18 @@ Accede a la documentación de la API en: `http://localhost:8080/swagger-ui.html`
 - `GET /api/documents/{id}` - Obtener documento
 - `GET /api/documents/{id}/download` - Descargar documento
 - `DELETE /api/documents/{id}` - Eliminar documento
+
+### VeriFactu / Factura Electrónica ✨ **NUEVO**
+- `GET /api/invoices/{id}/verification-status` - Obtener estado de verificación VeriFactu
+- WebSocket: `/topic/invoice/{id}/status` - Actualizaciones en tiempo real
+
+#### Estados de Verificación
+- `NOT_SENT`: Factura no enviada a VeriFactu/AEAT
+- `PENDING`: Verificación en cola
+- `PROCESSING`: Verificación en curso
+- `ACCEPTED`: ✅ Verificado correctamente (PDF descargable)
+- `REJECTED`: ❌ Rechazado (ver errorMessage)
+- `FAILED`: ⚠️ Error en proceso
 
 ### Trazabilidad
 - `GET /api/audit-logs` - Listar logs de auditoría

@@ -3,6 +3,7 @@ package com.invoices.invoice.infrastructure.persistence.repositories;
 import com.invoices.invoice.infrastructure.persistence.entities.InvoiceJpaEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -19,4 +20,21 @@ public interface JpaInvoiceRepository extends JpaRepository<InvoiceJpaEntity, Lo
     @org.springframework.data.jpa.repository.Query("SELECT i.invoiceNumber FROM InvoiceJpaEntity i WHERE YEAR(i.issueDate) = :year ORDER BY i.invoiceNumber DESC LIMIT 1")
     java.util.Optional<String> findLastInvoiceNumberByYear(
             @org.springframework.data.repository.query.Param("year") int year);
+
+    // VeriFactu query methods for batch scheduler and metrics
+    List<InvoiceJpaEntity> findByVerifactuStatusInAndUpdatedAtBefore(
+            List<String> statuses, LocalDateTime updatedBefore);
+
+    Long countByCreatedAtAfter(LocalDateTime createdAfter);
+
+    Long countByVerifactuStatusAndCreatedAtAfter(
+            String verifactuStatus, LocalDateTime createdAfter);
+
+    Long countByVerifactuStatusIn(List<String> statuses);
+
+    Long countByCreatedAtBetween(
+            LocalDateTime start, LocalDateTime end);
+
+    Long countByVerifactuStatusAndCreatedAtBetween(
+            String verifactuStatus, LocalDateTime start, LocalDateTime end);
 }

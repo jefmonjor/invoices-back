@@ -76,3 +76,17 @@ management:
       enabled: false
     db:
       enabled: true
+
+# WebSocket Configuration for tests
+websocket:
+  allowed-origins: "*"  # Allow all origins in test
+
+# VeriFactu Mock Configuration for tests
+verifactu:
+  aeat:
+    url: http://localhost:8888/mock-aeat  # Mock AEAT server
+  keystore:
+    path: classpath:test-keystore.jks
+    password: test-password
+    alias: test-alias
+

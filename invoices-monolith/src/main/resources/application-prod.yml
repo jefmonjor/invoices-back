@@ -1,0 +1,25 @@
+# Production configuration
+spring:
+  profiles: prod
+  
+  # WebSocket configuration
+  websocket:
+    allowed-origins:
+      - https://your-production-domain.com
+      - https://www.your-production-domain.com
+
+# VeriFactu AEAT Production Endpoint
+verifactu:
+  aeat:
+    url: https://www2.agenciatributaria.gob.es/wlpl/TIKE-CONT/ws/TIKE-CONT-SuministroLR
+  keystore:
+    path: ${VERIFACTU_KEYSTORE_PATH}
+    password: ${VERIFACTU_KEYSTORE_PASSWORD}
+    alias: ${VERIFACTU_KEYSTORE_ALIAS}
+
+# Logging
+logging:
+  level:
+    com.invoices: INFO
+    org.springframework.web.socket: INFO
+    org.springframework.messaging: INFO

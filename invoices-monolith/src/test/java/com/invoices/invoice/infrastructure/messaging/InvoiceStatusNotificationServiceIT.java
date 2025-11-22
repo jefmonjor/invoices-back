@@ -1,0 +1,199 @@
+package com.invoices.invoice.infrastructure.messaging;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.messaging.simp.stomp.StompSession;
+import org.springframework.messaging.simp.stomp.StompSessionHandlerAdapter;
+import org.springframework.messaging.simp.stomp.StompHeaders;
+import org.springframework.messaging.simp.stomp.StompFrameHandler;
+import org.springframework.messaging.converter.MappingJackson2MessageConverter;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.web.socket.client.standard.StandardWebSocketClient;
+import org.springframework.web.socket.messaging.WebSocketStompClient;
+
+import java.lang.reflect.Type;
+import java.util.Map;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+/**
+ * Integration test for WebSocket invoice status notifications
+ */
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
+@ActiveProfiles("test")
+class InvoiceStatusNotificationServiceIT {
+
+    @Autowired
+    private InvoiceStatusNotificationService notificationService;
+
+    private WebSocketStompClient stompClient;
+    private final String WS_URL = "ws://localhost:8080/ws";
+
+    @BeforeEach
+    void setup() {
+        StandardWebSocketClient webSocketClient = new StandardWebSocketClient();
+        stompClient = new WebSocketStompClient(webSocketClient);
+        stompClient.setMessageConverter(new MappingJackson2MessageConverter());
+    }
+
+    @Test
+    void shouldReceiveStatusNotification() throws Exception {
+        // Given: A test invoice
+        Long invoiceId = 999L;
+
+        // When: Connect to WebSocket
+        BlockingQueue<Map<String, Object>> messages = new LinkedBlockingQueue<>();
+
+        StompSession session = stompClient.connectAsync(
+                WS_URL,
+                new StompSessionHandlerAdapter() {
+                }).get(5, TimeUnit.SECONDS);
+
+        // Subscribe to invoice status channel
+        session.subscribe(
+                "/topic/invoice/" + invoiceId + "/status",
+                new StompFrameHandler() {
+                    @Override
+                    public Type getPayloadType(StompHeaders headers) {
+                        return Map.class;
+                    }
+
+                    @Override
+                    @SuppressWarnings("unchecked")
+                    public void handleFrame(StompHeaders headers, Object payload) {
+                        messages.add((Map<String, Object>) payload);
+                    }
+                });
+
+        // Send status update
+        notificationService.notifyStatus(invoiceId, "processing");
+
+        // Then: Should receive the message
+        Map<String, Object> receivedMessage = messages.poll(5, TimeUnit.SECONDS);
+
+        assertThat(receivedMessage).isNotNull();
+        assertThat(receivedMessage.get("invoiceId")).isEqualTo(invoiceId.intValue());
+        assertThat(receivedMessage.get("status")).isEqualTo("processing");
+        assertThat(receivedMessage.get("timestamp")).isNotNull();
+
+        session.disconnect();
+    }
+
+    @Test
+    void shouldReceiveStatusWithTxNotification() throws Exception {
+        // Given: A test invoice
+        Long invoiceId = 888L;
+        String txId = "TX-TEST-12345";
+        String message = "VeriFactu verification completed";
+
+        // When: Connect to WebSocket
+        BlockingQueue<Map<String, Object>> messages = new LinkedBlockingQueue<>();
+
+        StompSession session = stompClient.connectAsync(
+                WS_URL,
+                new StompSessionHandlerAdapter() {
+                }).get(5, TimeUnit.SECONDS);
+
+        // Subscribe to invoice status channel
+        session.subscribe(
+                "/topic/invoice/" + invoiceId + "/status",
+                new StompFrameHandler() {
+                    @Override
+                    public Type getPayloadType(StompHeaders headers) {
+                        return Map.class;
+                    }
+
+                    @Override
+                    @SuppressWarnings("unchecked")
+                    public void handleFrame(StompHeaders headers, Object payload) {
+                        messages.add((Map<String, Object>) payload);
+                    }
+                });
+
+        // Send status update with transaction ID
+        notificationService.notifyStatusWithTx(invoiceId, "accepted", txId, message);
+
+        // Then: Should receive the complete message
+        Map<String, Object> receivedMessage = messages.poll(5, TimeUnit.SECONDS);
+
+        assertThat(receivedMessage).isNotNull();
+        assertThat(receivedMessage.get("invoiceId")).isEqualTo(invoiceId.intValue());
+        assertThat(receivedMessage.get("status")).isEqualTo("accepted");
+        assertThat(receivedMessage.get("txId")).isEqualTo(txId);
+        assertThat(receivedMessage.get("message")).isEqualTo(message);
+        assertThat(receivedMessage.get("timestamp")).isNotNull();
+
+        session.disconnect();
+    }
+
+    @Test
+    void shouldHandleMultipleSubscribers() throws Exception {
+        // Given: Two separate subscribers
+        Long invoiceId = 777L;
+
+        BlockingQueue<Map<String, Object>> messagesClient1 = new LinkedBlockingQueue<>();
+        BlockingQueue<Map<String, Object>> messagesClient2 = new LinkedBlockingQueue<>();
+
+        // Client 1
+        StompSession session1 = stompClient.connectAsync(
+                WS_URL,
+                new StompSessionHandlerAdapter() {
+                }).get(5, TimeUnit.SECONDS);
+
+        session1.subscribe(
+                "/topic/invoice/" + invoiceId + "/status",
+                new StompFrameHandler() {
+                    @Override
+                    public Type getPayloadType(StompHeaders headers) {
+                        return Map.class;
+                    }
+
+                    @Override
+                    @SuppressWarnings("unchecked")
+                    public void handleFrame(StompHeaders headers, Object payload) {
+                        messagesClient1.add((Map<String, Object>) payload);
+                    }
+                });
+
+        // Client 2
+        StompSession session2 = stompClient.connectAsync(
+                WS_URL,
+                new StompSessionHandlerAdapter() {
+                }).get(5, TimeUnit.SECONDS);
+
+        session2.subscribe(
+                "/topic/invoice/" + invoiceId + "/status",
+                new StompFrameHandler() {
+                    @Override
+                    public Type getPayloadType(StompHeaders headers) {
+                        return Map.class;
+                    }
+
+                    @Override
+                    @SuppressWarnings("unchecked")
+                    public void handleFrame(StompHeaders headers, Object payload) {
+                        messagesClient2.add((Map<String, Object>) payload);
+                    }
+                });
+
+        // When: Send a single notification
+        notificationService.notifyStatus(invoiceId, "accepted");
+
+        // Then: Both clients should receive it
+        Map<String, Object> message1 = messagesClient1.poll(5, TimeUnit.SECONDS);
+        Map<String, Object> message2 = messagesClient2.poll(5, TimeUnit.SECONDS);
+
+        assertThat(message1).isNotNull();
+        assertThat(message2).isNotNull();
+        assertThat(message1.get("status")).isEqualTo("accepted");
+        assertThat(message2.get("status")).isEqualTo("accepted");
+
+        session1.disconnect();
+        session2.disconnect();
+    }
+}

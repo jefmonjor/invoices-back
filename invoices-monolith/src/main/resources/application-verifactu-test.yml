@@ -1,0 +1,48 @@
+# VeriFactu Test Environment Configuration
+# AEAT Pre-production/Test Environment
+
+verifactu:
+  # AEAT Test Environment Endpoint
+  aeat:
+    endpoint: https://prewww1.aeat.es/wlpl/TIKE-CONT/ws/SuministroInformacion
+    test-nif: 89890001K
+    timeout-seconds: 30
+  
+  # Certificate Configuration (Test Certificate)
+  certificate:
+    path: classpath:certificates/test-certificate.p12
+    password: ${VERIFACTU_CERT_PASSWORD:changeme}
+    alias: verifactu-test
+  
+  # Feature Flags
+  enabled: true
+  use-mock: false  # Use real SOAP service in test environment
+  
+  # Rollout Configuration (for gradual activation)
+  rollout:
+    percentage: 100  # 100% in test environment
+    
+  # Batch Configuration
+  batch:
+    enabled: true
+    retry-cron: "0 0 2 * * ?"  # 02:00 AM daily
+    max-batch-retries: 10
+    retry-after-hours: 24
+    weekly-report-cron: "0 0 9 * * MON"  # Monday 09:00
+    
+  # Metrics
+  metrics:
+    enabled: true
+    retention-days: 90
+
+# Redis Configuration for Test
+spring:
+  data:
+    redis:
+      database: 1  # Different database for test
+      
+# Logging
+logging:
+  level:
+    com.invoices.invoice.infrastructure.verifactu: DEBUG
+    com.invoices.invoice.infrastructure.messaging: DEBUG

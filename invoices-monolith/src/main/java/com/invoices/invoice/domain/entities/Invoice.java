@@ -41,6 +41,15 @@ public class Invoice {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
+    // VeriFactu fields
+    private String documentHash;
+    private String pdfServerPath;
+    private String verifactuStatus;
+    private String documentJson;
+    private String verifactuTxId;
+    private String verifactuRawResponse;
+    private Boolean pdfIsFinal;
+
     public Invoice(
             Long id,
             Long companyId,
@@ -423,5 +432,73 @@ public class Invoice {
 
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
+    }
+
+    // VeriFactu getters/setters
+    public String getDocumentHash() {
+        return documentHash;
+    }
+
+    public void setDocumentHash(String documentHash) {
+        this.documentHash = documentHash;
+        updateTimestamp();
+    }
+
+    public String getPdfServerPath() {
+        return pdfServerPath;
+    }
+
+    public void setPdfServerPath(String pdfServerPath) {
+        this.pdfServerPath = pdfServerPath;
+        updateTimestamp();
+    }
+
+    public String getVerifactuStatus() {
+        return verifactuStatus;
+    }
+
+    public void setVerifactuStatus(String verifactuStatus) {
+        this.verifactuStatus = verifactuStatus;
+        updateTimestamp();
+    }
+
+    public String getDocumentJson() {
+        return documentJson;
+    }
+
+    public void setDocumentJson(String documentJson) {
+        this.documentJson = documentJson;
+        updateTimestamp();
+    }
+
+    public String getVerifactuTxId() {
+        return verifactuTxId;
+    }
+
+    public void setVerifactuTxId(String verifactuTxId) {
+        this.verifactuTxId = verifactuTxId;
+        updateTimestamp();
+    }
+
+    public String getVerifactuRawResponse() {
+        return verifactuRawResponse;
+    }
+
+    public void setVerifactuRawResponse(String verifactuRawResponse) {
+        this.verifactuRawResponse = verifactuRawResponse;
+        updateTimestamp();
+    }
+
+    public Boolean getPdfIsFinal() {
+        return pdfIsFinal;
+    }
+
+    public void setPdfIsFinal(Boolean pdfIsFinal) {
+        this.pdfIsFinal = pdfIsFinal;
+        updateTimestamp();
+    }
+
+    public BigDecimal getTotalAmount() {
+        return calculateTotalAmount();
     }
 }

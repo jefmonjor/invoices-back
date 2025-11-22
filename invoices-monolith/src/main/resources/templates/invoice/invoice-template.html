@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8" />
+    <title th:text="'Factura ' + ${invoice.invoiceNumber}">Factura</title>
+    <link rel="stylesheet" href="../static/css/invoice-styles.css" th:href="@{/css/invoice-styles.css}" />
+    <style>
+        /* Fallback for fonts if not loaded from CSS file in some contexts */
+        body {
+            font-family: sans-serif;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Top Bar -->
+        <div class="top-bar clearfix">
+            <div style="float: left;">
+                <h1 class="invoice-title">FACTURA</h1>
+            </div>
+            <div class="invoice-meta" style="float: right;">
+                <div class="meta-item">
+                    <span class="meta-label">Nº Factura</span>
+                    <span class="meta-value" th:text="${invoice.invoiceNumber}">001/2024</span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label">Fecha</span>
+                    <span class="meta-value"
+                        th:text="${#temporals.format(invoice.issueDate, 'dd/MM/yyyy')}">01/01/2024</span>
+                </div>
+                <div class="meta-item" th:if="${invoice.settlementNumber}">
+                    <span class="meta-label">Expediente</span>
+                    <span class="meta-value" th:text="${invoice.settlementNumber}">EXP-001</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Address Section -->
+        <div class="address-section clearfix">
+            <div class="address-col">
+                <span class="col-title">De:</span>
+                <span class="entity-name" th:text="${company.businessName}">EMPRESA</span>
+                <span class="entity-info"
+                    th:text="${company.address + ', ' + company.postalCode + ' ' + company.city + ' (' + company.province + ')'}">Dirección</span>
+                <span class="entity-info" th:text="'NIF: ' + ${company.taxId}">NIF: B12345678</span>
+                <span class="entity-info" th:text="${company.email}">email@empresa.com</span>
+                <span class="entity-info" th:text="${company.phone}">600000000</span>
+            </div>
+
+            <div class="address-col" style="float: right;">
+                <span class="col-title">Para:</span>
+                <span class="entity-name" th:text="${client.businessName}">Cliente</span>
+                <span class="entity-info"
+                    th:text="${client.address + ', ' + client.postalCode + ' ' + client.city + ' (' + client.province + ')'}">Dirección
+                    Cliente</span>
+                <span class="entity-info" th:text="'NIF: ' + ${client.taxId}">NIF: A87654321</span>
+            </div>
+        </div>
+
+        <!-- Items Table -->
+        <table>
+            <thead>
+                <tr>
+                    <!-- Conditional Headers based on isTransportInvoice flag passed from service -->
+                    <th th:if="${isTransportInvoice}" class="col-date">FECHA</th>
+                    <th th:if="${isTransportInvoice}" class="col-plate">MATRÍCULA</th>
+                    <th th:if="${isTransportInvoice}" class="col-desc-transport">DESCRIPCIÓN</th>
+                    <th th:if="${isTransportInvoice}" class="col-zone">ZONA</th>
+                    <th th:if="${isTransportInvoice}" class="col-order">PEDIDO</th>
+
+                    <th th:unless="${isTransportInvoice}" class="col-desc">DESCRIPCIÓN</th>
+
+                    <th class="col-qty text-center">CANT.</th>
+                    <th class="col-price text-right">PRECIO</th>
+
+                    <th th:unless="${isTransportInvoice}" class="col-discount text-right">DESC.</th>
+                    <th th:unless="${isTransportInvoice}" class="col-vat text-right">IVA</th>
+
+                    <th class="col-total text-right">TOTAL</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="item : ${invoice.items}">
+                    <!-- Transport Columns -->
+                    <td th:if="${isTransportInvoice}" class="col-date"
+                        th:text="${item.itemDate != null ? #temporals.format(item.itemDate, 'dd/MM/yyyy') : '-'}"></td>
+                    <td th:if="${isTransportInvoice}" class="col-plate" th:text="${item.vehiclePlate ?: '-'}"></td>
+                    <td th:if="${isTransportInvoice}" class="col-desc-transport" th:text="${item.description}"></td>
+                    <td th:if="${isTransportInvoice}" class="col-zone" th:text="${item.zone ?: '-'}"></td>
+                    <td th:if="${isTransportInvoice}" class="col-order" th:text="${item.orderNumber ?: '-'}"></td>
+
+                    <!-- Normal Columns -->
+                    <td th:unless="${isTransportInvoice}" class="col-desc" th:text="${item.description}"></td>
+
+                    <!-- Common Columns -->
+                    <td class="col-qty text-center" th:text="${item.units}"></td>
+                    <td class="col-price text-right" th:text="${#numbers.formatCurrency(item.price)}"></td>
+
+                    <td th:unless="${isTransportInvoice}" class="col-discount text-right"
+                        th:text="${item.discountPercentage != null ? item.discountPercentage + '%' : '-'}"></td>
+                    <td th:unless="${isTransportInvoice}" class="col-vat text-right"
+                        th:text="${item.vatPercentage + '%'}"></td>
+
+                    <td class="col-total text-right" th:text="${#numbers.formatCurrency(item.subtotal)}"></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- Totals Section -->
+        <div class="totals-section clearfix">
+            <div class="totals-table-container">
+                <div class="total-row">
+                    <span class="total-label">Base Imponible</span>
+                    <span class="total-value" th:text="${#numbers.formatCurrency(invoice.baseAmount)}">0,00 €</span>
+                </div>
+                <div class="total-row">
+                    <span class="total-label">IVA</span>
+                    <span class="total-value"
+                        th:text="${#numbers.formatCurrency(invoice.totalAmount - invoice.baseAmount + invoice.irpfAmount - invoice.reAmount)}">0,00
+                        €</span>
+                </div>
+                <div class="total-row" th:if="${invoice.rePercentage > 0}">
+                    <span class="total-label" th:text="'Recargo Equiv. (' + ${invoice.rePercentage} + '%)'">RE</span>
+                    <span class="total-value" th:text="${#numbers.formatCurrency(invoice.reAmount)}">0,00 €</span>
+                </div>
+                <div class="total-row" th:if="${invoice.irpfPercentage > 0}">
+                    <span class="total-label" th:text="'IRPF (' + ${invoice.irpfPercentage} + '%)'">IRPF</span>
+                    <span class="total-value" th:text="'-' + ${#numbers.formatCurrency(invoice.irpfAmount)}">0,00
+                        €</span>
+                </div>
+                <div class="grand-total">
+                    <span class="grand-total-label">TOTAL</span>
+                    <span class="grand-total-value" th:text="${#numbers.formatCurrency(invoice.totalAmount)}">0,00
+                        €</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Section -->
+        <div class="bottom-section clearfix">
+            <div class="notes-section">
+                <div th:if="${invoice.notes}">
+                    <span class="bottom-label">Observaciones</span>
+                    <p class="bottom-text" th:text="${invoice.notes}"></p>
+                </div>
+            </div>
+            <div class="iban-section">
+                <div th:if="${company.iban}">
+                    <span class="bottom-label">Datos de Pago</span>
+                    <p class="bottom-text" th:text="'IBAN: ' + ${company.iban}"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
