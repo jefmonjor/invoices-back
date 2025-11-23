@@ -6,28 +6,43 @@ package com.invoices.invoice.domain.entities;
  */
 public class Company {
     private final Long id;
-    private final String businessName;  // Razón Social
-    private final String taxId;         // CIF/NIF
-    private final String address;       // Dirección completa
+    private final String businessName; // Razón Social
+    private final String taxId; // CIF/NIF
+    private final String address; // Dirección completa
     private final String city;
     private final String postalCode;
     private final String province;
+    private final String country; // País
     private final String phone;
     private final String email;
-    private final String iban;          // IBAN para pagos
+    private final String iban; // IBAN para pagos
 
     public Company(
-        Long id,
-        String businessName,
-        String taxId,
-        String address,
-        String city,
-        String postalCode,
-        String province,
-        String phone,
-        String email,
-        String iban
-    ) {
+            Long id,
+            String businessName,
+            String taxId,
+            String address,
+            String city,
+            String postalCode,
+            String province,
+            String phone,
+            String email,
+            String iban) {
+        this(id, businessName, taxId, address, city, postalCode, province, "España", phone, email, iban);
+    }
+
+    public Company(
+            Long id,
+            String businessName,
+            String taxId,
+            String address,
+            String city,
+            String postalCode,
+            String province,
+            String country,
+            String phone,
+            String email,
+            String iban) {
         validateMandatoryFields(businessName, taxId);
 
         this.id = id;
@@ -37,6 +52,7 @@ public class Company {
         this.city = city;
         this.postalCode = postalCode;
         this.province = province;
+        this.country = country != null ? country : "España";
         this.phone = phone;
         this.email = email;
         this.iban = iban;
@@ -53,15 +69,25 @@ public class Company {
 
     public String getFullAddress() {
         StringBuilder sb = new StringBuilder();
-        if (address != null) sb.append(address);
+        if (address != null)
+            sb.append(address);
         if (postalCode != null || city != null) {
-            if (sb.length() > 0) sb.append(", ");
-            if (postalCode != null) sb.append(postalCode);
-            if (city != null) sb.append(" ").append(city);
+            if (sb.length() > 0)
+                sb.append(", ");
+            if (postalCode != null)
+                sb.append(postalCode);
+            if (city != null)
+                sb.append(" ").append(city);
         }
         if (province != null) {
-            if (sb.length() > 0) sb.append(", ");
+            if (sb.length() > 0)
+                sb.append(", ");
             sb.append(province);
+        }
+        if (country != null) {
+            if (sb.length() > 0)
+                sb.append(", ");
+            sb.append(country);
         }
         return sb.toString();
     }
@@ -93,6 +119,10 @@ public class Company {
 
     public String getProvince() {
         return province;
+    }
+
+    public String getCountry() {
+        return country;
     }
 
     public String getPhone() {

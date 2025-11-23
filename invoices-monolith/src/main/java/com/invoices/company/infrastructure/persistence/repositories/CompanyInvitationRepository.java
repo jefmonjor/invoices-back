@@ -1,0 +1,9 @@
+package com.invoices.company.infrastructure.persistence.repositories;
+
+import com.invoices.company.infrastructure.persistence.entities.CompanyInvitation;
+import org.springframework.data.jpa.repository.JpaRepository;
+import java.util.Optional;
+
+public interface CompanyInvitationRepository extends JpaRepository<CompanyInvitation, Long> {
+    Optional<CompanyInvitation> findByToken(String token);
+}

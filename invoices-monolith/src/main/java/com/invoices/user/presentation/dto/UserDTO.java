@@ -30,6 +30,8 @@ public class UserDTO {
 
     private Boolean enabled;
 
+    private Long currentCompanyId;
+
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;

@@ -2,8 +2,8 @@ package com.invoices.invoice.infrastructure.verifactu;
 
 import com.invoices.invoice.domain.entities.Invoice;
 import com.invoices.invoice.domain.entities.InvoiceItem;
-import com.invoices.company.domain.entities.Company;
-import com.invoices.client.domain.entities.Client;
+import com.invoices.invoice.domain.entities.Company;
+import com.invoices.invoice.domain.entities.Client;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -20,8 +20,10 @@ import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
 /**
- * Builder for VERI*FACTU XML documents according to the urn:verifactu:invoices:1.0 schema.
- * This builder creates invoice transmission XML with canonical hashing and invoice chaining.
+ * Builder for VERI*FACTU XML documents according to the
+ * urn:verifactu:invoices:1.0 schema.
+ * This builder creates invoice transmission XML with canonical hashing and
+ * invoice chaining.
  */
 @Service
 @Slf4j
@@ -37,21 +39,21 @@ public class VerifactuXmlBuilder {
     /**
      * Builds a VERI*FACTU compliant XML document for invoice transmission.
      *
-     * @param invoice         The invoice to transmit
-     * @param company         The issuing company
-     * @param client          The recipient client
-     * @param canonicalHash   The SHA-256 canonical hash of the invoice (64 hex chars)
-     * @param previousHash    The hash of the previous invoice in the chain (or empty string if first)
+     * @param invoice       The invoice to transmit
+     * @param company       The issuing company
+     * @param client        The recipient client
+     * @param canonicalHash The SHA-256 canonical hash of the invoice (64 hex chars)
+     * @param previousHash  The hash of the previous invoice in the chain (or empty
+     *                      string if first)
      * @return XML Document ready for transmission
      * @throws ParserConfigurationException if XML parser cannot be configured
      */
-    public Document buildVerifactuXml(
+    public Document buildAltaFacturaXml(
             Invoice invoice,
             Company company,
             Client client,
             String canonicalHash,
-            String previousHash
-    ) throws ParserConfigurationException {
+            String previousHash) throws ParserConfigurationException {
 
         DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
         docFactory.setNamespaceAware(true);
@@ -109,8 +111,7 @@ public class VerifactuXmlBuilder {
             Company company,
             Client client,
             String canonicalHash,
-            String previousHash
-    ) {
+            String previousHash) {
         Element invoiceElement = doc.createElement("Invoice");
         root.appendChild(invoiceElement);
 
@@ -173,7 +174,7 @@ public class VerifactuXmlBuilder {
         invoiceElement.appendChild(recipient);
 
         appendTextElement(doc, recipient, "TaxId", client.getTaxId() != null ? client.getTaxId() : "");
-        appendTextElement(doc, recipient, "LegalName", client.getName());
+        appendTextElement(doc, recipient, "LegalName", client.getBusinessName());
 
         // Build full address from client data
         String fullAddress = buildClientAddress(client);
@@ -194,11 +195,12 @@ public class VerifactuXmlBuilder {
 
             appendTextElement(doc, line, "LineNumber", String.valueOf(lineNumber++));
             appendTextElement(doc, line, "Description", item.getDescription());
-            appendTextElement(doc, line, "Quantity", formatDecimal(item.getQuantity(), 2));
+            appendTextElement(doc, line, "Quantity", formatDecimal(BigDecimal.valueOf(item.getUnits()), 2));
             appendTextElement(doc, line, "UnitPrice", formatDecimal(item.getPrice(), 2));
 
             // Discount percentage
-            BigDecimal discountPercent = item.getDiscount() != null ? item.getDiscount() : BigDecimal.ZERO;
+            BigDecimal discountPercent = item.getDiscountPercentage() != null ? item.getDiscountPercentage()
+                    : BigDecimal.ZERO;
             appendTextElement(doc, line, "DiscountPercent", formatDecimal(discountPercent, 2));
 
             // Taxable base (subtotal after discounts)
@@ -269,17 +271,20 @@ public class VerifactuXmlBuilder {
         }
 
         if (company.getCity() != null && !company.getCity().isEmpty()) {
-            if (address.length() > 0) address.append(", ");
+            if (address.length() > 0)
+                address.append(", ");
             address.append(company.getCity());
         }
 
         if (company.getPostalCode() != null && !company.getPostalCode().isEmpty()) {
-            if (address.length() > 0) address.append(", ");
+            if (address.length() > 0)
+                address.append(", ");
             address.append(company.getPostalCode());
         }
 
         if (company.getCountry() != null && !company.getCountry().isEmpty()) {
-            if (address.length() > 0) address.append(", ");
+            if (address.length() > 0)
+                address.append(", ");
             address.append(company.getCountry());
         }
 
@@ -297,17 +302,20 @@ public class VerifactuXmlBuilder {
         }
 
         if (client.getCity() != null && !client.getCity().isEmpty()) {
-            if (address.length() > 0) address.append(", ");
+            if (address.length() > 0)
+                address.append(", ");
             address.append(client.getCity());
         }
 
         if (client.getPostalCode() != null && !client.getPostalCode().isEmpty()) {
-            if (address.length() > 0) address.append(", ");
+            if (address.length() > 0)
+                address.append(", ");
             address.append(client.getPostalCode());
         }
 
         if (client.getCountry() != null && !client.getCountry().isEmpty()) {
-            if (address.length() > 0) address.append(", ");
+            if (address.length() > 0)
+                address.append(", ");
             address.append(client.getCountry());
         }
 

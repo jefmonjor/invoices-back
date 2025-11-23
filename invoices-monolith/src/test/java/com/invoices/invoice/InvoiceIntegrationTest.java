@@ -90,7 +90,8 @@ class InvoiceIntegrationTest {
                                 "30203",
                                 "MURCIA",
                                 "968123456",
-                                "info@sersfritrucks.com");
+                                "info@sersfritrucks.com",
+                                testCompany.getId());
                 testClient = clientRepository.save(testClient);
         }
 

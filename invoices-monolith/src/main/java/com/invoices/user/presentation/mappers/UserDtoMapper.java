@@ -31,6 +31,7 @@ public class UserDtoMapper {
         dto.setLastName(domainUser.getLastName());
         dto.setRoles(domainUser.getRoles().stream().collect(Collectors.toSet()));
         dto.setEnabled(domainUser.isEnabled());
+        dto.setCurrentCompanyId(domainUser.getCurrentCompanyId());
         dto.setCreatedAt(domainUser.getCreatedAt());
         dto.setUpdatedAt(domainUser.getUpdatedAt());
 
@@ -39,7 +40,8 @@ public class UserDtoMapper {
 
     /**
      * Convert UserDTO to domain User (for updates only - doesn't include password)
-     * Note: This is typically not used for creating new users (use Use Cases directly)
+     * Note: This is typically not used for creating new users (use Use Cases
+     * directly)
      *
      * @param dto the UserDTO
      * @return partial domain user
@@ -51,19 +53,19 @@ public class UserDtoMapper {
 
         // Note: Password is not included - must be handled separately
         return new User(
-            dto.getId(),
-            dto.getEmail(),
-            null, // Password must be set separately
-            dto.getFirstName(),
-            dto.getLastName(),
-            dto.getRoles(),
-            dto.getEnabled(),
-            true, // accountNonExpired
-            true, // accountNonLocked
-            true, // credentialsNonExpired
-            dto.getCreatedAt(),
-            dto.getUpdatedAt(),
-            null // lastLogin
-        );
+                dto.getId(),
+                dto.getEmail(),
+                null, // Password must be set separately
+                dto.getFirstName(),
+                dto.getLastName(),
+                dto.getRoles(),
+                dto.getEnabled(),
+                true, // accountNonExpired
+                true, // accountNonLocked
+                true, // credentialsNonExpired
+                dto.getCreatedAt(),
+                dto.getUpdatedAt(),
+                null, // lastLogin
+                dto.getCurrentCompanyId());
     }
 }

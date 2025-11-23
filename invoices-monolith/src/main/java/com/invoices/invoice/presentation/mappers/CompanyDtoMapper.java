@@ -17,17 +17,18 @@ public class CompanyDtoMapper {
         }
 
         return CompanyDTO.builder()
-            .id(company.getId())
-            .businessName(company.getBusinessName())
-            .taxId(company.getTaxId())
-            .address(company.getAddress())
-            .city(company.getCity())
-            .postalCode(company.getPostalCode())
-            .province(company.getProvince())
-            .phone(company.getPhone())
-            .email(company.getEmail())
-            .iban(company.getIban())
-            .build();
+                .id(company.getId())
+                .businessName(company.getBusinessName())
+                .taxId(company.getTaxId())
+                .address(company.getAddress())
+                .city(company.getCity())
+                .postalCode(company.getPostalCode())
+                .province(company.getProvince())
+                .country(company.getCountry())
+                .phone(company.getPhone())
+                .email(company.getEmail())
+                .iban(company.getIban())
+                .build();
     }
 
     public Company toDomain(CompanyDTO dto) {
@@ -36,16 +37,16 @@ public class CompanyDtoMapper {
         }
 
         return new Company(
-            dto.getId(),
-            dto.getBusinessName(),
-            dto.getTaxId(),
-            dto.getAddress(),
-            dto.getCity(),
-            dto.getPostalCode(),
-            dto.getProvince(),
-            dto.getPhone(),
-            dto.getEmail(),
-            dto.getIban()
-        );
+                dto.getId(),
+                dto.getBusinessName(),
+                dto.getTaxId(),
+                dto.getAddress(),
+                dto.getCity(),
+                dto.getPostalCode(),
+                dto.getProvince(),
+                dto.getCountry(),
+                dto.getPhone(),
+                dto.getEmail(),
+                dto.getIban());
     }
 }

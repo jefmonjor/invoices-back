@@ -21,6 +21,7 @@ public class CompanyDTO {
     private String city;
     private String postalCode;
     private String province;
+    private String country;
     private String phone;
     private String email;
     private String iban;

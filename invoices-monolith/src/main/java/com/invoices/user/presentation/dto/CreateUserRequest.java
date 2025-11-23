@@ -40,4 +40,17 @@ public class CreateUserRequest {
      * Optional roles. If not provided, defaults to "ROLE_USER"
      */
     private Set<String> roles;
+
+    // Company Registration Fields
+    private String registrationType; // NEW_COMPANY, JOIN_COMPANY
+
+    // For NEW_COMPANY
+    private String companyName;
+    private String taxId;
+    private String companyAddress;
+    private String companyEmail;
+    private String companyPhone;
+
+    // For JOIN_COMPANY
+    private String invitationToken;
 }

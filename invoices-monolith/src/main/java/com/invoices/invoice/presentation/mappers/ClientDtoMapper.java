@@ -17,16 +17,18 @@ public class ClientDtoMapper {
         }
 
         return ClientDTO.builder()
-            .id(client.getId())
-            .businessName(client.getBusinessName())
-            .taxId(client.getTaxId())
-            .address(client.getAddress())
-            .city(client.getCity())
-            .postalCode(client.getPostalCode())
-            .province(client.getProvince())
-            .phone(client.getPhone())
-            .email(client.getEmail())
-            .build();
+                .id(client.getId())
+                .businessName(client.getBusinessName())
+                .taxId(client.getTaxId())
+                .address(client.getAddress())
+                .city(client.getCity())
+                .postalCode(client.getPostalCode())
+                .province(client.getProvince())
+                .country(client.getCountry())
+                .phone(client.getPhone())
+                .email(client.getEmail())
+                .companyId(client.getCompanyId())
+                .build();
     }
 
     public Client toDomain(ClientDTO dto) {
@@ -35,15 +37,16 @@ public class ClientDtoMapper {
         }
 
         return new Client(
-            dto.getId(),
-            dto.getBusinessName(),
-            dto.getTaxId(),
-            dto.getAddress(),
-            dto.getCity(),
-            dto.getPostalCode(),
-            dto.getProvince(),
-            dto.getPhone(),
-            dto.getEmail()
-        );
+                dto.getId(),
+                dto.getBusinessName(),
+                dto.getTaxId(),
+                dto.getAddress(),
+                dto.getCity(),
+                dto.getPostalCode(),
+                dto.getProvince(),
+                dto.getCountry(),
+                dto.getPhone(),
+                dto.getEmail(),
+                dto.getCompanyId());
     }
 }

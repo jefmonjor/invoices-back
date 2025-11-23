@@ -15,7 +15,7 @@ import java.util.Set;
  */
 @Entity
 @Table(name = "users", indexes = {
-    @Index(name = "idx_user_email", columnList = "email")
+        @Index(name = "idx_user_email", columnList = "email")
 })
 public class UserJpaEntity {
 
@@ -51,6 +51,9 @@ public class UserJpaEntity {
 
     @Column(name = "credentials_non_expired")
     private Boolean credentialsNonExpired = true;
+
+    @Column(name = "current_company_id")
+    private Long currentCompanyId;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -146,6 +149,14 @@ public class UserJpaEntity {
 
     public void setCredentialsNonExpired(Boolean credentialsNonExpired) {
         this.credentialsNonExpired = credentialsNonExpired;
+    }
+
+    public Long getCurrentCompanyId() {
+        return currentCompanyId;
+    }
+
+    public void setCurrentCompanyId(Long currentCompanyId) {
+        this.currentCompanyId = currentCompanyId;
     }
 
     public LocalDateTime getCreatedAt() {

@@ -45,7 +45,8 @@ public class InvoiceCanonicalizer {
      */
     public String canonicalize(Invoice invoice, Company company, Client client) {
         try {
-            // Build canonical object with sorted keys (TreeMap maintains alphabetical order)
+            // Build canonical object with sorted keys (TreeMap maintains alphabetical
+            // order)
             Map<String, Object> canonical = new TreeMap<>();
 
             // Add normalized fields in alphabetical order
@@ -71,7 +72,8 @@ public class InvoiceCanonicalizer {
             canonical.put("invoiceNumber", normalize(invoice.getInvoiceNumber()));
             canonical.put("irpfAmount", formatMoney(invoice.calculateIrpfAmount()));
             canonical.put("irpfPercentage", formatMoney(invoice.getIrpfPercentage()));
-            canonical.put("issueDate", invoice.getIssueDate().atZone(java.time.ZoneOffset.UTC).format(ISO_8601_FORMATTER));
+            canonical.put("issueDate",
+                    invoice.getIssueDate().atZone(java.time.ZoneOffset.UTC).format(ISO_8601_FORMATTER));
 
             // Items (sorted by description to ensure consistency)
             List<Map<String, Object>> items = invoice.getItems().stream()
@@ -119,7 +121,7 @@ public class InvoiceCanonicalizer {
         canonicalItem.put("discountPercentage", formatMoney(discount));
 
         canonicalItem.put("price", formatMoney(item.getPrice()));
-        canonicalItem.put("quantity", formatMoney(item.getQuantity()));
+        canonicalItem.put("quantity", formatMoney(BigDecimal.valueOf(item.getUnits())));
         canonicalItem.put("subtotal", formatMoney(item.calculateSubtotal()));
         canonicalItem.put("total", formatMoney(item.calculateTotal()));
         canonicalItem.put("vatPercentage", formatMoney(item.getVatPercentage()));
@@ -189,7 +191,7 @@ public class InvoiceCanonicalizer {
                     .map(item -> {
                         Map<String, Object> itemMap = new HashMap<>();
                         itemMap.put("description", item.getDescription());
-                        itemMap.put("quantity", item.getQuantity().toString());
+                        itemMap.put("quantity", String.valueOf(item.getUnits()));
                         itemMap.put("price", item.getPrice().toString());
                         itemMap.put("vatPercentage", item.getVatPercentage().toString());
                         if (item.getDiscountPercentage() != null) {

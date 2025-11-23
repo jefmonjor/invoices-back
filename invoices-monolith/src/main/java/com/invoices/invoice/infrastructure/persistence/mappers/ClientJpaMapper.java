@@ -17,16 +17,17 @@ public class ClientJpaMapper {
         }
 
         return new Client(
-            jpaEntity.getId(),
-            jpaEntity.getBusinessName(),
-            jpaEntity.getTaxId(),
-            jpaEntity.getAddress(),
-            jpaEntity.getCity(),
-            jpaEntity.getPostalCode(),
-            jpaEntity.getProvince(),
-            jpaEntity.getPhone(),
-            jpaEntity.getEmail()
-        );
+                jpaEntity.getId(),
+                jpaEntity.getBusinessName(),
+                jpaEntity.getTaxId(),
+                jpaEntity.getAddress(),
+                jpaEntity.getCity(),
+                jpaEntity.getPostalCode(),
+                jpaEntity.getProvince(),
+                jpaEntity.getCountry(),
+                jpaEntity.getPhone(),
+                jpaEntity.getEmail(),
+                jpaEntity.getCompanyId());
     }
 
     public ClientJpaEntity toJpaEntity(Client domain) {
@@ -42,8 +43,10 @@ public class ClientJpaMapper {
         jpaEntity.setCity(domain.getCity());
         jpaEntity.setPostalCode(domain.getPostalCode());
         jpaEntity.setProvince(domain.getProvince());
+        jpaEntity.setCountry(domain.getCountry());
         jpaEntity.setPhone(domain.getPhone());
         jpaEntity.setEmail(domain.getEmail());
+        jpaEntity.setCompanyId(domain.getCompanyId());
 
         return jpaEntity;
     }

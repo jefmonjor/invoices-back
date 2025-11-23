@@ -1,8 +1,5 @@
 package com.invoices.invoice.presentation.controllers;
 
-import com.invoices.document.domain.entities.Document;
-import com.invoices.document.domain.usecases.DownloadDocumentUseCase;
-import com.invoices.document.domain.usecases.GetDocumentsByInvoiceUseCase;
 import com.invoices.invoice.domain.entities.Client;
 import com.invoices.invoice.domain.entities.Company;
 import com.invoices.invoice.domain.entities.Invoice;
@@ -26,8 +23,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -47,8 +42,6 @@ public class InvoiceController {
     private final CreateInvoiceUseCase createInvoiceUseCase;
     private final UpdateInvoiceUseCase updateInvoiceUseCase;
     private final DeleteInvoiceUseCase deleteInvoiceUseCase;
-    private final GetDocumentsByInvoiceUseCase getDocumentsByInvoiceUseCase;
-    private final DownloadDocumentUseCase downloadDocumentUseCase;
     private final InvoiceDtoMapper dtoMapper;
     private final InvoiceRepository invoiceRepository;
     private final CompanyRepository companyRepository;
@@ -61,8 +54,6 @@ public class InvoiceController {
             CreateInvoiceUseCase createInvoiceUseCase,
             UpdateInvoiceUseCase updateInvoiceUseCase,
             DeleteInvoiceUseCase deleteInvoiceUseCase,
-            GetDocumentsByInvoiceUseCase getDocumentsByInvoiceUseCase,
-            DownloadDocumentUseCase downloadDocumentUseCase,
             InvoiceDtoMapper dtoMapper,
             InvoiceRepository invoiceRepository,
             CompanyRepository companyRepository,
@@ -73,8 +64,6 @@ public class InvoiceController {
         this.createInvoiceUseCase = createInvoiceUseCase;
         this.updateInvoiceUseCase = updateInvoiceUseCase;
         this.deleteInvoiceUseCase = deleteInvoiceUseCase;
-        this.getDocumentsByInvoiceUseCase = getDocumentsByInvoiceUseCase;
-        this.downloadDocumentUseCase = downloadDocumentUseCase;
         this.dtoMapper = dtoMapper;
         this.invoiceRepository = invoiceRepository;
         this.companyRepository = companyRepository;
@@ -173,7 +162,7 @@ public class InvoiceController {
     /**
      * GET /invoices/{id}/pdf - Download invoice PDF (draft or final)
      *
-     * @param id Invoice ID
+     * @param id      Invoice ID
      * @param version "draft" (default) or "final"
      * @return PDF bytes
      */
@@ -297,7 +286,8 @@ public class InvoiceController {
                 log.warn("No canonical JSON found for invoice ID: {}", id);
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .header("Content-Type", "application/json")
-                        .body("{\"error\": \"Canonical JSON not found\", \"message\": \"No canonical JSON available for invoice " + id + "\"}");
+                        .body("{\"error\": \"Canonical JSON not found\", \"message\": \"No canonical JSON available for invoice "
+                                + id + "\"}");
             }
 
             return ResponseEntity.ok()

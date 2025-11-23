@@ -21,6 +21,8 @@ public class ClientDTO {
     private String city;
     private String postalCode;
     private String province;
+    private String country;
     private String phone;
     private String email;
+    private Long companyId;
 }

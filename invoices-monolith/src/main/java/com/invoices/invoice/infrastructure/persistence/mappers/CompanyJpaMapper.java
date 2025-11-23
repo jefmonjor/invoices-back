@@ -17,17 +17,17 @@ public class CompanyJpaMapper {
         }
 
         return new Company(
-            jpaEntity.getId(),
-            jpaEntity.getBusinessName(),
-            jpaEntity.getTaxId(),
-            jpaEntity.getAddress(),
-            jpaEntity.getCity(),
-            jpaEntity.getPostalCode(),
-            jpaEntity.getProvince(),
-            jpaEntity.getPhone(),
-            jpaEntity.getEmail(),
-            jpaEntity.getIban()
-        );
+                jpaEntity.getId(),
+                jpaEntity.getBusinessName(),
+                jpaEntity.getTaxId(),
+                jpaEntity.getAddress(),
+                jpaEntity.getCity(),
+                jpaEntity.getPostalCode(),
+                jpaEntity.getProvince(),
+                jpaEntity.getCountry(),
+                jpaEntity.getPhone(),
+                jpaEntity.getEmail(),
+                jpaEntity.getIban());
     }
 
     public CompanyJpaEntity toJpaEntity(Company domain) {
@@ -43,6 +43,7 @@ public class CompanyJpaMapper {
         jpaEntity.setCity(domain.getCity());
         jpaEntity.setPostalCode(domain.getPostalCode());
         jpaEntity.setProvince(domain.getProvince());
+        jpaEntity.setCountry(domain.getCountry());
         jpaEntity.setPhone(domain.getPhone());
         jpaEntity.setEmail(domain.getEmail());
         jpaEntity.setIban(domain.getIban());

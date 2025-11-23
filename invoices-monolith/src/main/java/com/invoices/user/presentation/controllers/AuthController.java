@@ -1,6 +1,9 @@
 package com.invoices.user.presentation.controllers;
 
 import com.invoices.security.JwtUtil;
+import com.invoices.company.application.services.CompanyInvitationService;
+import com.invoices.company.application.services.CompanyManagementService;
+import com.invoices.invoice.domain.entities.Company;
 import com.invoices.user.domain.entities.User;
 import com.invoices.user.domain.usecases.AuthenticateUserUseCase;
 import com.invoices.user.domain.usecases.CreateUserUseCase;
@@ -38,119 +41,108 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Authentication", description = "Endpoints for user authentication and registration")
 public class AuthController {
 
-    private final CreateUserUseCase createUserUseCase;
-    private final AuthenticateUserUseCase authenticateUserUseCase;
-    private final UpdateUserLastLoginUseCase updateUserLastLoginUseCase;
-    private final JwtUtil jwtUtil;
-    private final UserDtoMapper userDtoMapper;
+        private final CreateUserUseCase createUserUseCase;
+        private final AuthenticateUserUseCase authenticateUserUseCase;
+        private final UpdateUserLastLoginUseCase updateUserLastLoginUseCase;
+        private final CompanyManagementService companyManagementService;
+        private final CompanyInvitationService companyInvitationService;
+        private final JwtUtil jwtUtil;
+        private final UserDtoMapper userDtoMapper;
 
-    /**
-     * Registers a new user and returns authentication token.
-     *
-     * @param request the registration request
-     * @return authentication response with JWT token
-     */
-    @PostMapping("/register")
-    @Operation(
-            summary = "Register a new user",
-            description = "Creates a new user account and returns an authentication token"
-    )
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "201",
-                    description = "User registered successfully",
-                    content = @Content(schema = @Schema(implementation = AuthResponse.class))
-            ),
-            @ApiResponse(
-                    responseCode = "400",
-                    description = "Validation error",
-                    content = @Content
-            ),
-            @ApiResponse(
-                    responseCode = "409",
-                    description = "User already exists with this email",
-                    content = @Content
-            )
-    })
-    public ResponseEntity<AuthResponse> register(@Valid @RequestBody CreateUserRequest request) {
-        log.info("POST /api/auth/register - Registering new user: {}", request.getEmail());
+        /**
+         * Registers a new user and returns authentication token.
+         *
+         * @param request the registration request
+         * @return authentication response with JWT token
+         */
+        @PostMapping("/register")
+        @Operation(summary = "Register a new user", description = "Creates a new user account and returns an authentication token")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "201", description = "User registered successfully", content = @Content(schema = @Schema(implementation = AuthResponse.class))),
+                        @ApiResponse(responseCode = "400", description = "Validation error", content = @Content),
+                        @ApiResponse(responseCode = "409", description = "User already exists with this email", content = @Content)
+        })
+        public ResponseEntity<AuthResponse> register(@Valid @RequestBody CreateUserRequest request) {
+                log.info("POST /api/auth/register - Registering new user: {}", request.getEmail());
 
-        // Default role for new users
-        java.util.Set<String> roles = new java.util.HashSet<>();
-        roles.add("ROLE_USER");
+                // Default role for new users
+                java.util.Set<String> roles = new java.util.HashSet<>();
+                roles.add("ROLE_USER");
 
-        // Create user using domain use case
-        User createdUser = createUserUseCase.execute(
-                request.getEmail(),
-                request.getPassword(),
-                request.getFirstName(),
-                request.getLastName(),
-                roles
-        );
+                // Create user using domain use case
+                User createdUser = createUserUseCase.execute(
+                                request.getEmail(),
+                                request.getPassword(),
+                                request.getFirstName(),
+                                request.getLastName(),
+                                roles);
 
-        // Generate JWT token with email and roles
-        String token = jwtUtil.generateToken(createdUser.getEmail(), createdUser.getRoles());
+                // Handle Company Registration
+                if ("NEW_COMPANY".equals(request.getRegistrationType())) {
+                        Company newCompany = new Company(
+                                        null,
+                                        request.getCompanyName(),
+                                        request.getTaxId(),
+                                        request.getCompanyAddress(),
+                                        null, // city
+                                        null, // postalCode
+                                        null, // province
+                                        request.getCompanyPhone(),
+                                        request.getCompanyEmail(),
+                                        null // iban
+                        );
+                        companyManagementService.createCompany(newCompany, createdUser.getId());
+                } else if ("JOIN_COMPANY".equals(request.getRegistrationType())) {
+                        companyInvitationService.acceptInvitation(request.getInvitationToken(), createdUser.getId());
+                }
 
-        AuthResponse response = AuthResponse.builder()
-                .token(token)
-                .expiresIn(jwtUtil.getExpirationTime())
-                .user(userDtoMapper.toDTO(createdUser))
-                .build();
+                // Generate JWT token with email and roles
+                String token = jwtUtil.generateToken(createdUser.getEmail(), createdUser.getRoles());
 
-        log.info("User registered successfully: {}", request.getEmail());
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
-    }
+                AuthResponse response = AuthResponse.builder()
+                                .token(token)
+                                .expiresIn(jwtUtil.getExpirationTime())
+                                .user(userDtoMapper.toDTO(createdUser))
+                                .build();
 
-    /**
-     * Authenticates a user and returns JWT token.
-     *
-     * @param request the login request
-     * @return authentication response with JWT token
-     */
-    @PostMapping("/login")
-    @Operation(
-            summary = "Login",
-            description = "Authenticates a user and returns a JWT token"
-    )
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Login successful",
-                    content = @Content(schema = @Schema(implementation = AuthResponse.class))
-            ),
-            @ApiResponse(
-                    responseCode = "400",
-                    description = "Validation error",
-                    content = @Content
-            ),
-            @ApiResponse(
-                    responseCode = "401",
-                    description = "Invalid credentials",
-                    content = @Content
-            )
-    })
-    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
-        log.info("POST /api/auth/login - Login attempt for user: {}", request.getEmail());
+                log.info("User registered successfully: {}", request.getEmail());
+                return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        }
 
-        // Authenticate user using domain use case
-        User authenticatedUser = authenticateUserUseCase.execute(
-                request.getEmail(),
-                request.getPassword()
-        );
+        /**
+         * Authenticates a user and returns JWT token.
+         *
+         * @param request the login request
+         * @return authentication response with JWT token
+         */
+        @PostMapping("/login")
+        @Operation(summary = "Login", description = "Authenticates a user and returns a JWT token")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Login successful", content = @Content(schema = @Schema(implementation = AuthResponse.class))),
+                        @ApiResponse(responseCode = "400", description = "Validation error", content = @Content),
+                        @ApiResponse(responseCode = "401", description = "Invalid credentials", content = @Content)
+        })
+        public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
+                log.info("POST /api/auth/login - Login attempt for user: {}", request.getEmail());
 
-        // Update last login timestamp
-        updateUserLastLoginUseCase.execute(authenticatedUser.getId());
+                // Authenticate user using domain use case
+                User authenticatedUser = authenticateUserUseCase.execute(
+                                request.getEmail(),
+                                request.getPassword());
 
-        // Generate JWT token with email and roles
-        String token = jwtUtil.generateToken(authenticatedUser.getEmail(), authenticatedUser.getRoles());
+                // Update last login timestamp
+                updateUserLastLoginUseCase.execute(authenticatedUser.getId());
 
-        AuthResponse response = AuthResponse.builder()
-                .token(token)
-                .expiresIn(jwtUtil.getExpirationTime())
-                .user(userDtoMapper.toDTO(authenticatedUser))
-                .build();
+                // Generate JWT token with email and roles
+                String token = jwtUtil.generateToken(authenticatedUser.getEmail(), authenticatedUser.getRoles());
 
-        log.info("User logged in successfully: {}", request.getEmail());
-        return ResponseEntity.ok(response);
-    }
+                AuthResponse response = AuthResponse.builder()
+                                .token(token)
+                                .expiresIn(jwtUtil.getExpirationTime())
+                                .user(userDtoMapper.toDTO(authenticatedUser))
+                                .build();
+
+                log.info("User logged in successfully: {}", request.getEmail());
+                return ResponseEntity.ok(response);
+        }
 }

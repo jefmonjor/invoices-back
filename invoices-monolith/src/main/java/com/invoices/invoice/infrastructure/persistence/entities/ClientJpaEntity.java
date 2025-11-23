@@ -33,11 +33,17 @@ public class ClientJpaEntity {
     @Column(name = "province", length = 100)
     private String province;
 
+    @Column(name = "country", length = 100)
+    private String country;
+
     @Column(name = "phone", length = 20)
     private String phone;
 
     @Column(name = "email", length = 100)
     private String email;
+
+    @Column(name = "company_id")
+    private Long companyId;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -117,6 +123,14 @@ public class ClientJpaEntity {
         this.province = province;
     }
 
+    public String getCountry() {
+        return country;
+    }
+
+    public void setCountry(String country) {
+        this.country = country;
+    }
+
     public String getPhone() {
         return phone;
     }
@@ -131,6 +145,14 @@ public class ClientJpaEntity {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public Long getCompanyId() {
+        return companyId;
+    }
+
+    public void setCompanyId(Long companyId) {
+        this.companyId = companyId;
     }
 
     public LocalDateTime getCreatedAt() {

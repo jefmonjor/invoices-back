@@ -35,6 +35,7 @@ public class UserJpaMapper {
         jpaEntity.setAccountNonExpired(domainUser.isAccountNonExpired());
         jpaEntity.setAccountNonLocked(domainUser.isAccountNonLocked());
         jpaEntity.setCredentialsNonExpired(domainUser.isCredentialsNonExpired());
+        jpaEntity.setCurrentCompanyId(domainUser.getCurrentCompanyId());
         jpaEntity.setCreatedAt(domainUser.getCreatedAt());
         jpaEntity.setUpdatedAt(domainUser.getUpdatedAt());
         jpaEntity.setLastLogin(domainUser.getLastLogin());
@@ -54,19 +55,19 @@ public class UserJpaMapper {
         }
 
         return new User(
-            jpaEntity.getId(),
-            jpaEntity.getEmail(),
-            jpaEntity.getPassword(),
-            jpaEntity.getFirstName(),
-            jpaEntity.getLastName(),
-            jpaEntity.getRoles(),
-            jpaEntity.getEnabled(),
-            jpaEntity.getAccountNonExpired(),
-            jpaEntity.getAccountNonLocked(),
-            jpaEntity.getCredentialsNonExpired(),
-            jpaEntity.getCreatedAt(),
-            jpaEntity.getUpdatedAt(),
-            jpaEntity.getLastLogin()
-        );
+                jpaEntity.getId(),
+                jpaEntity.getEmail(),
+                jpaEntity.getPassword(),
+                jpaEntity.getFirstName(),
+                jpaEntity.getLastName(),
+                jpaEntity.getRoles(),
+                jpaEntity.getEnabled(),
+                jpaEntity.getAccountNonExpired(),
+                jpaEntity.getAccountNonLocked(),
+                jpaEntity.getCredentialsNonExpired(),
+                jpaEntity.getCreatedAt(),
+                jpaEntity.getUpdatedAt(),
+                jpaEntity.getLastLogin(),
+                jpaEntity.getCurrentCompanyId());
     }
 }

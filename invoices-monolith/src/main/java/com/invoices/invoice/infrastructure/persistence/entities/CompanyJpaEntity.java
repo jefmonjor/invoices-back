@@ -33,6 +33,9 @@ public class CompanyJpaEntity {
     @Column(name = "province", length = 100)
     private String province;
 
+    @Column(name = "country", length = 100)
+    private String country;
+
     @Column(name = "phone", length = 20)
     private String phone;
 
@@ -118,6 +121,14 @@ public class CompanyJpaEntity {
 
     public void setProvince(String province) {
         this.province = province;
+    }
+
+    public String getCountry() {
+        return country;
+    }
+
+    public void setCountry(String country) {
+        this.country = country;
     }
 
     public String getPhone() {

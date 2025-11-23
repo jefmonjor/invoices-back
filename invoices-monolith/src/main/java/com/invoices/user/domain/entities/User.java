@@ -8,14 +8,15 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
- * User domain entity (Clean Architecture - pure POJO without framework dependencies)
- * Represents a user in the system with authentication and authorization capabilities.
+ * User domain entity (Clean Architecture - pure POJO without framework
+ * dependencies)
+ * Represents a user in the system with authentication and authorization
+ * capabilities.
  */
 public class User {
 
     private static final Pattern EMAIL_PATTERN = Pattern.compile(
-        "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"
-    );
+            "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
 
     private final Long id;
     private final String email;
@@ -30,14 +31,16 @@ public class User {
     private final LocalDateTime createdAt;
     private final LocalDateTime updatedAt;
     private final LocalDateTime lastLogin;
+    private final Long currentCompanyId;
 
     /**
      * Full constructor for creating a User entity
      */
     public User(Long id, String email, String password, String firstName, String lastName,
-                Set<String> roles, boolean enabled, boolean accountNonExpired,
-                boolean accountNonLocked, boolean credentialsNonExpired,
-                LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime lastLogin) {
+            Set<String> roles, boolean enabled, boolean accountNonExpired,
+            boolean accountNonLocked, boolean credentialsNonExpired,
+            LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime lastLogin,
+            Long currentCompanyId) {
         validateEmail(email);
         validatePassword(password);
 
@@ -54,6 +57,7 @@ public class User {
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.lastLogin = lastLogin;
+        this.currentCompanyId = currentCompanyId;
     }
 
     /**
@@ -61,8 +65,8 @@ public class User {
      */
     public User(String email, String hashedPassword, String firstName, String lastName, Set<String> roles) {
         this(null, email, hashedPassword, firstName, lastName, roles,
-             true, true, true, true,
-             LocalDateTime.now(), LocalDateTime.now(), null);
+                true, true, true, true,
+                LocalDateTime.now(), LocalDateTime.now(), null, null);
     }
 
     // ==================== VALIDATION METHODS ====================
@@ -110,10 +114,9 @@ public class User {
      */
     public User withLastLogin(LocalDateTime lastLogin) {
         return new User(
-            this.id, this.email, this.password, this.firstName, this.lastName,
-            this.roles, this.enabled, this.accountNonExpired, this.accountNonLocked,
-            this.credentialsNonExpired, this.createdAt, LocalDateTime.now(), lastLogin
-        );
+                this.id, this.email, this.password, this.firstName, this.lastName,
+                this.roles, this.enabled, this.accountNonExpired, this.accountNonLocked,
+                this.credentialsNonExpired, this.createdAt, LocalDateTime.now(), lastLogin, this.currentCompanyId);
     }
 
     /**
@@ -122,10 +125,9 @@ public class User {
     public User withPassword(String newHashedPassword) {
         validatePassword(newHashedPassword);
         return new User(
-            this.id, this.email, newHashedPassword, this.firstName, this.lastName,
-            this.roles, this.enabled, this.accountNonExpired, this.accountNonLocked,
-            this.credentialsNonExpired, this.createdAt, LocalDateTime.now(), this.lastLogin
-        );
+                this.id, this.email, newHashedPassword, this.firstName, this.lastName,
+                this.roles, this.enabled, this.accountNonExpired, this.accountNonLocked,
+                this.credentialsNonExpired, this.createdAt, LocalDateTime.now(), this.lastLogin, this.currentCompanyId);
     }
 
     /**
@@ -133,10 +135,9 @@ public class User {
      */
     public User withDisabled() {
         return new User(
-            this.id, this.email, this.password, this.firstName, this.lastName,
-            this.roles, false, this.accountNonExpired, this.accountNonLocked,
-            this.credentialsNonExpired, this.createdAt, LocalDateTime.now(), this.lastLogin
-        );
+                this.id, this.email, this.password, this.firstName, this.lastName,
+                this.roles, false, this.accountNonExpired, this.accountNonLocked,
+                this.credentialsNonExpired, this.createdAt, LocalDateTime.now(), this.lastLogin, this.currentCompanyId);
     }
 
     /**
@@ -144,10 +145,19 @@ public class User {
      */
     public User withEnabled() {
         return new User(
-            this.id, this.email, this.password, this.firstName, this.lastName,
-            this.roles, true, this.accountNonExpired, this.accountNonLocked,
-            this.credentialsNonExpired, this.createdAt, LocalDateTime.now(), this.lastLogin
-        );
+                this.id, this.email, this.password, this.firstName, this.lastName,
+                this.roles, true, this.accountNonExpired, this.accountNonLocked,
+                this.credentialsNonExpired, this.createdAt, LocalDateTime.now(), this.lastLogin, this.currentCompanyId);
+    }
+
+    /**
+     * Create a new User with updated current company
+     */
+    public User withCurrentCompany(Long companyId) {
+        return new User(
+                this.id, this.email, this.password, this.firstName, this.lastName,
+                this.roles, this.enabled, this.accountNonExpired, this.accountNonLocked,
+                this.credentialsNonExpired, this.createdAt, LocalDateTime.now(), this.lastLogin, companyId);
     }
 
     // ==================== GETTERS ====================
@@ -217,12 +227,18 @@ public class User {
         return lastLogin;
     }
 
+    public Long getCurrentCompanyId() {
+        return currentCompanyId;
+    }
+
     // ==================== EQUALS & HASHCODE ====================
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         User user = (User) o;
         return Objects.equals(id, user.id) && Objects.equals(email, user.email);
     }
@@ -242,6 +258,7 @@ public class User {
                 ", roles=" + roles +
                 ", enabled=" + enabled +
                 ", createdAt=" + createdAt +
+                ", currentCompanyId=" + currentCompanyId +
                 '}';
     }
 }

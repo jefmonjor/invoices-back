@@ -65,30 +65,63 @@ public class JwtUtil {
     }
 
     /**
-     * Generates a JWT token for the given email and roles.
-     * This is useful when you have email and roles but not a complete UserDetails object.
+     * Generates a JWT token for the given email, roles and companyId.
      *
-     * @param email the user's email
-     * @param roles the user's roles
+     * @param email     the user's email
+     * @param roles     the user's roles
+     * @param companyId the user's current company ID
      * @return the generated JWT token
      */
-    public String generateToken(String email, java.util.Set<String> roles) {
+    public String generateToken(String email, java.util.Set<String> roles, Long companyId) {
         Map<String, Object> claims = new HashMap<>();
 
         // Add roles to claims
         String rolesString = String.join(",", roles);
         claims.put("roles", rolesString);
 
+        if (companyId != null) {
+            claims.put("companyId", companyId);
+        }
+
         String token = createToken(claims, email);
-        log.info("Generated JWT token for user: {}", email);
+        log.info("Generated JWT token for user: {} with companyId: {}", email, companyId);
 
         return token;
     }
 
     /**
+     * Generates a JWT token for the given email and roles (legacy support).
+     *
+     * @param email the user's email
+     * @param roles the user's roles
+     * @return the generated JWT token
+     */
+    public String generateToken(String email, java.util.Set<String> roles) {
+        return generateToken(email, roles, null);
+    }
+
+    /**
+     * Extracts the companyId from the JWT token.
+     *
+     * @param token the JWT token
+     * @return the companyId or null if not present
+     */
+    public Long extractCompanyId(String token) {
+        return extractClaim(token, claims -> {
+            Object companyId = claims.get("companyId");
+            if (companyId instanceof Integer) {
+                return ((Integer) companyId).longValue();
+            } else if (companyId instanceof Long) {
+                return (Long) companyId;
+            }
+            return null;
+        });
+    }
+
+    /**
      * Creates a JWT token with the specified claims and subject.
      *
-     * @param claims the claims to include in the token
+     * @param claims  the claims to include in the token
      * @param subject the subject (username/email)
      * @return the generated token
      */
@@ -129,9 +162,9 @@ public class JwtUtil {
     /**
      * Extracts a specific claim from the JWT token.
      *
-     * @param token the JWT token
+     * @param token          the JWT token
      * @param claimsResolver function to resolve the claim
-     * @param <T> the type of the claim
+     * @param <T>            the type of the claim
      * @return the claim value
      */
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
@@ -151,7 +184,7 @@ public class JwtUtil {
         try {
             return Jwts.parserBuilder()
                     .setSigningKey(getSigningKey())
-                    .requireIssuer(issuer)  // Validate issuer to prevent tokens from other systems
+                    .requireIssuer(issuer) // Validate issuer to prevent tokens from other systems
                     .build()
                     .parseClaimsJws(token)
                     .getBody();
@@ -190,7 +223,7 @@ public class JwtUtil {
     /**
      * Validates the JWT token against user details.
      *
-     * @param token the JWT token
+     * @param token       the JWT token
      * @param userDetails the user details to validate against
      * @return true if valid, false otherwise
      */
