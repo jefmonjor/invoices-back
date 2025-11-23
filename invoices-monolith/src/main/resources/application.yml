@@ -81,6 +81,19 @@ spring:
       consumer-group: ${REDIS_CONSUMER_GROUP:trace-group}
       consumer-name: ${REDIS_CONSUMER_NAME:trace-consumer}
 
+  # Email Configuration
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:your-email@gmail.com}
+    password: ${MAIL_PASSWORD:your-app-password}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
 # JWT Configuration
 jwt:
   # SECURITY: JWT_SECRET is REQUIRED - must be at least 32 characters (256 bits for HS256)
@@ -276,6 +289,19 @@ bucket4j:
       consumer-group: ${REDIS_CONSUMER_GROUP:trace-group}
       consumer-name: ${REDIS_CONSUMER_NAME:trace-consumer}
 
+  # Email Configuration
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:your-email@gmail.com}
+    password: ${MAIL_PASSWORD:your-app-password}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
 # JWT Configuration
 jwt:
   # SECURITY: JWT_SECRET is REQUIRED - must be at least 32 characters (256 bits for HS256)
@@ -417,3 +443,15 @@ verifactu:
     alias: myalias
   aeat:
     endpoint: https://prewww1.aeat.es/wlpl/TIKE-CONT/ws/V1_0/static_files/common/internet/dep/aplicaciones/es/aeat/tike/cont/ws/SuministroLR.xsd
+  webhook:
+    # SECURITY: Webhook secret for HMAC-SHA256 signature validation
+    # Generate with: openssl rand -hex 32
+    # WARNING: Default value is for LOCAL DEVELOPMENT ONLY - MUST be changed in production
+    secret: ${VERIFACTU_WEBHOOK_SECRET:default-webhook-secret-change-in-production}
+  batch:
+    enabled: ${VERIFACTU_BATCH_ENABLED:true}
+    retry-cron: ${VERIFACTU_BATCH_RETRY_CRON:0 0 2 * * ?}
+    weekly-report-cron: ${VERIFACTU_BATCH_WEEKLY_REPORT_CRON:0 0 9 * * MON}
+  email:
+    from: ${VERIFACTU_EMAIL_FROM:noreply@invoices.com}
+    to: ${VERIFACTU_EMAIL_TO:admin@invoices.com}

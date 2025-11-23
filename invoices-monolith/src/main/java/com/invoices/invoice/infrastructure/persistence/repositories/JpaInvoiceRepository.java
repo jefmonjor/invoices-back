@@ -37,4 +37,7 @@ public interface JpaInvoiceRepository extends JpaRepository<InvoiceJpaEntity, Lo
 
     Long countByVerifactuStatusAndCreatedAtBetween(
             String verifactuStatus, LocalDateTime start, LocalDateTime end);
+
+    Long countByVerifactuStatusAndUpdatedAtBefore(
+            String verifactuStatus, LocalDateTime updatedBefore);
 }

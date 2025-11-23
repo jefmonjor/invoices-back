@@ -70,6 +70,37 @@ public class InvoiceJpaEntity {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
+    // VERI*FACTU fields
+    @Column(name = "document_json", columnDefinition = "TEXT")
+    private String documentJson;
+
+    @Column(name = "canonical_json", columnDefinition = "TEXT")
+    private String canonicalJson;
+
+    @Column(name = "document_hash", length = 64)
+    private String documentHash;
+
+    @Column(name = "previous_document_hash", length = 64)
+    private String previousDocumentHash;
+
+    @Column(name = "verifactu_status", length = 50)
+    private String verifactuStatus;
+
+    @Column(name = "verifactu_tx_id", length = 255)
+    private String verifactuTxId;
+
+    @Column(name = "verifactu_raw_response", columnDefinition = "TEXT")
+    private String verifactuRawResponse;
+
+    @Column(name = "pdf_server_path", length = 500)
+    private String pdfServerPath;
+
+    @Column(name = "pdf_is_final")
+    private Boolean pdfIsFinal;
+
+    @Column(name = "qr_payload", columnDefinition = "TEXT")
+    private String qrPayload;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
@@ -238,5 +269,86 @@ public class InvoiceJpaEntity {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    // VERI*FACTU Getters and Setters
+    public String getDocumentJson() {
+        return documentJson;
+    }
+
+    public void setDocumentJson(String documentJson) {
+        this.documentJson = documentJson;
+    }
+
+    public String getCanonicalJson() {
+        return canonicalJson;
+    }
+
+    public void setCanonicalJson(String canonicalJson) {
+        this.canonicalJson = canonicalJson;
+    }
+
+    public String getDocumentHash() {
+        return documentHash;
+    }
+
+    public void setDocumentHash(String documentHash) {
+        this.documentHash = documentHash;
+    }
+
+    public String getPreviousDocumentHash() {
+        return previousDocumentHash;
+    }
+
+    public void setPreviousDocumentHash(String previousDocumentHash) {
+        this.previousDocumentHash = previousDocumentHash;
+    }
+
+    public String getVerifactuStatus() {
+        return verifactuStatus;
+    }
+
+    public void setVerifactuStatus(String verifactuStatus) {
+        this.verifactuStatus = verifactuStatus;
+    }
+
+    public String getVerifactuTxId() {
+        return verifactuTxId;
+    }
+
+    public void setVerifactuTxId(String verifactuTxId) {
+        this.verifactuTxId = verifactuTxId;
+    }
+
+    public String getVerifactuRawResponse() {
+        return verifactuRawResponse;
+    }
+
+    public void setVerifactuRawResponse(String verifactuRawResponse) {
+        this.verifactuRawResponse = verifactuRawResponse;
+    }
+
+    public String getPdfServerPath() {
+        return pdfServerPath;
+    }
+
+    public void setPdfServerPath(String pdfServerPath) {
+        this.pdfServerPath = pdfServerPath;
+    }
+
+    public Boolean getPdfIsFinal() {
+        return pdfIsFinal;
+    }
+
+    public void setPdfIsFinal(Boolean pdfIsFinal) {
+        this.pdfIsFinal = pdfIsFinal;
+    }
+
+    public String getQrPayload() {
+        return qrPayload;
+    }
+
+    public void setQrPayload(String qrPayload) {
+        this.qrPayload = qrPayload;
     }
 }

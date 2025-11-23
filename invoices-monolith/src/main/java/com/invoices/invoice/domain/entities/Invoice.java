@@ -43,12 +43,15 @@ public class Invoice {
 
     // VeriFactu fields
     private String documentHash;
+    private String canonicalJson;
+    private String previousDocumentHash;
     private String pdfServerPath;
     private String verifactuStatus;
     private String documentJson;
     private String verifactuTxId;
     private String verifactuRawResponse;
     private Boolean pdfIsFinal;
+    private String qrPayload;
 
     public Invoice(
             Long id,
@@ -495,6 +498,33 @@ public class Invoice {
 
     public void setPdfIsFinal(Boolean pdfIsFinal) {
         this.pdfIsFinal = pdfIsFinal;
+        updateTimestamp();
+    }
+
+    public String getQrPayload() {
+        return qrPayload;
+    }
+
+    public void setQrPayload(String qrPayload) {
+        this.qrPayload = qrPayload;
+        updateTimestamp();
+    }
+
+    public String getCanonicalJson() {
+        return canonicalJson;
+    }
+
+    public void setCanonicalJson(String canonicalJson) {
+        this.canonicalJson = canonicalJson;
+        updateTimestamp();
+    }
+
+    public String getPreviousDocumentHash() {
+        return previousDocumentHash;
+    }
+
+    public void setPreviousDocumentHash(String previousDocumentHash) {
+        this.previousDocumentHash = previousDocumentHash;
         updateTimestamp();
     }
 

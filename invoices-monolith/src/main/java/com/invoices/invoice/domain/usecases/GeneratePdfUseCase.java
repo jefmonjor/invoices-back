@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
@@ -30,6 +31,7 @@ public class GeneratePdfUseCase {
     private final PdfGenerator pdfGenerator;
     private final FileStorageService fileStorageService;
     private final com.invoices.invoice.infrastructure.messaging.RedisVerifactuProducer redisVerifactuProducer;
+    private final com.invoices.invoice.infrastructure.services.InvoiceCanonicalizer invoiceCanonicalizer;
 
     @Transactional
     public Invoice execute(Long invoiceId) {
@@ -46,13 +48,17 @@ public class GeneratePdfUseCase {
         Client client = clientRepository.findById(invoice.getClientId())
                 .orElseThrow(() -> new RuntimeException("Client not found: " + invoice.getClientId()));
 
-        // 3. Generate PDF
+        // 3. Canonicalize invoice and calculate hash (CRITICAL for VERI*FACTU)
+        String canonicalJson = invoiceCanonicalizer.canonicalize(invoice, company, client);
+        String canonicalHash = calculateSha256(canonicalJson.getBytes(StandardCharsets.UTF_8));
+
+        // 4. Generate compact JSON (original representation)
+        String compactJson = invoiceCanonicalizer.toCompactJson(invoice);
+
+        // 5. Generate PDF
         byte[] pdfBytes = pdfGenerator.generateInvoicePdf(invoice, company, client);
 
-        // 4. Calculate Hash (SHA-256)
-        String hash = calculateSha256(pdfBytes);
-
-        // 5. Store in MinIO
+        // 6. Store in MinIO
         String objectName = "invoices/" + invoice.getInvoiceNumber().replace("/", "_") + ".pdf";
         FileContent fileContent = new FileContent(
                 () -> new ByteArrayInputStream(pdfBytes),
@@ -60,16 +66,19 @@ public class GeneratePdfUseCase {
                 "application/pdf");
         fileStorageService.storeFile(objectName, fileContent);
 
-        // 6. Update Invoice
-        invoice.setDocumentHash(hash);
+        // 7. Update Invoice with VERI*FACTU fields
+        invoice.setDocumentJson(compactJson);           // Original JSON
+        invoice.setCanonicalJson(canonicalJson);        // Canonical JSON (for audit)
+        invoice.setDocumentHash(canonicalHash);         // SHA-256 of canonical JSON
         invoice.setPdfServerPath(objectName);
-        invoice.setVerifactuStatus("pending");
+        invoice.setVerifactuStatus("PENDING");
+        invoice.setPdfIsFinal(false);                   // Draft PDF initially
         invoiceRepository.save(invoice);
 
-        // 7. Enqueue for VeriFactu
+        // 8. Enqueue for VeriFactu verification
         redisVerifactuProducer.enqueueInvoice(invoice.getId());
-        log.info("PDF generated, stored, and enqueued for VeriFactu. Invoice: {}, Hash: {}", invoice.getInvoiceNumber(),
-                hash);
+        log.info("PDF generated, stored, and enqueued for VeriFactu. Invoice: {}, Hash: {}",
+                invoice.getInvoiceNumber(), canonicalHash);
 
         return invoice;
     }
