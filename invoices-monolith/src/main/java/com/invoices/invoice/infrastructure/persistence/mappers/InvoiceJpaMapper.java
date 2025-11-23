@@ -78,6 +78,18 @@ public class InvoiceJpaMapper {
         jpaEntity.setCreatedAt(invoice.getCreatedAt());
         jpaEntity.setUpdatedAt(invoice.getUpdatedAt());
 
+        // VERI*FACTU fields
+        jpaEntity.setDocumentJson(invoice.getDocumentJson());
+        jpaEntity.setCanonicalJson(invoice.getCanonicalJson());
+        jpaEntity.setDocumentHash(invoice.getDocumentHash());
+        jpaEntity.setPreviousDocumentHash(invoice.getPreviousDocumentHash());
+        jpaEntity.setVerifactuStatus(invoice.getVerifactuStatus());
+        jpaEntity.setVerifactuTxId(invoice.getVerifactuTxId());
+        jpaEntity.setVerifactuRawResponse(invoice.getVerifactuRawResponse());
+        jpaEntity.setPdfServerPath(invoice.getPdfServerPath());
+        jpaEntity.setPdfIsFinal(invoice.getPdfIsFinal());
+        jpaEntity.setQrPayload(invoice.getQrPayload());
+
         List<InvoiceItemJpaEntity> itemEntities = invoice.getItems().stream()
                 .map(item -> toJpaItemEntity(item, jpaEntity))
                 .collect(Collectors.toList());
@@ -127,6 +139,38 @@ public class InvoiceJpaMapper {
             InvoiceItem item = toDomainItemEntity(itemJpa);
             invoice.addItemInternal(item);
         });
+
+        // Set VERI*FACTU fields if present
+        if (jpaEntity.getDocumentJson() != null) {
+            invoice.setDocumentJson(jpaEntity.getDocumentJson());
+        }
+        if (jpaEntity.getCanonicalJson() != null) {
+            invoice.setCanonicalJson(jpaEntity.getCanonicalJson());
+        }
+        if (jpaEntity.getDocumentHash() != null) {
+            invoice.setDocumentHash(jpaEntity.getDocumentHash());
+        }
+        if (jpaEntity.getPreviousDocumentHash() != null) {
+            invoice.setPreviousDocumentHash(jpaEntity.getPreviousDocumentHash());
+        }
+        if (jpaEntity.getVerifactuStatus() != null) {
+            invoice.setVerifactuStatus(jpaEntity.getVerifactuStatus());
+        }
+        if (jpaEntity.getVerifactuTxId() != null) {
+            invoice.setVerifactuTxId(jpaEntity.getVerifactuTxId());
+        }
+        if (jpaEntity.getVerifactuRawResponse() != null) {
+            invoice.setVerifactuRawResponse(jpaEntity.getVerifactuRawResponse());
+        }
+        if (jpaEntity.getPdfServerPath() != null) {
+            invoice.setPdfServerPath(jpaEntity.getPdfServerPath());
+        }
+        if (jpaEntity.getPdfIsFinal() != null) {
+            invoice.setPdfIsFinal(jpaEntity.getPdfIsFinal());
+        }
+        if (jpaEntity.getQrPayload() != null) {
+            invoice.setQrPayload(jpaEntity.getQrPayload());
+        }
 
         return invoice;
     }

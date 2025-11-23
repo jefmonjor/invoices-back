@@ -1,6 +1,8 @@
 package com.invoices.invoice.infrastructure.batch;
 
+import com.invoices.invoice.dto.BatchSummary;
 import com.invoices.invoice.infrastructure.persistence.repositories.JpaInvoiceRepository;
+import com.invoices.invoice.infrastructure.services.EmailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -26,6 +28,7 @@ public class VerifactuBatchScheduler {
 
     private final JpaInvoiceRepository invoiceRepository;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final EmailService emailService;
 
     /**
      * Scheduled task to retry failed verifications
@@ -71,6 +74,24 @@ public class VerifactuBatchScheduler {
 
             // Update metrics
             updateBatchMetrics(invoiceEntities.size(), requeued);
+
+            // Calculate critical pending invoices (>48h)
+            long criticalPending = invoiceRepository.countByVerifactuStatusAndUpdatedAtBefore(
+                "NOT_SENT", LocalDateTime.now().minusHours(48));
+
+            // Build batch summary
+            BatchSummary summary = BatchSummary.builder()
+                .timestamp(LocalDateTime.now())
+                .totalProcessed(invoiceEntities.size())
+                .successful(requeued)
+                .failed(invoiceEntities.size() - requeued)
+                .criticalPending((int) criticalPending)
+                .successRate(invoiceEntities.size() > 0 ?
+                    (double) requeued / invoiceEntities.size() * 100 : 0.0)
+                .build();
+
+            // Send email summary
+            emailService.sendBatchSummaryEmail(summary);
 
         } catch (Exception e) {
             log.error("[VeriFactu Batch] Error in retry process", e);
