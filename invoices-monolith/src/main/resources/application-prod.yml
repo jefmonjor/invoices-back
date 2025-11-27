@@ -1,6 +1,8 @@
 # Production configuration
 spring:
-  profiles: prod
+  config:
+    activate:
+      on-profile: prod
   
   # WebSocket configuration
   websocket:
