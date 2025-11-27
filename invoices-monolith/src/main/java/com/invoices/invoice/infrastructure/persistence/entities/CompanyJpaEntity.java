@@ -2,6 +2,7 @@ package com.invoices.invoice.infrastructure.persistence.entities;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import com.invoices.shared.infrastructure.security.encryption.EncryptedStringConverter;
 
 /**
  * JPA entity for company (emisor) persistence.
@@ -22,6 +23,7 @@ public class CompanyJpaEntity {
     private String taxId;
 
     @Column(name = "address", length = 500)
+    @Convert(converter = EncryptedStringConverter.class)
     private String address;
 
     @Column(name = "city", length = 100)
@@ -37,12 +39,15 @@ public class CompanyJpaEntity {
     private String country;
 
     @Column(name = "phone", length = 20)
+    @Convert(converter = EncryptedStringConverter.class)
     private String phone;
 
     @Column(name = "email", length = 100)
+    @Convert(converter = EncryptedStringConverter.class)
     private String email;
 
     @Column(name = "iban", length = 34)
+    @Convert(converter = EncryptedStringConverter.class)
     private String iban;
 
     @Column(name = "created_at", nullable = false, updatable = false)

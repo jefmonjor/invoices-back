@@ -24,8 +24,10 @@ public class DocumentUseCaseConfiguration {
             DocumentRepository documentRepository,
             FileStorageService fileStorageService,
             PdfValidator pdfValidator,
-            com.invoices.invoice.domain.ports.InvoiceRepository invoiceRepository) {
-        return new UploadDocumentUseCase(documentRepository, fileStorageService, pdfValidator, invoiceRepository);
+            com.invoices.invoice.domain.ports.InvoiceRepository invoiceRepository,
+            com.invoices.document.domain.services.StorageKeyGenerator storageKeyGenerator) {
+        return new UploadDocumentUseCase(documentRepository, fileStorageService, pdfValidator, invoiceRepository,
+                storageKeyGenerator);
     }
 
     @Bean

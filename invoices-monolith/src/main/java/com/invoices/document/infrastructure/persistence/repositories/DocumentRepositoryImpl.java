@@ -60,4 +60,11 @@ public class DocumentRepositoryImpl implements DocumentRepository {
     public boolean existsById(Long id) {
         return jpaDocumentRepository.existsById(id);
     }
+
+    @Override
+    public List<Document> findByCompanyId(Long companyId) {
+        return jpaDocumentRepository.findByCompanyId(companyId).stream()
+                .map(mapper::toDomainEntity)
+                .collect(Collectors.toList());
+    }
 }

@@ -71,10 +71,12 @@ public class InvoiceJpaEntity {
     private LocalDateTime updatedAt;
 
     // VERI*FACTU fields
-    @Column(name = "document_json", columnDefinition = "TEXT")
+    @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.JSON)
+    @Column(name = "document_json", columnDefinition = "jsonb")
     private String documentJson;
 
-    @Column(name = "canonical_json", columnDefinition = "TEXT")
+    @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.JSON)
+    @Column(name = "canonical_json", columnDefinition = "jsonb")
     private String canonicalJson;
 
     @Column(name = "document_hash", length = 64)
@@ -89,7 +91,8 @@ public class InvoiceJpaEntity {
     @Column(name = "verifactu_tx_id", length = 255)
     private String verifactuTxId;
 
-    @Column(name = "verifactu_raw_response", columnDefinition = "TEXT")
+    @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.JSON)
+    @Column(name = "verifactu_raw_response", columnDefinition = "jsonb")
     private String verifactuRawResponse;
 
     @Column(name = "pdf_server_path", length = 500)
@@ -98,7 +101,8 @@ public class InvoiceJpaEntity {
     @Column(name = "pdf_is_final")
     private Boolean pdfIsFinal;
 
-    @Column(name = "qr_payload", columnDefinition = "TEXT")
+    @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.JSON)
+    @Column(name = "qr_payload", columnDefinition = "jsonb")
     private String qrPayload;
 
     @PrePersist

@@ -50,6 +50,7 @@ public class UserController {
         private final UpdateUserUseCase updateUserUseCase;
         private final DeleteUserUseCase deleteUserUseCase;
         private final UserDtoMapper mapper;
+        private final com.invoices.company.application.services.CompanyManagementService companyManagementService;
 
         @GetMapping("/profile")
         @PreAuthorize("isAuthenticated()")
@@ -218,6 +219,48 @@ public class UserController {
 
                 log.info("User {} deleted successfully", id);
                 return ResponseEntity.noContent().build();
+        }
+
+        /**
+         * Get all companies the current user belongs to
+         */
+        @GetMapping("/me/companies")
+        @PreAuthorize("isAuthenticated()")
+        @Operation(summary = "Get current user's companies", description = "Retrieves all companies the authenticated user belongs to with their roles")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Companies retrieved successfully"),
+                        @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content)
+        })
+        public ResponseEntity<List<com.invoices.company.presentation.dto.CompanyDto>> getCurrentUserCompanies() {
+                String email = SecurityContextHolder.getContext().getAuthentication().getName();
+                log.info("GET /api/users/me/companies - Fetching companies for user: {}", email);
+
+                var companies = companyManagementService.getUserCompanies(email);
+
+                log.info("Retrieved {} companies for user: {}", companies.size(), email);
+                return ResponseEntity.ok(companies);
+        }
+
+        /**
+         * Set default company for the current user
+         */
+        @PutMapping("/me/companies/{companyId}/set-default")
+        @PreAuthorize(" isAuthenticated()")
+        @Operation(summary = "Set default company", description = "Sets the specified company as the current user's default/active company")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Default company set successfully"),
+                        @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content),
+                        @ApiResponse(responseCode = "403", description = "User does not belong to this company", content = @Content)
+        })
+        public ResponseEntity<Void> setDefaultCompany(@PathVariable Long companyId) {
+                String email = SecurityContextHolder.getContext().getAuthentication().getName();
+                log.info("PUT /api/users/me/companies/{}/set-default - Setting default company for user: {}", companyId,
+                                email);
+
+                companyManagementService.switchCompany(email, companyId);
+
+                log.info("Default company set to {} for user: {}", companyId, email);
+                return ResponseEntity.ok().build();
         }
 
         /**

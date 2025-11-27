@@ -1,5 +1,7 @@
 package com.invoices.invoice.domain.entities;
 
+import com.invoices.shared.domain.validation.ValidNif;
+
 /**
  * Client domain entity - represents the customer/client.
  * Pure domain object with NO framework dependencies.
@@ -7,6 +9,8 @@ package com.invoices.invoice.domain.entities;
 public class Client {
     private final Long id;
     private final String businessName; // Razón Social
+
+    @ValidNif
     private final String taxId; // CIF/NIF
     private final String address; // Dirección completa
     private final String city;

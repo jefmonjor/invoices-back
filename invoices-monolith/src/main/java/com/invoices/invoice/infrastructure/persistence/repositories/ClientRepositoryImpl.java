@@ -34,20 +34,20 @@ public class ClientRepositoryImpl implements ClientRepository {
     @Override
     public Optional<Client> findById(Long id) {
         return jpaRepository.findById(id)
-            .map(mapper::toDomain);
+                .map(mapper::toDomain);
     }
 
     @Override
     public Optional<Client> findByTaxId(String taxId) {
         return jpaRepository.findByTaxId(taxId)
-            .map(mapper::toDomain);
+                .map(mapper::toDomain);
     }
 
     @Override
     public List<Client> findAll() {
         return jpaRepository.findAll().stream()
-            .map(mapper::toDomain)
-            .collect(Collectors.toList());
+                .map(mapper::toDomain)
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -58,5 +58,12 @@ public class ClientRepositoryImpl implements ClientRepository {
     @Override
     public boolean existsById(Long id) {
         return jpaRepository.existsById(id);
+    }
+
+    @Override
+    public List<Client> findByCompanyId(Long companyId) {
+        return jpaRepository.findByCompanyId(companyId).stream()
+                .map(mapper::toDomain)
+                .collect(Collectors.toList());
     }
 }

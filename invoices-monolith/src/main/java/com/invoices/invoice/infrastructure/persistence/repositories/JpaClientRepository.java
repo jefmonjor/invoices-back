@@ -15,4 +15,6 @@ public interface JpaClientRepository extends JpaRepository<ClientJpaEntity, Long
     Optional<ClientJpaEntity> findByTaxId(String taxId);
 
     boolean existsByTaxId(String taxId);
+
+    java.util.List<ClientJpaEntity> findByCompanyId(Long companyId);
 }

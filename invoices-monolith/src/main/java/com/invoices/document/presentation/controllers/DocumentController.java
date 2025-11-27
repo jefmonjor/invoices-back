@@ -62,38 +62,29 @@ public class DocumentController {
                 log.info("POST /api/documents - Uploading document: {}, size: {} bytes, contentType: {}",
                                 file.getOriginalFilename(), file.getSize(), file.getContentType());
 
-                try {
-                        // Validate file is not empty
-                        if (file.isEmpty()) {
-                                log.error("Upload failed: File is empty");
-                                throw new IllegalArgumentException("File cannot be empty");
-                        }
-                        // Convert MultipartFile to domain FileContent
-                        FileContent fileContent = new FileContent(
-                                        file::getInputStream,
-                                        file.getSize(),
-                                        file.getContentType());
-
-                        // Execute use case
-                        Document uploadedDocument = uploadDocumentUseCase.execute(
-                                        fileContent,
-                                        file.getOriginalFilename(),
-                                        invoiceId,
-                                        uploadedBy);
-
-                        // Map to response DTO
-                        UploadDocumentResponse response = mapper.toUploadResponse(uploadedDocument);
-
-                        log.info("Document uploaded successfully with ID: {}", uploadedDocument.getId());
-                        return ResponseEntity.status(HttpStatus.CREATED).body(response);
-
-                } catch (IllegalArgumentException e) {
-                        log.error("Invalid request: {}", e.getMessage());
-                        return ResponseEntity.badRequest().build();
-                } catch (Exception e) {
-                        log.error("Unexpected error uploading document", e);
-                        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+                // Validate file is not empty
+                if (file.isEmpty()) {
+                        log.error("Upload failed: File is empty");
+                        throw new IllegalArgumentException("File cannot be empty");
                 }
+                // Convert MultipartFile to domain FileContent
+                FileContent fileContent = new FileContent(
+                                file::getInputStream,
+                                file.getSize(),
+                                file.getContentType());
+
+                // Execute use case
+                Document uploadedDocument = uploadDocumentUseCase.execute(
+                                fileContent,
+                                file.getOriginalFilename(),
+                                invoiceId,
+                                uploadedBy);
+
+                // Map to response DTO
+                UploadDocumentResponse response = mapper.toUploadResponse(uploadedDocument);
+
+                log.info("Document uploaded successfully with ID: {}", uploadedDocument.getId());
+                return ResponseEntity.status(HttpStatus.CREATED).body(response);
         }
 
         @GetMapping("/{id}")

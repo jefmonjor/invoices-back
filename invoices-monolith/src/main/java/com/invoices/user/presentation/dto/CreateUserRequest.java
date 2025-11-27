@@ -9,6 +9,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.Set;
+import com.invoices.shared.domain.validation.ValidNif;
+import com.invoices.shared.domain.utils.InputSanitizer;
 
 /**
  * DTO for creating a new user.
@@ -36,6 +38,14 @@ public class CreateUserRequest {
     @Size(max = 100, message = "Last name must not exceed 100 characters")
     private String lastName;
 
+    public void setFirstName(String firstName) {
+        this.firstName = InputSanitizer.sanitize(firstName);
+    }
+
+    public void setLastName(String lastName) {
+        this.lastName = InputSanitizer.sanitize(lastName);
+    }
+
     /**
      * Optional roles. If not provided, defaults to "ROLE_USER"
      */
@@ -46,11 +56,23 @@ public class CreateUserRequest {
 
     // For NEW_COMPANY
     private String companyName;
+
+    @ValidNif
     private String taxId;
+
     private String companyAddress;
     private String companyEmail;
     private String companyPhone;
 
+    public void setCompanyName(String companyName) {
+        this.companyName = InputSanitizer.sanitize(companyName);
+    }
+
+    public void setCompanyAddress(String companyAddress) {
+        this.companyAddress = InputSanitizer.sanitize(companyAddress);
+    }
+
     // For JOIN_COMPANY
     private String invitationToken;
+    private String invitationCode;
 }

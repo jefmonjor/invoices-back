@@ -19,4 +19,11 @@ public interface VerifactuServiceInterface {
      * @return "REAL" or "MOCK"
      */
     String getServiceType();
+
+    /**
+     * Process VeriFactu webhook payload
+     * 
+     * @param payload JSON payload from AEAT
+     */
+    void processWebhook(String payload);
 }

@@ -101,8 +101,10 @@ public class SecurityConfig {
                                                                 .policy(org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
 
                                                 // Permissions policy (formerly Feature-Policy)
-                                                .permissionsPolicy(permissions -> permissions
-                                                                .policy("geolocation=(), microphone=(), camera=()")))
+                                                .addHeaderWriter(
+                                                                new org.springframework.security.web.header.writers.StaticHeadersWriter(
+                                                                                "Permissions-Policy",
+                                                                                "geolocation=(), microphone=(), camera=()")))
 
                                 // Configure authorization rules
                                 .authorizeHttpRequests(auth -> auth
@@ -118,7 +120,8 @@ public class SecurityConfig {
                                                                 "/v3/api-docs/**",
                                                                 "/api-docs/**",
                                                                 "/swagger-ui/**",
-                                                                "/swagger-ui.html")
+                                                                "/swagger-ui.html",
+                                                                "/ws/**")
                                                 .permitAll()
 
                                                 // Protected endpoints - require authentication

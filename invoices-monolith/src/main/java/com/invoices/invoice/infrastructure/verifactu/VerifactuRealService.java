@@ -5,12 +5,14 @@ import com.invoices.invoice.domain.enums.VerifactuStatus;
 import com.invoices.invoice.domain.ports.InvoiceRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.w3c.dom.Document;
 
 import java.util.UUID;
 
 @Service("verifactuRealService")
+@Profile("production")
 @RequiredArgsConstructor
 @Slf4j
 public class VerifactuRealService implements VerifactuServiceInterface {
@@ -46,10 +48,11 @@ public class VerifactuRealService implements VerifactuServiceInterface {
             // Calculate Canonical Hash
             String canonicalHash = canonicalService.calculateInvoiceHash(invoice, company, client, "");
 
-            // Get Previous Hash (Mock implementation for now - should fetch from previous
-            // invoice)
-            // In a real implementation, we would query the last invoice for this company
-            String previousHash = "";
+            // Get Previous Hash
+            String previousHash = invoiceRepository
+                    .findLastInvoiceByCompanyIdAndIdNot(invoice.getCompanyId(), invoice.getId())
+                    .map(Invoice::getDocumentHash)
+                    .orElse(""); // Genesis block or legacy invoice: empty hash
 
             // 1. Build XML
             Document xml = xmlBuilder.buildAltaFacturaXml(invoice, company, client, canonicalHash, previousHash);
@@ -66,6 +69,11 @@ public class VerifactuRealService implements VerifactuServiceInterface {
 
             invoice.setVerifactuStatus(VerifactuStatus.ACCEPTED.name());
             invoice.setVerifactuTxId(UUID.randomUUID().toString()); // Mock ID
+
+            // Set Chaining Fields
+            invoice.setPreviousDocumentHash(previousHash);
+            invoice.setDocumentHash(canonicalHash);
+
             invoiceRepository.save(invoice);
 
             log.info("Invoice {} successfully verified with VeriFactu", invoice.getInvoiceNumber());
@@ -75,5 +83,16 @@ public class VerifactuRealService implements VerifactuServiceInterface {
             invoice.setVerifactuStatus(VerifactuStatus.REJECTED.name());
             invoiceRepository.save(invoice);
         }
+    }
+
+    @Override
+    public void processWebhook(String payload) {
+        log.info("[REAL] Received webhook payload: {}", payload);
+        // TODO: Parse JSON payload and update invoice status
+        // Example:
+        // JsonNode node = objectMapper.readTree(payload);
+        // String invoiceNumber = node.get("invoiceNumber").asText();
+        // String status = node.get("status").asText();
+        // ... update logic
     }
 }

@@ -17,7 +17,7 @@ public class GetAllInvoicesUseCase {
         this.invoiceRepository = invoiceRepository;
     }
 
-    public List<Invoice> execute() {
-        return invoiceRepository.findAll();
+    public List<Invoice> execute(Long companyId) {
+        return invoiceRepository.findByCompanyId(companyId);
     }
 }

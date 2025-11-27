@@ -9,7 +9,8 @@ import java.util.Optional;
 
 /**
  * Port (interface) for audit log repository operations.
- * This defines the contract for persistence without exposing implementation details.
+ * This defines the contract for persistence without exposing implementation
+ * details.
  * Infrastructure layer will provide the actual implementation.
  */
 public interface AuditLogRepository {
@@ -23,7 +24,8 @@ public interface AuditLogRepository {
     Optional<AuditLog> findById(Long id);
 
     /**
-     * Find all audit logs for a specific invoice, ordered by creation date (newest first).
+     * Find all audit logs for a specific invoice, ordered by creation date (newest
+     * first).
      *
      * @param invoiceId the invoice ID
      * @return List of audit logs for the invoice
@@ -31,7 +33,8 @@ public interface AuditLogRepository {
     List<AuditLog> findByInvoiceId(Long invoiceId);
 
     /**
-     * Find all audit logs for a specific client, ordered by creation date (newest first).
+     * Find all audit logs for a specific client, ordered by creation date (newest
+     * first).
      *
      * @param clientId the client ID
      * @return List of audit logs for the client
@@ -39,7 +42,17 @@ public interface AuditLogRepository {
     List<AuditLog> findByClientId(Long clientId);
 
     /**
-     * Find all audit logs of a specific event type, ordered by creation date (newest first).
+     * Find all audit logs for a specific company, ordered by creation date (newest
+     * first).
+     *
+     * @param companyId the company ID
+     * @return List of audit logs for the company
+     */
+    List<AuditLog> findByCompanyId(Long companyId);
+
+    /**
+     * Find all audit logs of a specific event type, ordered by creation date
+     * (newest first).
      *
      * @param eventType the event type
      * @return List of audit logs matching the event type

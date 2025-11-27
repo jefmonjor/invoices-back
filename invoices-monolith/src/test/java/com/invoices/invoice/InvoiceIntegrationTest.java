@@ -46,9 +46,16 @@ class InvoiceIntegrationTest {
                 }
 
                 @SuppressWarnings("unchecked") // Mockito.mock returns raw type
+
                 @org.springframework.context.annotation.Bean
                 public org.springframework.data.redis.core.RedisTemplate<String, Object> redisTemplate() {
                         return org.mockito.Mockito.mock(org.springframework.data.redis.core.RedisTemplate.class);
+                }
+
+                @org.springframework.context.annotation.Bean
+                @org.springframework.context.annotation.Primary
+                public org.springframework.mail.javamail.JavaMailSender javaMailSender() {
+                        return org.mockito.Mockito.mock(org.springframework.mail.javamail.JavaMailSender.class);
                 }
         }
 

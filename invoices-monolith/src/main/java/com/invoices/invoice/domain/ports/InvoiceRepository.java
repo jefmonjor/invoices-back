@@ -27,4 +27,19 @@ public interface InvoiceRepository {
     boolean existsById(Long id);
 
     Optional<String> findLastInvoiceNumberByYear(int year);
+
+    Optional<String> findLastInvoiceNumberByCompanyAndYear(Long companyId, int year);
+
+    List<Invoice> findByCompanyId(Long companyId);
+
+    long countByCompanyId(Long companyId);
+
+    void deleteByCompanyId(Long companyId);
+
+    /**
+     * Finds the last created invoice for a company, excluding a specific invoice
+     * ID.
+     * Used for VeriFactu chaining to find the previous invoice.
+     */
+    Optional<Invoice> findLastInvoiceByCompanyIdAndIdNot(Long companyId, Long excludedInvoiceId);
 }

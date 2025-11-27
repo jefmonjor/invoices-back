@@ -76,7 +76,8 @@ public class InvoiceController {
      */
     @GetMapping
     public ResponseEntity<List<InvoiceDTO>> getAllInvoices() {
-        List<Invoice> invoices = getAllInvoicesUseCase.execute();
+        Long companyId = com.invoices.security.context.CompanyContext.getCompanyId();
+        List<Invoice> invoices = getAllInvoicesUseCase.execute(companyId);
         List<InvoiceDTO> dtos = invoices.stream()
                 .map(dtoMapper::toDto)
                 .collect(Collectors.toList());
@@ -122,6 +123,7 @@ public class InvoiceController {
      * PUT /invoices/{id} - Update invoice
      */
     @PutMapping("/{id}")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<InvoiceDTO> updateInvoice(
             @PathVariable Long id,
             @Valid @RequestBody UpdateInvoiceRequest request) {
@@ -154,6 +156,7 @@ public class InvoiceController {
      * DELETE /invoices/{id} - Delete invoice
      */
     @DeleteMapping("/{id}")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteInvoice(@PathVariable Long id) {
         deleteInvoiceUseCase.execute(id);
         return ResponseEntity.noContent().build();

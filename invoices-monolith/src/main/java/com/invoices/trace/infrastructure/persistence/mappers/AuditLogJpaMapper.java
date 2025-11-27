@@ -24,6 +24,7 @@ public class AuditLogJpaMapper {
 
         return AuditLogJpaEntity.builder()
                 .id(domainAuditLog.getId())
+                .companyId(domainAuditLog.getCompanyId())
                 .eventType(domainAuditLog.getEventType())
                 .invoiceId(domainAuditLog.getInvoiceId())
                 .invoiceNumber(domainAuditLog.getInvoiceNumber())
@@ -49,6 +50,7 @@ public class AuditLogJpaMapper {
 
         return new AuditLog(
                 jpaEntity.getId(),
+                jpaEntity.getCompanyId(),
                 jpaEntity.getEventType(),
                 jpaEntity.getInvoiceId(),
                 jpaEntity.getInvoiceNumber(),
@@ -57,7 +59,6 @@ public class AuditLogJpaMapper {
                 jpaEntity.getTotal(),
                 jpaEntity.getStatus(),
                 jpaEntity.getEventData(),
-                jpaEntity.getCreatedAt()
-        );
+                jpaEntity.getCreatedAt());
     }
 }

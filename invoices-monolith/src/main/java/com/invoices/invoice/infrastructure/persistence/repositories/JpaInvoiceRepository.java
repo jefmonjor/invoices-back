@@ -13,31 +13,49 @@ import java.util.List;
  */
 public interface JpaInvoiceRepository extends JpaRepository<InvoiceJpaEntity, Long> {
 
-    List<InvoiceJpaEntity> findByUserId(Long userId);
+        List<InvoiceJpaEntity> findByUserId(Long userId);
 
-    boolean existsByInvoiceNumber(String invoiceNumber);
+        List<InvoiceJpaEntity> findByCompanyId(Long companyId);
 
-    @org.springframework.data.jpa.repository.Query("SELECT i.invoiceNumber FROM InvoiceJpaEntity i WHERE YEAR(i.issueDate) = :year ORDER BY i.invoiceNumber DESC LIMIT 1")
-    java.util.Optional<String> findLastInvoiceNumberByYear(
-            @org.springframework.data.repository.query.Param("year") int year);
+        boolean existsByInvoiceNumber(String invoiceNumber);
 
-    // VeriFactu query methods for batch scheduler and metrics
-    List<InvoiceJpaEntity> findByVerifactuStatusInAndUpdatedAtBefore(
-            List<String> statuses, LocalDateTime updatedBefore);
+        @org.springframework.data.jpa.repository.Query("SELECT i.invoiceNumber FROM InvoiceJpaEntity i WHERE YEAR(i.issueDate) = :year ORDER BY i.invoiceNumber DESC LIMIT 1")
+        java.util.Optional<String> findLastInvoiceNumberByYear(
+                        @org.springframework.data.repository.query.Param("year") int year);
 
-    Long countByCreatedAtAfter(LocalDateTime createdAfter);
+        @org.springframework.data.jpa.repository.Query("SELECT i.invoiceNumber FROM InvoiceJpaEntity i WHERE i.companyId = :companyId AND YEAR(i.issueDate) = :year ORDER BY i.invoiceNumber DESC LIMIT 1")
+        java.util.Optional<String> findLastInvoiceNumberByCompanyAndYear(
+                        @org.springframework.data.repository.query.Param("companyId") Long companyId,
+                        @org.springframework.data.repository.query.Param("year") int year);
 
-    Long countByVerifactuStatusAndCreatedAtAfter(
-            String verifactuStatus, LocalDateTime createdAfter);
+        // VeriFactu query methods for batch scheduler and metrics
+        List<InvoiceJpaEntity> findByVerifactuStatusInAndUpdatedAtBefore(
+                        List<String> statuses, LocalDateTime updatedBefore);
 
-    Long countByVerifactuStatusIn(List<String> statuses);
+        Long countByCreatedAtAfter(LocalDateTime createdAfter);
 
-    Long countByCreatedAtBetween(
-            LocalDateTime start, LocalDateTime end);
+        Long countByVerifactuStatusAndCreatedAtAfter(
+                        String verifactuStatus, LocalDateTime createdAfter);
 
-    Long countByVerifactuStatusAndCreatedAtBetween(
-            String verifactuStatus, LocalDateTime start, LocalDateTime end);
+        Long countByVerifactuStatusIn(List<String> statuses);
 
-    Long countByVerifactuStatusAndUpdatedAtBefore(
-            String verifactuStatus, LocalDateTime updatedBefore);
+        Long countByCreatedAtBetween(
+                        LocalDateTime start, LocalDateTime end);
+
+        Long countByVerifactuStatusAndCreatedAtBetween(
+                        String verifactuStatus, LocalDateTime start, LocalDateTime end);
+
+        Long countByVerifactuStatusAndUpdatedAtBefore(
+                        String verifactuStatus, LocalDateTime updatedBefore);
+
+        long countByCompanyId(Long companyId);
+
+        void deleteByCompanyId(Long companyId);
+
+        /**
+         * Finds the last created invoice for a company, excluding a specific invoice
+         * ID.
+         */
+        java.util.Optional<InvoiceJpaEntity> findFirstByCompanyIdAndIdNotOrderByCreatedAtDesc(Long companyId,
+                        Long excludedId);
 }

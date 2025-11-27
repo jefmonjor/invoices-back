@@ -35,6 +35,9 @@ public class AuditLogJpaEntity {
     @Column(name = "event_type", nullable = false, length = 50)
     private String eventType;
 
+    @Column(name = "company_id")
+    private Long companyId;
+
     @Column(name = "invoice_id")
     private Long invoiceId;
 
@@ -53,7 +56,8 @@ public class AuditLogJpaEntity {
     @Column(length = 20)
     private String status;
 
-    @Column(name = "event_data", columnDefinition = "TEXT")
+    @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.JSON)
+    @Column(name = "event_data", columnDefinition = "jsonb")
     private String eventData;
 
     @CreationTimestamp

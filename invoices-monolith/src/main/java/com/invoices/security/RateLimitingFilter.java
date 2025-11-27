@@ -2,7 +2,6 @@ package com.invoices.security;
 
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
-import io.github.bucket4j.Refill;
 import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -112,9 +111,10 @@ public class RateLimitingFilter implements Filter {
                     ? Duration.ofMinutes(properties.getAuthRefillMinutes())
                     : Duration.ofMinutes(properties.getGeneralRefillMinutes());
 
-            Bandwidth limit = Bandwidth.classic(
-                    capacity,
-                    Refill.intervally(capacity, refillDuration));
+            Bandwidth limit = Bandwidth.builder()
+                    .capacity(capacity)
+                    .refillIntervally(capacity, refillDuration)
+                    .build();
 
             return Bucket.builder()
                     .addLimit(limit)

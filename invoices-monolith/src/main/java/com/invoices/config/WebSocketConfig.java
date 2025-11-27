@@ -19,12 +19,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/ws")
-                .setAllowedOrigins(
-                        "http://localhost:5173", // Local development (Vite)
-                        "http://localhost:3000", // Alternative local port
-                        "https://your-prod-domain.com", // Production (replace with actual domain)
-                        "https://www.your-prod-domain.com" // Production with www
-                )
+                .setAllowedOriginPatterns("*")
                 .withSockJS();
     }
 }

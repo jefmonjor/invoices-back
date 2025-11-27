@@ -19,16 +19,19 @@ public class UploadDocumentUseCase {
     private final FileStorageService fileStorageService;
     private final PdfValidator pdfValidator;
     private final com.invoices.invoice.domain.ports.InvoiceRepository invoiceRepository;
+    private final com.invoices.document.domain.services.StorageKeyGenerator storageKeyGenerator;
 
     public UploadDocumentUseCase(
             DocumentRepository documentRepository,
             FileStorageService fileStorageService,
             PdfValidator pdfValidator,
-            com.invoices.invoice.domain.ports.InvoiceRepository invoiceRepository) {
+            com.invoices.invoice.domain.ports.InvoiceRepository invoiceRepository,
+            com.invoices.document.domain.services.StorageKeyGenerator storageKeyGenerator) {
         this.documentRepository = documentRepository;
         this.fileStorageService = fileStorageService;
         this.pdfValidator = pdfValidator;
         this.invoiceRepository = invoiceRepository;
+        this.storageKeyGenerator = storageKeyGenerator;
     }
 
     /**
@@ -51,23 +54,33 @@ public class UploadDocumentUseCase {
 
         // Determine filename based on invoice data if available
         String finalFilename = originalFilename;
+        String uniqueFilename = null;
+
         if (invoiceId != null) {
             com.invoices.invoice.domain.entities.Invoice invoice = invoiceRepository.findById(invoiceId)
                     .orElse(null);
 
             if (invoice != null) {
                 finalFilename = generateFilename(invoice);
+                // Use structured key for invoices
+                uniqueFilename = storageKeyGenerator.generateInvoiceKey(
+                        invoice.getCompanyId(),
+                        invoice.getInvoiceNumber(),
+                        invoice.getIssueDate());
             }
         }
 
-        // Generate unique storage object name
+        // Generate unique storage object name if not already generated (e.g. not an
+        // invoice or invoice not found)
         String extension = ".pdf"; // Enforced by generateFilename or validation
         if (!finalFilename.toLowerCase().endsWith(".pdf")) {
             // Fallback if originalFilename was passed and didn't have extension (unlikely)
             extension = extractFileExtension(finalFilename);
         }
 
-        String uniqueFilename = UUID.randomUUID().toString() + extension;
+        if (uniqueFilename == null) {
+            uniqueFilename = UUID.randomUUID().toString() + extension;
+        }
 
         // Store file in storage service (MinIO, S3, etc.)
         fileStorageService.storeFile(uniqueFilename, fileContent);

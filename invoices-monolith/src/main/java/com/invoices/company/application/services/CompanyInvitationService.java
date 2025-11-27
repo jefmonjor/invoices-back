@@ -14,11 +14,14 @@ public class CompanyInvitationService {
 
     private final CompanyInvitationRepository invitationRepository;
     private final CompanyManagementService companyManagementService;
+    private final com.invoices.invoice.domain.ports.CompanyRepository companyRepository;
 
     public CompanyInvitationService(CompanyInvitationRepository invitationRepository,
-            CompanyManagementService companyManagementService) {
+            CompanyManagementService companyManagementService,
+            com.invoices.invoice.domain.ports.CompanyRepository companyRepository) {
         this.invitationRepository = invitationRepository;
         this.companyManagementService = companyManagementService;
+        this.companyRepository = companyRepository;
     }
 
     @Transactional
@@ -52,7 +55,59 @@ public class CompanyInvitationService {
         companyManagementService.addUserToCompany(userId, invitation.getCompanyId(), invitation.getRole());
 
         // Update invitation status
-        invitation.setStatus("ACCEPTED");
+        // For generic codes, we might not want to mark as ACCEPTED immediately if it's
+        // reusable?
+        // But the current implementation assumes one-time use per token row.
+        // If we want reusable codes, we need a different mechanism or don't set to
+        // ACCEPTED for generic codes.
+        // For now, let's assume one-time use or that generic codes are handled
+        // differently.
+        // Given the "GENERIC_CODE" email, maybe we should check that.
+
+        if (!"GENERIC_CODE".equals(invitation.getEmail())) {
+            invitation.setStatus("ACCEPTED");
+            invitationRepository.save(invitation);
+        }
+        // If it IS generic code, do we expire it? Or keep it valid until expiration
+        // time?
+        // Usually generic codes are reusable until expiration.
+    }
+
+    @Transactional
+    public String createInvitation(Long companyId, String username, int expiresInHours) {
+        // Generate a simple code for manual entry (e.g., 8 chars alphanumeric)
+        String code = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        LocalDateTime expiresAt = LocalDateTime.now().plusHours(expiresInHours);
+
+        // We need the user ID of the creator. Assuming username is email.
+        // For now, we'll just store the code. The entity might need adjustment if we
+        // want to store creator ID.
+        // The existing createInvitation method uses email (invitee email).
+        // The new requirement is generating a code for ANYONE to join.
+
+        // Let's create a new invitation record.
+        // Note: The existing entity seems to expect an email. If we want a generic
+        // code, we might need to adjust the entity or use a placeholder.
+        // Let's use a placeholder email or null if allowed.
+
+        CompanyInvitation invitation = new CompanyInvitation(companyId, "GENERIC_CODE", code, "USER", expiresAt);
         invitationRepository.save(invitation);
+
+        return code;
+    }
+
+    public com.invoices.invoice.domain.entities.Company validateInvitation(String code) {
+        Optional<CompanyInvitation> invitationOpt = invitationRepository.findByToken(code);
+        if (invitationOpt.isEmpty()) {
+            throw new RuntimeException("Invalid invitation code");
+        }
+
+        CompanyInvitation invitation = invitationOpt.get();
+        if (invitation.getExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("Invitation expired");
+        }
+
+        return companyRepository.findById(invitation.getCompanyId())
+                .orElseThrow(() -> new RuntimeException("Company not found"));
     }
 }

@@ -17,6 +17,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class AuditLogDTO {
     private Long id;
+    private Long companyId;
     private String eventType;
     private Long invoiceId;
     private String invoiceNumber;

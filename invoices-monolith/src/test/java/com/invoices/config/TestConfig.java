@@ -6,11 +6,7 @@ import com.invoices.security.JwtAuthenticationFilter;
 import com.invoices.security.JwtUtil;
 import io.minio.MinioClient;
 import org.mockito.Mockito;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration;
-import org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration;
-import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
+
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
@@ -26,12 +22,6 @@ import org.springframework.security.provisioning.InMemoryUserDetailsManager;
  */
 @TestConfiguration
 @Profile("test")
-@EnableAutoConfiguration(exclude = {
-        RedisAutoConfiguration.class,
-        RedisRepositoriesAutoConfiguration.class,
-        FlywayAutoConfiguration.class,
-        DataSourceAutoConfiguration.class
-})
 public class TestConfig {
 
     /**
@@ -98,5 +88,43 @@ public class TestConfig {
                 .build();
 
         return new InMemoryUserDetailsManager(testUser);
+    }
+
+    /**
+     * Mock CompanySecurityInterceptor for multi-company tests.
+     */
+    @Bean
+    @Primary
+    public com.invoices.security.infrastructure.interceptor.CompanySecurityInterceptor testCompanySecurityInterceptor() {
+        return Mockito.mock(com.invoices.security.infrastructure.interceptor.CompanySecurityInterceptor.class);
+    }
+
+    /**
+     * Mock RedisTemplate for event streaming tests.
+     */
+    @Bean
+    @Primary
+    @SuppressWarnings("unchecked")
+    public org.springframework.data.redis.core.RedisTemplate<String, Object> testRedisTemplate() {
+        org.springframework.data.redis.core.RedisTemplate<String, Object> mockTemplate = Mockito
+                .mock(org.springframework.data.redis.core.RedisTemplate.class);
+        org.springframework.data.redis.core.StreamOperations<String, Object, Object> mockStreamOps = Mockito
+                .mock(org.springframework.data.redis.core.StreamOperations.class);
+        org.springframework.data.redis.core.ValueOperations<String, Object> mockValueOps = Mockito
+                .mock(org.springframework.data.redis.core.ValueOperations.class);
+
+        Mockito.when(mockTemplate.opsForStream()).thenReturn(mockStreamOps);
+        Mockito.when(mockTemplate.opsForValue()).thenReturn(mockValueOps);
+
+        return mockTemplate;
+    }
+
+    /**
+     * Mock JavaMailSender for email service tests.
+     */
+    @Bean
+    @Primary
+    public org.springframework.mail.javamail.JavaMailSender testJavaMailSender() {
+        return Mockito.mock(org.springframework.mail.javamail.JavaMailSender.class);
     }
 }

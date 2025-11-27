@@ -66,7 +66,8 @@ public class UpdateUserUseCase {
                 existingUser.getCreatedAt(),
                 LocalDateTime.now(), // Update timestamp
                 existingUser.getLastLogin(),
-                existingUser.getCurrentCompanyId());
+                existingUser.getCurrentCompanyId(),
+                existingUser.getPlatformRole());
 
         return userRepository.save(updatedUser);
     }

@@ -23,19 +23,19 @@ public class CreateInvoiceUseCase {
     private final CompanyRepository companyRepository;
     private final ClientRepository clientRepository;
     private final InvoiceEventPublisher eventPublisher;
-    private final com.invoices.invoice.domain.services.InvoiceNumberGenerator invoiceNumberGenerator;
+    private final com.invoices.invoice.domain.services.InvoiceNumberingService invoiceNumberingService;
 
     public CreateInvoiceUseCase(
             InvoiceRepository invoiceRepository,
             CompanyRepository companyRepository,
             ClientRepository clientRepository,
             InvoiceEventPublisher eventPublisher,
-            com.invoices.invoice.domain.services.InvoiceNumberGenerator invoiceNumberGenerator) {
+            com.invoices.invoice.domain.services.InvoiceNumberingService invoiceNumberingService) {
         this.invoiceRepository = invoiceRepository;
         this.companyRepository = companyRepository;
         this.clientRepository = clientRepository;
         this.eventPublisher = eventPublisher;
-        this.invoiceNumberGenerator = invoiceNumberGenerator;
+        this.invoiceNumberingService = invoiceNumberingService;
     }
 
     public Invoice execute(
@@ -57,7 +57,7 @@ public class CreateInvoiceUseCase {
         }
 
         // Generate invoice number
-        String invoiceNumber = invoiceNumberGenerator.generateNextNumber();
+        String invoiceNumber = invoiceNumberingService.generateNextNumber(companyId);
 
         // Create invoice
         Invoice invoice = new Invoice(

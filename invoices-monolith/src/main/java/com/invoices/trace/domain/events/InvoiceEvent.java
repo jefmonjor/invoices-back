@@ -10,6 +10,7 @@ import java.util.Objects;
  */
 public class InvoiceEvent {
 
+    private final Long companyId;
     private final String eventType;
     private final Long invoiceId;
     private final String invoiceNumber;
@@ -20,6 +21,7 @@ public class InvoiceEvent {
     private final LocalDateTime timestamp;
 
     public InvoiceEvent(
+            Long companyId,
             String eventType,
             Long invoiceId,
             String invoiceNumber,
@@ -27,12 +29,12 @@ public class InvoiceEvent {
             String clientEmail,
             BigDecimal total,
             String status,
-            LocalDateTime timestamp
-    ) {
+            LocalDateTime timestamp) {
         if (eventType == null || eventType.trim().isEmpty()) {
             throw new IllegalArgumentException("Event type cannot be null or empty");
         }
 
+        this.companyId = companyId;
         this.eventType = eventType;
         this.invoiceId = invoiceId;
         this.invoiceNumber = invoiceNumber;
@@ -62,6 +64,10 @@ public class InvoiceEvent {
     }
 
     // Getters
+
+    public Long getCompanyId() {
+        return companyId;
+    }
 
     public String getEventType() {
         return eventType;
@@ -97,12 +103,14 @@ public class InvoiceEvent {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         InvoiceEvent that = (InvoiceEvent) o;
         return Objects.equals(eventType, that.eventType) &&
-               Objects.equals(invoiceId, that.invoiceId) &&
-               Objects.equals(timestamp, that.timestamp);
+                Objects.equals(invoiceId, that.invoiceId) &&
+                Objects.equals(timestamp, that.timestamp);
     }
 
     @Override

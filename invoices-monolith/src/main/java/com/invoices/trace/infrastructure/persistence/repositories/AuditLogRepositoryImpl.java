@@ -48,6 +48,13 @@ public class AuditLogRepositoryImpl implements AuditLogRepository {
     }
 
     @Override
+    public List<AuditLog> findByCompanyId(Long companyId) {
+        return jpaAuditLogRepository.findByCompanyIdOrderByCreatedAtDesc(companyId).stream()
+                .map(mapper::toDomainEntity)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public List<AuditLog> findByEventType(String eventType) {
         return jpaAuditLogRepository.findByEventTypeOrderByCreatedAtDesc(eventType).stream()
                 .map(mapper::toDomainEntity)

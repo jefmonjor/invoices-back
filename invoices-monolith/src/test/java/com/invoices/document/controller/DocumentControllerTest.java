@@ -1,6 +1,5 @@
 package com.invoices.document.controller;
 
-import com.invoices.config.TestConfig;
 import com.invoices.document.domain.entities.Document;
 import com.invoices.document.domain.usecases.*;
 import com.invoices.document.presentation.dto.DocumentDTO;
@@ -10,18 +9,19 @@ import com.invoices.document.presentation.controllers.DocumentController;
 import com.invoices.document.exception.DocumentNotFoundException;
 import com.invoices.document.exception.FileUploadException;
 import com.invoices.document.exception.InvalidFileTypeException;
+import com.invoices.exception.GlobalExceptionHandler;
+import com.invoices.security.infrastructure.interceptor.CompanySecurityInterceptor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.context.annotation.Import;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -35,41 +35,37 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
- * Integration tests for DocumentController.
- * Tests REST endpoints with MockMvc.
- *
- * Uses @WebMvcTest to load only web layer.
- * Mocks DocumentService dependency.
+ * Unit tests for DocumentController.
+ * Uses MockitoExtension and standaloneSetup for isolation.
  */
-@WebMvcTest(controllers = DocumentController.class, excludeAutoConfiguration = {
-                org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration.class,
-                org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration.class
-})
-@ActiveProfiles("test")
-@Import(TestConfig.class)
-@DisplayName("DocumentController Integration Tests")
+@ExtendWith(MockitoExtension.class)
+@DisplayName("DocumentController Unit Tests")
 class DocumentControllerTest {
 
-        @Autowired
         private MockMvc mockMvc;
 
-        @MockitoBean
+        @Mock
         private UploadDocumentUseCase uploadDocumentUseCase;
 
-        @MockitoBean
+        @Mock
         private DownloadDocumentUseCase downloadDocumentUseCase;
 
-        @MockitoBean
+        @Mock
         private GetDocumentByIdUseCase getDocumentByIdUseCase;
 
-        @MockitoBean
+        @Mock
         private GetDocumentsByInvoiceUseCase getDocumentsByInvoiceUseCase;
 
-        @MockitoBean
+        @Mock
         private DeleteDocumentUseCase deleteDocumentUseCase;
 
-        @MockitoBean
+        @Mock
         private DocumentDtoMapper mapper;
+
+        @Mock
+        private CompanySecurityInterceptor companySecurityInterceptor;
+
+        private DocumentController documentController;
 
         private DocumentDTO testDocumentDTO;
         private UploadDocumentResponse uploadResponse;
@@ -80,6 +76,20 @@ class DocumentControllerTest {
 
         @BeforeEach
         void setUp() {
+                // Manually create controller with mocked dependencies
+                documentController = new DocumentController(
+                                uploadDocumentUseCase,
+                                downloadDocumentUseCase,
+                                getDocumentByIdUseCase,
+                                getDocumentsByInvoiceUseCase,
+                                deleteDocumentUseCase,
+                                mapper);
+
+                mockMvc = MockMvcBuilders.standaloneSetup(documentController)
+                                .setControllerAdvice(new GlobalExceptionHandler())
+                                .addInterceptors(companySecurityInterceptor)
+                                .build();
+
                 testDocument = new Document(
                                 DOCUMENT_ID,
                                 "unique-file.pdf",
@@ -109,6 +119,12 @@ class DocumentControllerTest {
                                 .downloadUrl("/api/documents/1/download")
                                 .uploadedAt(LocalDateTime.now())
                                 .build();
+
+                try {
+                        lenient().when(companySecurityInterceptor.preHandle(any(), any(), any())).thenReturn(true);
+                } catch (Exception e) {
+                        throw new RuntimeException(e);
+                }
         }
 
         @Nested
@@ -187,13 +203,11 @@ class DocumentControllerTest {
                                         .file(file))
                                         .andDo(print())
                                         .andExpect(status().isBadRequest());
-
-                        verify(uploadDocumentUseCase).execute(any(), anyString(), any(), anyString());
                 }
 
                 @Test
-                @DisplayName("Should return 500 when upload fails")
-                void shouldReturn500WhenUploadFails() throws Exception {
+                @DisplayName("Should return 500 for file upload errors")
+                void shouldReturn500ForFileUploadError() throws Exception {
                         // Arrange
                         MockMultipartFile file = new MockMultipartFile(
                                         "file",

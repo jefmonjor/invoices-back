@@ -38,18 +38,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     /**
      * Filters incoming requests to validate JWT tokens.
      *
-     * @param request the HTTP request
-     * @param response the HTTP response
+     * @param request     the HTTP request
+     * @param response    the HTTP response
      * @param filterChain the filter chain
      * @throws ServletException if a servlet error occurs
-     * @throws IOException if an I/O error occurs
+     * @throws IOException      if an I/O error occurs
      */
     @Override
     protected void doFilterInternal(
             @NonNull HttpServletRequest request,
             @NonNull HttpServletResponse response,
-            @NonNull FilterChain filterChain
-    ) throws ServletException, IOException {
+            @NonNull FilterChain filterChain) throws ServletException, IOException {
 
         try {
             String jwt = extractJwtFromRequest(request);
@@ -69,6 +68,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    /**
+     * Skip JWT filter for WebSocket endpoints to avoid interfering with the
+     * WebSocket handshake.
+     * 
+     * @param request the HTTP request
+     * @return true if the filter should not be applied
+     */
+    @Override
+    protected boolean shouldNotFilter(@NonNull HttpServletRequest request) {
+        String path = request.getRequestURI();
+        // Skip filter for WebSocket endpoints
+        return path.startsWith("/ws");
     }
 
     /**
@@ -92,7 +105,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     /**
      * Authenticates the user using the JWT token.
      *
-     * @param jwt the JWT token
+     * @param jwt     the JWT token
      * @param request the HTTP request
      */
     private void authenticateWithJwt(String jwt, HttpServletRequest request) {
@@ -102,12 +115,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
         if (jwtUtil.validateToken(jwt, userDetails)) {
-            UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(
-                            userDetails,
-                            null,
-                            userDetails.getAuthorities()
-                    );
+            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                    userDetails,
+                    null,
+                    userDetails.getAuthorities());
 
             authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
             SecurityContextHolder.getContext().setAuthentication(authentication);

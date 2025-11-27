@@ -1,3 +1,4 @@
+
 package com.invoices.trace.domain.usecases;
 
 import com.invoices.trace.domain.entities.AuditLog;
@@ -25,16 +26,18 @@ public class RecordAuditLogUseCase {
      */
     public AuditLog execute(InvoiceEvent event, String eventDataJson) {
         // Create audit log from event
-        AuditLog auditLog = new AuditLog(
-                event.getEventType(),
-                event.getInvoiceId(),
-                event.getInvoiceNumber(),
-                event.getClientId(),
-                event.getClientEmail(),
-                event.getTotal(),
-                event.getStatus(),
-                eventDataJson
-        );
+        AuditLog auditLog = AuditLog.builder()
+                .companyId(event.getCompanyId())
+                .eventType(event.getEventType())
+                .invoiceId(event.getInvoiceId())
+                .invoiceNumber(event.getInvoiceNumber())
+                .clientId(event.getClientId())
+                .clientEmail(event.getClientEmail())
+                .total(event.getTotal())
+                .status(event.getStatus())
+                .eventData(eventDataJson)
+                .createdAt(java.time.LocalDateTime.now())
+                .build();
 
         // Save to repository
         return auditLogRepository.save(auditLog);

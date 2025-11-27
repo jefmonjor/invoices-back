@@ -6,6 +6,7 @@ import com.invoices.invoice.domain.ports.InvoiceRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -25,6 +26,7 @@ import java.util.concurrent.TimeUnit;
  * - 10% TIMEOUT (30s delay)
  */
 @Service("verifactuMockService")
+@Profile("!production")
 @RequiredArgsConstructor
 @Slf4j
 public class VerifactuMockService implements VerifactuServiceInterface {
@@ -165,5 +167,11 @@ public class VerifactuMockService implements VerifactuServiceInterface {
         } catch (Exception e) {
             log.error("[MOCK] Error serializing response to JSON", e);
         }
+    }
+
+    @Override
+    public void processWebhook(String payload) {
+        log.info("[MOCK] Received webhook payload: {}", payload);
+        // Mock implementation just logs the payload
     }
 }

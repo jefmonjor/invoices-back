@@ -32,6 +32,7 @@ public class User {
     private final LocalDateTime updatedAt;
     private final LocalDateTime lastLogin;
     private final Long currentCompanyId;
+    private final PlatformRole platformRole; // Platform-level role (PLATFORM_ADMIN or REGULAR_USER)
 
     /**
      * Full constructor for creating a User entity
@@ -40,7 +41,7 @@ public class User {
             Set<String> roles, boolean enabled, boolean accountNonExpired,
             boolean accountNonLocked, boolean credentialsNonExpired,
             LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime lastLogin,
-            Long currentCompanyId) {
+            Long currentCompanyId, PlatformRole platformRole) {
         validateEmail(email);
         validatePassword(password);
 
@@ -58,6 +59,7 @@ public class User {
         this.updatedAt = updatedAt;
         this.lastLogin = lastLogin;
         this.currentCompanyId = currentCompanyId;
+        this.platformRole = platformRole != null ? platformRole : PlatformRole.REGULAR_USER;
     }
 
     /**
@@ -66,7 +68,7 @@ public class User {
     public User(String email, String hashedPassword, String firstName, String lastName, Set<String> roles) {
         this(null, email, hashedPassword, firstName, lastName, roles,
                 true, true, true, true,
-                LocalDateTime.now(), LocalDateTime.now(), null, null);
+                LocalDateTime.now(), LocalDateTime.now(), null, null, PlatformRole.REGULAR_USER);
     }
 
     // ==================== VALIDATION METHODS ====================
@@ -116,7 +118,8 @@ public class User {
         return new User(
                 this.id, this.email, this.password, this.firstName, this.lastName,
                 this.roles, this.enabled, this.accountNonExpired, this.accountNonLocked,
-                this.credentialsNonExpired, this.createdAt, LocalDateTime.now(), lastLogin, this.currentCompanyId);
+                this.credentialsNonExpired, this.createdAt, LocalDateTime.now(), lastLogin, this.currentCompanyId,
+                this.platformRole);
     }
 
     /**
@@ -127,7 +130,8 @@ public class User {
         return new User(
                 this.id, this.email, newHashedPassword, this.firstName, this.lastName,
                 this.roles, this.enabled, this.accountNonExpired, this.accountNonLocked,
-                this.credentialsNonExpired, this.createdAt, LocalDateTime.now(), this.lastLogin, this.currentCompanyId);
+                this.credentialsNonExpired, this.createdAt, LocalDateTime.now(), this.lastLogin, this.currentCompanyId,
+                this.platformRole);
     }
 
     /**
@@ -137,7 +141,8 @@ public class User {
         return new User(
                 this.id, this.email, this.password, this.firstName, this.lastName,
                 this.roles, false, this.accountNonExpired, this.accountNonLocked,
-                this.credentialsNonExpired, this.createdAt, LocalDateTime.now(), this.lastLogin, this.currentCompanyId);
+                this.credentialsNonExpired, this.createdAt, LocalDateTime.now(), this.lastLogin, this.currentCompanyId,
+                this.platformRole);
     }
 
     /**
@@ -147,7 +152,8 @@ public class User {
         return new User(
                 this.id, this.email, this.password, this.firstName, this.lastName,
                 this.roles, true, this.accountNonExpired, this.accountNonLocked,
-                this.credentialsNonExpired, this.createdAt, LocalDateTime.now(), this.lastLogin, this.currentCompanyId);
+                this.credentialsNonExpired, this.createdAt, LocalDateTime.now(), this.lastLogin, this.currentCompanyId,
+                this.platformRole);
     }
 
     /**
@@ -157,7 +163,8 @@ public class User {
         return new User(
                 this.id, this.email, this.password, this.firstName, this.lastName,
                 this.roles, this.enabled, this.accountNonExpired, this.accountNonLocked,
-                this.credentialsNonExpired, this.createdAt, LocalDateTime.now(), this.lastLogin, companyId);
+                this.credentialsNonExpired, this.createdAt, LocalDateTime.now(), this.lastLogin, companyId,
+                this.platformRole);
     }
 
     // ==================== GETTERS ====================
@@ -229,6 +236,10 @@ public class User {
 
     public Long getCurrentCompanyId() {
         return currentCompanyId;
+    }
+
+    public PlatformRole getPlatformRole() {
+        return platformRole;
     }
 
     // ==================== EQUALS & HASHCODE ====================

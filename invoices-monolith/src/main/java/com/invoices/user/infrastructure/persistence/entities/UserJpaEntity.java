@@ -3,6 +3,8 @@ package com.invoices.user.infrastructure.persistence.entities;
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import com.invoices.user.domain.entities.PlatformRole;
+import com.invoices.shared.infrastructure.security.encryption.EncryptedStringConverter;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -30,9 +32,11 @@ public class UserJpaEntity {
     private String password;
 
     @Column(name = "first_name", length = 100)
+    @Convert(converter = EncryptedStringConverter.class)
     private String firstName;
 
     @Column(name = "last_name", length = 100)
+    @Convert(converter = EncryptedStringConverter.class)
     private String lastName;
 
     @ElementCollection(fetch = FetchType.EAGER)
@@ -65,6 +69,10 @@ public class UserJpaEntity {
 
     @Column(name = "last_login")
     private LocalDateTime lastLogin;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "platform_role", nullable = false)
+    private PlatformRole platformRole = PlatformRole.REGULAR_USER;
 
     // Constructors
     public UserJpaEntity() {
@@ -181,5 +189,13 @@ public class UserJpaEntity {
 
     public void setLastLogin(LocalDateTime lastLogin) {
         this.lastLogin = lastLogin;
+    }
+
+    public PlatformRole getPlatformRole() {
+        return platformRole;
+    }
+
+    public void setPlatformRole(PlatformRole platformRole) {
+        this.platformRole = platformRole;
     }
 }

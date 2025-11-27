@@ -33,7 +33,8 @@ public class ClientController {
     public ResponseEntity<List<ClientDTO>> getAllClients() {
         log.info("GET /api/clients - Retrieving all clients");
 
-        List<ClientDTO> clients = clientRepository.findAll().stream()
+        Long companyId = com.invoices.security.context.CompanyContext.getCompanyId();
+        List<ClientDTO> clients = clientRepository.findByCompanyId(companyId).stream()
                 .map(clientDtoMapper::toDto)
                 .collect(Collectors.toList());
 
@@ -76,7 +77,8 @@ public class ClientController {
     }
 
     @PutMapping("/{id}")
-    @Operation(summary = "Update client", description = "Update an existing client")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Update client", description = "Update an existing client (ADMIN only)")
     public ResponseEntity<ClientDTO> updateClient(
             @PathVariable Long id,
             @RequestBody ClientDTO clientDTO) {
@@ -102,7 +104,8 @@ public class ClientController {
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "Delete client", description = "Delete a client by its ID")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Delete client", description = "Delete a client by its ID (ADMIN only)")
     public ResponseEntity<Void> deleteClient(@PathVariable Long id) {
         log.info("DELETE /api/clients/{} - Deleting client", id);
 

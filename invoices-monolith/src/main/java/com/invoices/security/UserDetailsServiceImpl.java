@@ -13,6 +13,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -64,12 +66,22 @@ public class UserDetailsServiceImpl implements UserDetailsService {
      * @return collection of granted authorities
      */
     private Collection<? extends GrantedAuthority> getAuthorities(User user) {
-        return user.getRoles().stream()
+        Set<GrantedAuthority> authorities = new HashSet<>();
+
+        // Add Platform Role
+        if (user.getPlatformRole() != null) {
+            authorities.add(new SimpleGrantedAuthority("ROLE_" + user.getPlatformRole().name()));
+        }
+
+        // Add Company Roles
+        authorities.addAll(user.getRoles().stream()
                 .map(role -> {
                     // Ensure role has ROLE_ prefix
                     String authority = role.startsWith("ROLE_") ? role : "ROLE_" + role;
                     return new SimpleGrantedAuthority(authority);
                 })
-                .collect(Collectors.toSet());
+                .collect(Collectors.toSet()));
+
+        return authorities;
     }
 }

@@ -22,4 +22,6 @@ public interface ClientRepository {
     void deleteById(Long id);
 
     boolean existsById(Long id);
+
+    List<Client> findByCompanyId(Long companyId);
 }

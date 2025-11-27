@@ -1,5 +1,6 @@
 package com.invoices.user.presentation.mappers;
 
+import com.invoices.user.domain.entities.PlatformRole;
 import com.invoices.user.domain.entities.User;
 import com.invoices.user.presentation.dto.UserDTO;
 import org.springframework.stereotype.Component;
@@ -66,6 +67,7 @@ public class UserDtoMapper {
                 dto.getCreatedAt(),
                 dto.getUpdatedAt(),
                 null, // lastLogin
-                dto.getCurrentCompanyId());
+                dto.getCurrentCompanyId(),
+                PlatformRole.REGULAR_USER); // Default to REGULAR_USER for DTO mapping
     }
 }

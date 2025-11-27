@@ -15,17 +15,16 @@ class CompanyTest {
     void shouldCreateCompanyWithValidData() {
         // Arrange & Act
         Company company = new Company(
-            1L,
-            "TRANSOLIDO S.L.",
-            "B91923755",
-            "Castillo Lastrucci, 3, 3D",
-            "DOS HERMANAS",
-            "41701",
-            "SEVILLA",
-            "659889201",
-            "contacto@transolido.es",
-            "ES60 0182 4840 0022 0165 7539"
-        );
+                1L,
+                "TRANSOLIDO S.L.",
+                "B91923755",
+                "Castillo Lastrucci, 3, 3D",
+                "DOS HERMANAS",
+                "41701",
+                "SEVILLA",
+                "659889201",
+                "contacto@transolido.es",
+                "ES60 0182 4840 0022 0165 7539");
 
         // Assert
         assertThat(company).isNotNull();
@@ -39,93 +38,88 @@ class CompanyTest {
     void shouldThrowExceptionWhenBusinessNameIsNull() {
         // Act & Assert
         assertThatThrownBy(() -> new Company(
-            1L,
-            null,
-            "B91923755",
-            "Address",
-            "City",
-            "12345",
-            "Province",
-            "123456789",
-            "email@test.com",
-            "ES1234567890"
-        ))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("Business name cannot be null or empty");
+                1L,
+                null,
+                "B91923755",
+                "Address",
+                "City",
+                "12345",
+                "Province",
+                "123456789",
+                "email@test.com",
+                "ES1234567890"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Business name cannot be null or empty");
     }
 
     @Test
     void shouldThrowExceptionWhenBusinessNameIsEmpty() {
         // Act & Assert
         assertThatThrownBy(() -> new Company(
-            1L,
-            "   ",
-            "B91923755",
-            "Address",
-            "City",
-            "12345",
-            "Province",
-            "123456789",
-            "email@test.com",
-            "ES1234567890"
-        ))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("Business name cannot be null or empty");
+                1L,
+                "   ",
+                "B91923755",
+                "Address",
+                "City",
+                "12345",
+                "Province",
+                "123456789",
+                "email@test.com",
+                "ES1234567890"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Business name cannot be null or empty");
     }
 
     @Test
     void shouldThrowExceptionWhenTaxIdIsNull() {
         // Act & Assert
         assertThatThrownBy(() -> new Company(
-            1L,
-            "Company Name",
-            null,
-            "Address",
-            "City",
-            "12345",
-            "Province",
-            "123456789",
-            "email@test.com",
-            "ES1234567890"
-        ))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("Tax ID cannot be null or empty");
+                1L,
+                "Company Name",
+                null,
+                "Address",
+                "City",
+                "12345",
+                "Province",
+                "123456789",
+                "email@test.com",
+                "ES1234567890"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Tax ID cannot be null or empty");
     }
 
     @Test
     void shouldThrowExceptionWhenTaxIdIsEmpty() {
         // Act & Assert
         assertThatThrownBy(() -> new Company(
-            1L,
-            "Company Name",
-            "  ",
-            "Address",
-            "City",
-            "12345",
-            "Province",
-            "123456789",
-            "email@test.com",
-            "ES1234567890"
-        ))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("Tax ID cannot be null or empty");
+                1L,
+                "Company Name",
+                "  ",
+                "Address",
+                "City",
+                "12345",
+                "Province",
+                "123456789",
+                "email@test.com",
+                "ES1234567890"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Tax ID cannot be null or empty");
     }
 
     @Test
     void shouldReturnFullAddressWithAllFields() {
         // Arrange
         Company company = new Company(
-            1L,
-            "TRANSOLIDO S.L.",
-            "B91923755",
-            "Castillo Lastrucci, 3, 3D",
-            "DOS HERMANAS",
-            "41701",
-            "SEVILLA",
-            "659889201",
-            "contacto@transolido.es",
-            "ES60 0182 4840 0022 0165 7539"
-        );
+                1L,
+                "TRANSOLIDO S.L.",
+                "B91923755",
+                "Castillo Lastrucci, 3, 3D",
+                "DOS HERMANAS",
+                "41701",
+                "SEVILLA",
+                "659889201",
+                "contacto@transolido.es",
+                "ES60 0182 4840 0022 0165 7539");
 
         // Act
         String fullAddress = company.getFullAddress();
@@ -141,17 +135,16 @@ class CompanyTest {
     void shouldReturnFullAddressWithPartialFields() {
         // Arrange
         Company company = new Company(
-            1L,
-            "Company",
-            "B12345678",
-            "Street 123",
-            null,
-            "12345",
-            null,
-            null,
-            null,
-            null
-        );
+                1L,
+                "Company",
+                "B12345678",
+                "Street 123",
+                null,
+                "12345",
+                null,
+                null,
+                null,
+                null);
 
         // Act
         String fullAddress = company.getFullAddress();
@@ -165,22 +158,21 @@ class CompanyTest {
     void shouldReturnFullAddressWithOnlyAddress() {
         // Arrange
         Company company = new Company(
-            1L,
-            "Company",
-            "B12345678",
-            "Street 123",
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
-        );
+                1L,
+                "Company",
+                "B12345678",
+                "Street 123",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null);
 
         // Act
         String fullAddress = company.getFullAddress();
 
         // Assert
-        assertThat(fullAddress).isEqualTo("Street 123");
+        assertThat(fullAddress).isEqualTo("Street 123, España");
     }
 }

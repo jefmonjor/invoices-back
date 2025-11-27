@@ -1,5 +1,8 @@
 package com.invoices.invoice.domain.entities;
 
+import com.invoices.shared.domain.validation.ValidNif;
+import com.invoices.shared.domain.validation.ValidIban;
+
 /**
  * Company domain entity - represents the issuer (emisor) of invoices.
  * Pure domain object with NO framework dependencies.
@@ -7,7 +10,10 @@ package com.invoices.invoice.domain.entities;
 public class Company {
     private final Long id;
     private final String businessName; // Razón Social
+
+    @ValidNif
     private final String taxId; // CIF/NIF
+
     private final String address; // Dirección completa
     private final String city;
     private final String postalCode;
@@ -15,6 +21,8 @@ public class Company {
     private final String country; // País
     private final String phone;
     private final String email;
+
+    @ValidIban
     private final String iban; // IBAN para pagos
 
     public Company(
@@ -135,5 +143,27 @@ public class Company {
 
     public String getIban() {
         return iban;
+    }
+
+    public Company withDetails(
+            String businessName,
+            String address,
+            String city,
+            String postalCode,
+            String province,
+            String phone,
+            String email) {
+        return new Company(
+                this.id,
+                businessName,
+                this.taxId, // Tax ID is immutable
+                address,
+                city,
+                postalCode,
+                province,
+                this.country,
+                phone,
+                email,
+                this.iban);
     }
 }

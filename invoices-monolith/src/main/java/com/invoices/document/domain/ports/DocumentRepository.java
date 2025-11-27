@@ -7,7 +7,8 @@ import java.util.Optional;
 
 /**
  * Port (interface) for document repository operations.
- * This defines the contract for persistence without exposing implementation details.
+ * This defines the contract for persistence without exposing implementation
+ * details.
  * Infrastructure layer will provide the actual implementation.
  */
 public interface DocumentRepository {
@@ -58,4 +59,12 @@ public interface DocumentRepository {
      * @return true if exists, false otherwise
      */
     boolean existsById(Long id);
+
+    /**
+     * Find all documents for a specific company (via invoice).
+     *
+     * @param companyId the company ID
+     * @return List of documents for the company
+     */
+    List<Document> findByCompanyId(Long companyId);
 }

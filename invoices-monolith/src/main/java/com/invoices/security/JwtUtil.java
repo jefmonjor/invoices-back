@@ -58,6 +58,12 @@ public class JwtUtil {
                 .collect(Collectors.joining(","));
         claims.put("roles", roles);
 
+        // Add platformRole if present
+        userDetails.getAuthorities().stream()
+                .filter(a -> a.getAuthority().startsWith("ROLE_PLATFORM_"))
+                .findFirst()
+                .ifPresent(a -> claims.put("platformRole", a.getAuthority().replace("ROLE_", "")));
+
         String token = createToken(claims, userDetails.getUsername());
         log.info("Generated JWT token for user: {}", userDetails.getUsername());
 
@@ -78,6 +84,11 @@ public class JwtUtil {
         // Add roles to claims
         String rolesString = String.join(",", roles);
         claims.put("roles", rolesString);
+
+        // Note: platformRole should be passed if needed, but for now we rely on
+        // UserDetails flow
+        // or we could add an overload. For legacy/company flow, platformRole might not
+        // be primary.
 
         if (companyId != null) {
             claims.put("companyId", companyId);

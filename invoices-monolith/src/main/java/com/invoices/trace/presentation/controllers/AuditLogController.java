@@ -34,101 +34,119 @@ import java.util.stream.Collectors;
 @Tag(name = "Trace Service", description = "Audit log management API for tracking invoice events")
 public class AuditLogController {
 
-    private final GetAuditLogByIdUseCase getAuditLogByIdUseCase;
-    private final GetAuditLogsByInvoiceUseCase getAuditLogsByInvoiceUseCase;
-    private final GetAuditLogsByClientUseCase getAuditLogsByClientUseCase;
-    private final GetAuditLogsByEventTypeUseCase getAuditLogsByEventTypeUseCase;
-    private final GetAllAuditLogsUseCase getAllAuditLogsUseCase;
-    private final AuditLogDtoMapper mapper;
+        private final GetAuditLogByIdUseCase getAuditLogByIdUseCase;
+        private final GetAuditLogsByInvoiceUseCase getAuditLogsByInvoiceUseCase;
+        private final GetAuditLogsByClientUseCase getAuditLogsByClientUseCase;
+        private final GetAuditLogsByEventTypeUseCase getAuditLogsByEventTypeUseCase;
+        private final GetAuditLogsByCompanyUseCase getAuditLogsByCompanyUseCase;
+        private final GetAllAuditLogsUseCase getAllAuditLogsUseCase;
+        private final AuditLogDtoMapper mapper;
 
-    @GetMapping
-    @Operation(summary = "Get audit logs", description = "Retrieve audit logs with optional filters and pagination")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Logs retrieved successfully",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = AuditLogDTO.class)))
-    })
-    public ResponseEntity<?> getAuditLogs(
-            @Parameter(description = "Invoice ID filter")
-            @RequestParam(required = false) Long invoiceId,
+        @GetMapping
+        @Operation(summary = "Get audit logs", description = "Retrieve audit logs with optional filters and pagination")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Logs retrieved successfully", content = @Content(mediaType = "application/json", schema = @Schema(implementation = AuditLogDTO.class)))
+        })
+        public ResponseEntity<?> getAuditLogs(
+                        @Parameter(description = "Invoice ID filter") @RequestParam(required = false) Long invoiceId,
 
-            @Parameter(description = "Client ID filter")
-            @RequestParam(required = false) Long clientId,
+                        @Parameter(description = "Client ID filter") @RequestParam(required = false) Long clientId,
 
-            @Parameter(description = "Event type filter")
-            @RequestParam(required = false) String eventType,
+                        @Parameter(description = "Company ID filter") @RequestParam(required = false) Long companyId,
 
-            @Parameter(description = "Page number (0-indexed)")
-            @RequestParam(defaultValue = "0") int page,
+                        @Parameter(description = "Event type filter") @RequestParam(required = false) String eventType,
 
-            @Parameter(description = "Page size")
-            @RequestParam(defaultValue = "20") int size,
+                        @Parameter(description = "Page number (0-indexed)") @RequestParam(defaultValue = "0") int page,
 
-            @Parameter(description = "Sort field")
-            @RequestParam(defaultValue = "createdAt") String sortBy,
+                        @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size,
 
-            @Parameter(description = "Sort direction (ASC or DESC)")
-            @RequestParam(defaultValue = "DESC") String sortDir
-    ) {
-        log.info("GET /api/traces - invoiceId={}, clientId={}, eventType={}, page={}, size={}",
-                invoiceId, clientId, eventType, page, size);
+                        @Parameter(description = "Sort field") @RequestParam(defaultValue = "createdAt") String sortBy,
 
-        // If specific filters are provided, return a list (use cases handle filtering)
-        if (invoiceId != null) {
-            List<AuditLog> logs = getAuditLogsByInvoiceUseCase.execute(invoiceId);
-            List<AuditLogDTO> logDTOs = logs.stream()
-                    .map(mapper::toDTO)
-                    .collect(Collectors.toList());
-            log.info("Retrieved {} audit logs for invoice {}", logDTOs.size(), invoiceId);
-            return ResponseEntity.ok(logDTOs);
+                        @Parameter(description = "Sort direction (ASC or DESC)") @RequestParam(defaultValue = "DESC") String sortDir) {
+                log.info("GET /api/traces - invoiceId={}, clientId={}, companyId={}, eventType={}, page={}, size={}",
+                                invoiceId, clientId, companyId, eventType, page, size);
+
+                // If specific filters are provided, return a list (use cases handle filtering)
+                if (invoiceId != null) {
+                        List<AuditLog> logs = getAuditLogsByInvoiceUseCase.execute(invoiceId);
+                        List<AuditLogDTO> logDTOs = logs.stream()
+                                        .map(mapper::toDTO)
+                                        .collect(Collectors.toList());
+                        log.info("Retrieved {} audit logs for invoice {}", logDTOs.size(), invoiceId);
+                        return ResponseEntity.ok(logDTOs);
+                }
+
+                if (clientId != null) {
+                        List<AuditLog> logs = getAuditLogsByClientUseCase.execute(clientId);
+                        List<AuditLogDTO> logDTOs = logs.stream()
+                                        .map(mapper::toDTO)
+                                        .collect(Collectors.toList());
+                        log.info("Retrieved {} audit logs for client {}", logDTOs.size(), clientId);
+                        return ResponseEntity.ok(logDTOs);
+                }
+
+                if (companyId != null) {
+                        List<AuditLog> logs = getAuditLogsByCompanyUseCase.execute(companyId);
+                        List<AuditLogDTO> logDTOs = logs.stream()
+                                        .map(mapper::toDTO)
+                                        .collect(Collectors.toList());
+                        log.info("Retrieved {} audit logs for company {}", logDTOs.size(), companyId);
+                        return ResponseEntity.ok(logDTOs);
+                }
+
+                if (eventType != null) {
+                        List<AuditLog> logs = getAuditLogsByEventTypeUseCase.execute(eventType);
+                        List<AuditLogDTO> logDTOs = logs.stream()
+                                        .map(mapper::toDTO)
+                                        .collect(Collectors.toList());
+                        log.info("Retrieved {} audit logs for event type '{}'", logDTOs.size(), eventType);
+                        return ResponseEntity.ok(logDTOs);
+                }
+
+                // Otherwise, return paginated results using GetAllAuditLogsUseCase
+                Sort.Direction direction = sortDir.equalsIgnoreCase("ASC") ? Sort.Direction.ASC : Sort.Direction.DESC;
+                Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
+
+                Page<AuditLog> logsPage = getAllAuditLogsUseCase.execute(pageable);
+                Page<AuditLogDTO> logDTOsPage = logsPage.map(mapper::toDTO);
+
+                log.info("Retrieved {} total audit logs (page {}/{})",
+                                logsPage.getTotalElements(), page, logsPage.getTotalPages());
+                return ResponseEntity.ok(logDTOsPage);
         }
 
-        if (clientId != null) {
-            List<AuditLog> logs = getAuditLogsByClientUseCase.execute(clientId);
-            List<AuditLogDTO> logDTOs = logs.stream()
-                    .map(mapper::toDTO)
-                    .collect(Collectors.toList());
-            log.info("Retrieved {} audit logs for client {}", logDTOs.size(), clientId);
-            return ResponseEntity.ok(logDTOs);
+        @GetMapping("/{id}")
+        @Operation(summary = "Get audit log by ID", description = "Retrieve a specific audit log by its ID")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Log retrieved successfully", content = @Content(mediaType = "application/json", schema = @Schema(implementation = AuditLogDTO.class))),
+                        @ApiResponse(responseCode = "404", description = "Log not found")
+        })
+        public ResponseEntity<AuditLogDTO> getAuditLogById(
+                        @Parameter(description = "Audit log ID", required = true) @PathVariable Long id) {
+                log.info("GET /api/traces/{} - Fetching audit log", id);
+
+                AuditLog auditLog = getAuditLogByIdUseCase.execute(id);
+                AuditLogDTO auditLogDTO = mapper.toDTO(auditLog);
+
+                log.info("Audit log {} retrieved successfully", id);
+                return ResponseEntity.ok(auditLogDTO);
         }
 
-        if (eventType != null) {
-            List<AuditLog> logs = getAuditLogsByEventTypeUseCase.execute(eventType);
-            List<AuditLogDTO> logDTOs = logs.stream()
-                    .map(mapper::toDTO)
-                    .collect(Collectors.toList());
-            log.info("Retrieved {} audit logs for event type '{}'", logDTOs.size(), eventType);
-            return ResponseEntity.ok(logDTOs);
+        @GetMapping("/company/{companyId}")
+        @Operation(summary = "Get audit logs by company", description = "Retrieve audit logs for a specific company")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Logs retrieved successfully", content = @Content(mediaType = "application/json", schema = @Schema(implementation = AuditLogDTO.class)))
+        })
+        public ResponseEntity<List<AuditLogDTO>> getAuditLogsByCompany(
+                        @Parameter(description = "Company ID", required = true) @PathVariable Long companyId) {
+                log.info("GET /api/traces/company/{} - Fetching audit logs", companyId);
+
+                List<AuditLog> logs = getAuditLogsByCompanyUseCase.execute(companyId);
+                List<AuditLogDTO> logDTOs = logs.stream()
+                                .map(mapper::toDTO)
+                                .collect(Collectors.toList());
+
+                log.info("Retrieved {} audit logs for company {}", logDTOs.size(), companyId);
+                return ResponseEntity.ok(logDTOs);
         }
-
-        // Otherwise, return paginated results using GetAllAuditLogsUseCase
-        Sort.Direction direction = sortDir.equalsIgnoreCase("ASC") ? Sort.Direction.ASC : Sort.Direction.DESC;
-        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
-
-        Page<AuditLog> logsPage = getAllAuditLogsUseCase.execute(pageable);
-        Page<AuditLogDTO> logDTOsPage = logsPage.map(mapper::toDTO);
-
-        log.info("Retrieved {} total audit logs (page {}/{})",
-                logsPage.getTotalElements(), page, logsPage.getTotalPages());
-        return ResponseEntity.ok(logDTOsPage);
-    }
-
-    @GetMapping("/{id}")
-    @Operation(summary = "Get audit log by ID", description = "Retrieve a specific audit log by its ID")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Log retrieved successfully",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = AuditLogDTO.class))),
-            @ApiResponse(responseCode = "404", description = "Log not found")
-    })
-    public ResponseEntity<AuditLogDTO> getAuditLogById(
-            @Parameter(description = "Audit log ID", required = true)
-            @PathVariable Long id
-    ) {
-        log.info("GET /api/traces/{} - Fetching audit log", id);
-
-        AuditLog auditLog = getAuditLogByIdUseCase.execute(id);
-        AuditLogDTO auditLogDTO = mapper.toDTO(auditLog);
-
-        log.info("Audit log {} retrieved successfully", id);
-        return ResponseEntity.ok(auditLogDTO);
-    }
 }

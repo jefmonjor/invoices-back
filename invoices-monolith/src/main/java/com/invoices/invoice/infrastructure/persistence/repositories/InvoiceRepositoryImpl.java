@@ -73,4 +73,32 @@ public class InvoiceRepositoryImpl implements InvoiceRepository {
     public Optional<String> findLastInvoiceNumberByYear(int year) {
         return jpaRepository.findLastInvoiceNumberByYear(year);
     }
+
+    @Override
+    public Optional<String> findLastInvoiceNumberByCompanyAndYear(Long companyId, int year) {
+        return jpaRepository.findLastInvoiceNumberByCompanyAndYear(companyId, year);
+    }
+
+    @Override
+    public List<Invoice> findByCompanyId(Long companyId) {
+        return jpaRepository.findByCompanyId(companyId).stream()
+                .map(mapper::toDomainEntity)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public long countByCompanyId(Long companyId) {
+        return jpaRepository.countByCompanyId(companyId);
+    }
+
+    @Override
+    public void deleteByCompanyId(Long companyId) {
+        jpaRepository.deleteByCompanyId(companyId);
+    }
+
+    @Override
+    public Optional<Invoice> findLastInvoiceByCompanyIdAndIdNot(Long companyId, Long excludedInvoiceId) {
+        return jpaRepository.findFirstByCompanyIdAndIdNotOrderByCreatedAtDesc(companyId, excludedInvoiceId)
+                .map(mapper::toDomainEntity);
+    }
 }

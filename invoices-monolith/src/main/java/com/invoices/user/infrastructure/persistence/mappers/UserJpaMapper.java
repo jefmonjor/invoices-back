@@ -39,6 +39,7 @@ public class UserJpaMapper {
         jpaEntity.setCreatedAt(domainUser.getCreatedAt());
         jpaEntity.setUpdatedAt(domainUser.getUpdatedAt());
         jpaEntity.setLastLogin(domainUser.getLastLogin());
+        jpaEntity.setPlatformRole(domainUser.getPlatformRole());
 
         return jpaEntity;
     }
@@ -68,6 +69,7 @@ public class UserJpaMapper {
                 jpaEntity.getCreatedAt(),
                 jpaEntity.getUpdatedAt(),
                 jpaEntity.getLastLogin(),
-                jpaEntity.getCurrentCompanyId());
+                jpaEntity.getCurrentCompanyId(),
+                jpaEntity.getPlatformRole());
     }
 }

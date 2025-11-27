@@ -24,6 +24,7 @@ public class AuditLogDtoMapper {
 
         return AuditLogDTO.builder()
                 .id(domainAuditLog.getId())
+                .companyId(domainAuditLog.getCompanyId())
                 .eventType(domainAuditLog.getEventType())
                 .invoiceId(domainAuditLog.getInvoiceId())
                 .invoiceNumber(domainAuditLog.getInvoiceNumber())

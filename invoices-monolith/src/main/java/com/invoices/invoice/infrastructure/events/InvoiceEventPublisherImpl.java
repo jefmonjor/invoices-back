@@ -85,6 +85,7 @@ public class InvoiceEventPublisherImpl implements InvoiceEventPublisher {
 
     private InvoiceEvent createEvent(String eventType, Invoice invoice, String clientEmail) {
         return new InvoiceEvent(
+                invoice.getCompanyId(),
                 eventType,
                 invoice.getId(),
                 invoice.getInvoiceNumber(),
@@ -92,7 +93,6 @@ public class InvoiceEventPublisherImpl implements InvoiceEventPublisher {
                 clientEmail,
                 invoice.calculateTotalAmount(),
                 invoice.getStatus().name(),
-                LocalDateTime.now()
-        );
+                LocalDateTime.now());
     }
 }

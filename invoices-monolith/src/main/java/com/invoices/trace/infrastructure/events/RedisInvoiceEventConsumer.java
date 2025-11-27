@@ -35,8 +35,7 @@ public class RedisInvoiceEventConsumer implements StreamListener<String, MapReco
     public RedisInvoiceEventConsumer(
             RecordAuditLogUseCase recordAuditLogUseCase,
             ObjectMapper objectMapper,
-            RedisTemplate<String, Object> redisTemplate
-    ) {
+            RedisTemplate<String, Object> redisTemplate) {
         this.recordAuditLogUseCase = recordAuditLogUseCase;
         this.objectMapper = objectMapper;
         this.redisTemplate = redisTemplate;
@@ -88,6 +87,7 @@ public class RedisInvoiceEventConsumer implements StreamListener<String, MapReco
 
         // Convert DTO to domain event
         return new InvoiceEvent(
+                dto.companyId(),
                 dto.eventType(),
                 dto.invoiceId(),
                 dto.invoiceNumber(),
@@ -95,8 +95,7 @@ public class RedisInvoiceEventConsumer implements StreamListener<String, MapReco
                 dto.clientEmail(),
                 dto.total(),
                 dto.status(),
-                dto.timestamp()
-        );
+                dto.timestamp());
     }
 
     /**
@@ -140,6 +139,7 @@ public class RedisInvoiceEventConsumer implements StreamListener<String, MapReco
      * This is infrastructure-specific and doesn't pollute the domain.
      */
     private record InvoiceEventDto(
+            Long companyId,
             String eventType,
             Long invoiceId,
             String invoiceNumber,
@@ -147,7 +147,6 @@ public class RedisInvoiceEventConsumer implements StreamListener<String, MapReco
             String clientEmail,
             BigDecimal total,
             String status,
-            LocalDateTime timestamp
-    ) {
+            LocalDateTime timestamp) {
     }
 }

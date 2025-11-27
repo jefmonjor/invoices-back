@@ -93,11 +93,16 @@ public class AuthController {
                         );
                         companyManagementService.createCompany(newCompany, createdUser.getId());
                 } else if ("JOIN_COMPANY".equals(request.getRegistrationType())) {
-                        companyInvitationService.acceptInvitation(request.getInvitationToken(), createdUser.getId());
+                        String tokenOrCode = request.getInvitationToken();
+                        if (tokenOrCode == null || tokenOrCode.isEmpty()) {
+                                tokenOrCode = request.getInvitationCode();
+                        }
+                        companyInvitationService.acceptInvitation(tokenOrCode, createdUser.getId());
                 }
 
-                // Generate JWT token with email and roles
-                String token = jwtUtil.generateToken(createdUser.getEmail(), createdUser.getRoles());
+                // Generate JWT token with email, roles and companyId
+                String token = jwtUtil.generateToken(createdUser.getEmail(), createdUser.getRoles(),
+                                createdUser.getCurrentCompanyId());
 
                 AuthResponse response = AuthResponse.builder()
                                 .token(token)
@@ -133,8 +138,9 @@ public class AuthController {
                 // Update last login timestamp
                 updateUserLastLoginUseCase.execute(authenticatedUser.getId());
 
-                // Generate JWT token with email and roles
-                String token = jwtUtil.generateToken(authenticatedUser.getEmail(), authenticatedUser.getRoles());
+                // Generate JWT token with email, roles and companyId
+                String token = jwtUtil.generateToken(authenticatedUser.getEmail(), authenticatedUser.getRoles(),
+                                authenticatedUser.getCurrentCompanyId());
 
                 AuthResponse response = AuthResponse.builder()
                                 .token(token)

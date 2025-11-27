@@ -27,24 +27,18 @@ public class InvoiceUseCaseConfiguration {
     }
 
     @Bean
-    public com.invoices.invoice.domain.services.InvoiceNumberGenerator invoiceNumberGenerator(
-            InvoiceRepository repository) {
-        return new com.invoices.invoice.domain.services.InvoiceNumberGenerator(repository);
-    }
-
-    @Bean
     public CreateInvoiceUseCase createInvoiceUseCase(
             InvoiceRepository invoiceRepository,
             CompanyRepository companyRepository,
             ClientRepository clientRepository,
             InvoiceEventPublisher eventPublisher,
-            com.invoices.invoice.domain.services.InvoiceNumberGenerator invoiceNumberGenerator) {
+            com.invoices.invoice.domain.services.InvoiceNumberingService invoiceNumberingService) {
         return new CreateInvoiceUseCase(
                 invoiceRepository,
                 companyRepository,
                 clientRepository,
                 eventPublisher,
-                invoiceNumberGenerator);
+                invoiceNumberingService);
     }
 
     @Bean

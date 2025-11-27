@@ -1,0 +1,107 @@
+package com.invoices.invoice.infrastructure.messaging;
+
+import com.invoices.invoice.infrastructure.messaging.dto.InvoiceEvent;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.messaging.converter.MappingJackson2MessageConverter;
+import org.springframework.messaging.simp.stomp.StompFrameHandler;
+import org.springframework.messaging.simp.stomp.StompHeaders;
+import org.springframework.messaging.simp.stomp.StompSession;
+import org.springframework.messaging.simp.stomp.StompSessionHandlerAdapter;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.web.socket.client.standard.StandardWebSocketClient;
+import org.springframework.web.socket.messaging.WebSocketStompClient;
+
+import org.springframework.web.socket.sockjs.client.SockJsClient;
+import org.springframework.web.socket.sockjs.client.WebSocketTransport;
+import org.springframework.web.socket.sockjs.client.Transport;
+import java.util.List;
+import java.util.Collections;
+
+import java.lang.reflect.Type;
+import java.time.LocalDateTime;
+import java.util.Map;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT, properties = "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration,org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration,org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration")
+@ActiveProfiles("test")
+@org.springframework.context.annotation.Import(com.invoices.config.TestConfig.class)
+class RedisEventListenerIT {
+
+    @Autowired
+    private RedisTemplate<String, Object> redisTemplate;
+
+    private WebSocketStompClient stompClient;
+    private final String WS_URL = "ws://localhost:8080/ws";
+
+    @BeforeEach
+    void setup() {
+        List<Transport> transports = Collections.singletonList(new WebSocketTransport(new StandardWebSocketClient()));
+        SockJsClient sockJsClient = new SockJsClient(transports);
+        stompClient = new WebSocketStompClient(sockJsClient);
+        stompClient.setMessageConverter(new MappingJackson2MessageConverter());
+    }
+
+    @Test
+    void shouldReceiveWebSocketMessageWhenRedisEventIsPublished() throws Exception {
+        // Given
+        Long invoiceId = 12345L;
+        Long companyId = 100L;
+        String status = "ACCEPTED";
+        String txId = "TX-123";
+
+        InvoiceEvent event = new InvoiceEvent();
+        event.setInvoiceId(invoiceId);
+        event.setCompanyId(companyId);
+        event.setStatus(status);
+        event.setTxId(txId);
+        event.setTimestamp(LocalDateTime.now());
+        event.setTenantId(1L);
+
+        // When: Connect to WebSocket
+        BlockingQueue<Map<String, Object>> messages = new LinkedBlockingQueue<>();
+
+        StompSession session = stompClient.connectAsync(
+                WS_URL,
+                new StompSessionHandlerAdapter() {
+                }).get(5, TimeUnit.SECONDS);
+
+        // Subscribe to company invoices topic
+        session.subscribe(
+                "/topic/company/" + companyId + "/invoices",
+                new StompFrameHandler() {
+                    @Override
+                    public Type getPayloadType(StompHeaders headers) {
+                        return Map.class;
+                    }
+
+                    @Override
+                    @SuppressWarnings("unchecked")
+                    public void handleFrame(StompHeaders headers, Object payload) {
+                        messages.add((Map<String, Object>) payload);
+                    }
+                });
+
+        // Publish to Redis channel (simulating RedisEventPublisher)
+        // Note: We publish to the channel that RedisMessageListenerContainer listens to
+        String channel = "tenant:1:events";
+        redisTemplate.convertAndSend(channel, event);
+
+        // Then: Should receive the message via WebSocket
+        Map<String, Object> receivedMessage = messages.poll(10, TimeUnit.SECONDS);
+
+        assertThat(receivedMessage).isNotNull();
+        assertThat(receivedMessage.get("invoiceId")).isEqualTo(invoiceId.intValue());
+        assertThat(receivedMessage.get("status")).isEqualTo(status);
+        assertThat(receivedMessage.get("txId")).isEqualTo(txId);
+
+        session.disconnect();
+    }
+}

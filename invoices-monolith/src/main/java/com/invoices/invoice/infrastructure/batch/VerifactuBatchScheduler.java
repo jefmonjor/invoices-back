@@ -40,7 +40,7 @@ public class VerifactuBatchScheduler {
 
         try {
             // Find invoices with REJECTED, FAILED, or TIMEOUT status
-            // that are older than 24 hours and have less than 10 retries
+            // that are older than 24 hours
             LocalDateTime cutoffTime = LocalDateTime.now().minusHours(24);
 
             var invoiceEntities = invoiceRepository.findByVerifactuStatusInAndUpdatedAtBefore(
@@ -49,12 +49,16 @@ public class VerifactuBatchScheduler {
 
             log.info("[VeriFactu Batch] Found {} invoices to retry", invoiceEntities.size());
 
+            // Group by Company ID to report separately (optional, but good for metrics)
+            Map<Long, Integer> companyRetryCounts = new HashMap<>();
+
             int requeued = 0;
             for (var invoiceEntity : invoiceEntities) {
                 try {
                     // Create retry event
                     Map<String, Object> event = new HashMap<>();
                     event.put("invoiceId", invoiceEntity.getId());
+                    event.put("companyId", invoiceEntity.getCompanyId()); // Add company context
                     event.put("eventType", "RETRY_VERIFICATION");
                     event.put("batchRetry", true);
                     event.put("timestamp", System.currentTimeMillis());
@@ -63,7 +67,10 @@ public class VerifactuBatchScheduler {
                     redisTemplate.opsForStream().add("verifactu-queue", event);
                     requeued++;
 
-                    log.debug("[VeriFactu Batch] Requeued invoice {} for retry", invoiceEntity.getId());
+                    companyRetryCounts.merge(invoiceEntity.getCompanyId(), 1, (a, b) -> a + b);
+
+                    log.debug("[VeriFactu Batch] Requeued invoice {} for retry (Company {})",
+                            invoiceEntity.getId(), invoiceEntity.getCompanyId());
                 } catch (Exception e) {
                     log.error("[VeriFactu Batch] Error requeueing invoice {}: {}",
                             invoiceEntity.getId(), e.getMessage());
@@ -72,23 +79,26 @@ public class VerifactuBatchScheduler {
 
             log.info("[VeriFactu Batch] Successfully requeued {} invoices for verification", requeued);
 
+            // Log retries per company
+            companyRetryCounts.forEach(
+                    (companyId, count) -> log.info("[VeriFactu Batch] Company {}: {} retries", companyId, count));
+
             // Update metrics
             updateBatchMetrics(invoiceEntities.size(), requeued);
 
             // Calculate critical pending invoices (>48h)
             long criticalPending = invoiceRepository.countByVerifactuStatusAndUpdatedAtBefore(
-                "NOT_SENT", LocalDateTime.now().minusHours(48));
+                    "NOT_SENT", LocalDateTime.now().minusHours(48));
 
             // Build batch summary
             BatchSummary summary = BatchSummary.builder()
-                .timestamp(LocalDateTime.now())
-                .totalProcessed(invoiceEntities.size())
-                .successful(requeued)
-                .failed(invoiceEntities.size() - requeued)
-                .criticalPending((int) criticalPending)
-                .successRate(invoiceEntities.size() > 0 ?
-                    (double) requeued / invoiceEntities.size() * 100 : 0.0)
-                .build();
+                    .timestamp(LocalDateTime.now())
+                    .totalProcessed(invoiceEntities.size())
+                    .successful(requeued)
+                    .failed(invoiceEntities.size() - requeued)
+                    .criticalPending((int) criticalPending)
+                    .successRate(invoiceEntities.size() > 0 ? (double) requeued / invoiceEntities.size() * 100 : 0.0)
+                    .build();
 
             // Send email summary
             emailService.sendBatchSummaryEmail(summary);
