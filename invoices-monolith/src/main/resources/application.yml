@@ -3,15 +3,7 @@ server:
   servlet:
     context-path: /
 
-# Spring Boot Actuator Configuration
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,metrics,info
-  endpoint:
-    health:
-      show-details: always
+
 
 spring:
   application:
