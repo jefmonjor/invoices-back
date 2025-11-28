@@ -2,13 +2,12 @@ package com.invoices.auth.application.services;
 
 import com.invoices.auth.domain.entities.PasswordResetToken;
 import com.invoices.auth.infrastructure.persistence.repositories.PasswordResetTokenRepository;
+import com.invoices.shared.infrastructure.mail.MailgunEmailService;
 import com.invoices.user.infrastructure.persistence.repositories.JpaUserRepository;
 import com.invoices.user.infrastructure.persistence.entities.UserJpaEntity;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,17 +25,11 @@ public class PasswordResetService {
 
     private final PasswordResetTokenRepository tokenRepository;
     private final JpaUserRepository jpaUserRepository;
-    private final JavaMailSender mailSender;
+    private final MailgunEmailService emailService;
     private final PasswordEncoder passwordEncoder;
 
     @Value("${security.token.password-reset-expiration-hours:1}")
     private int tokenExpirationHours;
-
-    @Value("${spring.mail.username}")
-    private String fromEmail;
-
-    @Value("${app.frontend-url:http://localhost:3000}")
-    private String frontendUrl;
 
     /**
      * Initiates a password reset by generating a token and sending an email.
@@ -71,7 +64,7 @@ public class PasswordResetService {
         tokenRepository.save(resetToken);
 
         // Send email
-        sendPasswordResetEmail(user, resetToken.getToken());
+        sendPasswordResetEmail(user, resetToken.getToken().toString());
 
         log.info("Password reset token created for user ID: {}", user.getId());
     }
@@ -123,34 +116,11 @@ public class PasswordResetService {
      * @param user  the user
      * @param token the reset token
      */
-    private void sendPasswordResetEmail(UserJpaEntity user, UUID token) {
-        String resetUrl = frontendUrl + "/reset-password?token=" + token;
-
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom(fromEmail);
-        message.setTo(user.getEmail());
-        message.setSubject("Password Reset Request - Invoices System");
-        message.setText(String.format(
-                "Hello %s,\n\n" +
-                        "You requested to reset your password. Please click the link below to reset your password:\n\n"
-                        +
-                        "%s\n\n" +
-                        "This link will expire in %d hour(s).\n\n" +
-                        "If you did not request this, please ignore this email and your password will remain unchanged.\n\n"
-                        +
-                        "Best regards,\n" +
-                        "Invoices System Team",
-                user.getFirstName(),
-                resetUrl,
-                tokenExpirationHours));
-
-        try {
-            mailSender.send(message);
-            log.info("Password reset email sent to: {}", user.getEmail());
-        } catch (Exception e) {
-            log.error("Failed to send password reset email to: {}", user.getEmail(), e);
-            throw new RuntimeException("Failed to send password reset email", e);
-        }
+    private void sendPasswordResetEmail(UserJpaEntity user, String token) {
+        emailService.sendPasswordReset(user.getEmail(), token)
+                .subscribe(
+                        null, // onSuccess
+                        error -> log.error("Failed to send password reset email to: {}", user.getEmail(), error));
     }
 
     /**

@@ -97,6 +97,13 @@ spring:
           starttls:
             enable: true
 
+  # Mailgun Configuration
+  mailgun:
+    domain: ${MAILGUN_DOMAIN:sandbox832c646181cd46038927c92abdfdfccf.mailgun.org}
+    api-key: ${MAILGUN_API_KEY:a9ca9818ee0761b225ce54aaf8b6ed0e-67edcffb-e50166fb}
+    api-base: https://api.mailgun.net/v3
+
+
 # JWT Configuration
 jwt:
   # SECURITY: JWT_SECRET is REQUIRED - must be at least 32 characters (256 bits for HS256)
