@@ -22,10 +22,10 @@ public class PlatformAdminAuditLog {
     @Column(name = "admin_email", nullable = false)
     private String adminEmail;
 
-    @Column(name = "action", nullable = false)
+    @Column(name = "action", nullable = false, length = 100)
     private String action;
 
-    @Column(name = "target_type", nullable = false)
+    @Column(name = "target_type", nullable = false, length = 50)
     private String targetType; // e.g., "COMPANY", "USER"
 
     @Column(name = "target_id")
@@ -34,7 +34,7 @@ public class PlatformAdminAuditLog {
     @Column(name = "details", columnDefinition = "TEXT")
     private String details;
 
-    @Column(name = "ip_address")
+    @Column(name = "ip_address", length = 50)
     private String ipAddress;
 
     @CreationTimestamp

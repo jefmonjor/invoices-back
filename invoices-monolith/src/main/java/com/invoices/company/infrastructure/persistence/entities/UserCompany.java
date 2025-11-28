@@ -9,7 +9,7 @@ public class UserCompany {
     @EmbeddedId
     private UserCompanyId id;
 
-    @Column(name = "role", nullable = false)
+    @Column(name = "role", nullable = false, length = 50)
     private String role;
 
     public UserCompany() {
