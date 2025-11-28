@@ -12,6 +12,7 @@ import org.springframework.data.redis.connection.stream.Consumer;
 import org.springframework.data.redis.connection.stream.MapRecord;
 import org.springframework.data.redis.connection.stream.ReadOffset;
 import org.springframework.data.redis.connection.stream.StreamOffset;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.stream.StreamMessageListenerContainer;
 import org.springframework.data.redis.stream.Subscription;
 
@@ -23,10 +24,11 @@ import java.time.Duration;
 @Configuration
 @Slf4j
 @RequiredArgsConstructor
-@Profile("!test")  // Don't run in test profile
+@Profile("!test") // Don't run in test profile
 public class RedisStreamConfig {
 
     private final RedisInvoiceEventConsumer invoiceEventConsumer;
+    private final StringRedisTemplate redisTemplate;
 
     @Value("${spring.redis.stream.invoice-events:invoice-events}")
     private String invoiceEventsStream;
@@ -44,8 +46,7 @@ public class RedisStreamConfig {
     public StreamMessageListenerContainer<String, MapRecord<String, String, String>> streamMessageListenerContainer(
             RedisConnectionFactory connectionFactory) {
 
-        var options = StreamMessageListenerContainer
-                .StreamMessageListenerContainerOptions
+        var options = StreamMessageListenerContainer.StreamMessageListenerContainerOptions
                 .builder()
                 .pollTimeout(Duration.ofSeconds(2))
                 .build();
@@ -73,8 +74,7 @@ public class RedisStreamConfig {
             var subscription = container.receive(
                     Consumer.from(consumerGroup, consumerName),
                     StreamOffset.create(invoiceEventsStream, ReadOffset.lastConsumed()),
-                    invoiceEventConsumer
-            );
+                    invoiceEventConsumer);
 
             container.start();
 
@@ -93,8 +93,44 @@ public class RedisStreamConfig {
      * Crea el consumer group si no existe
      */
     private void createConsumerGroupIfNotExists() {
-        // Esta operación se puede hacer manualmente o con un script de inicialización
-        // Redis creará automáticamente el stream cuando se envíe el primer mensaje
-        log.info("Consumer group '{}' will be created automatically on first message", consumerGroup);
+        try {
+            // Verificar si el stream existe
+            if (Boolean.FALSE.equals(redisTemplate.hasKey(invoiceEventsStream))) {
+                log.info("Stream {} does not exist. Creating it along with the consumer group.", invoiceEventsStream);
+                // Crear el grupo crea el stream automáticamente con MKSTREAM (implícito en
+                // createGroup de Spring Data Redis a veces, pero mejor asegurar)
+                // Spring Data Redis createGroup usa XGROUP CREATE ... MKSTREAM por defecto si
+                // el stream no existe?
+                // No siempre. Pero createGroup suele fallar si el stream no existe a menos que
+                // se use MKSTREAM.
+                // La implementación de Lettuce/Jedis subyacente puede variar.
+                // Intentamos crear el grupo.
+                try {
+                    redisTemplate.opsForStream().createGroup(invoiceEventsStream, ReadOffset.from("0-0"),
+                            consumerGroup);
+                } catch (Exception ex) {
+                    // Si falla porque el stream no existe, podríamos necesitar crearlo primero
+                    // enviando un mensaje dummy o usando comandos raw.
+                    // Pero createGroup en versiones recientes suele manejarlo o lanzar excepción.
+                    log.warn("Could not create group, possibly stream missing or group exists. Error: {}",
+                            ex.getMessage());
+                }
+            } else {
+                // Si el stream existe, intentamos crear el grupo.
+                try {
+                    redisTemplate.opsForStream().createGroup(invoiceEventsStream, ReadOffset.from("0-0"),
+                            consumerGroup);
+                    log.info("Consumer group {} created for stream {}", consumerGroup, invoiceEventsStream);
+                } catch (Exception e) {
+                    // Ignorar si el grupo ya existe (RedisBusyException o similar)
+                    log.info("Consumer group {} likely already exists for stream {}", consumerGroup,
+                            invoiceEventsStream);
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error ensuring consumer group exists: {}", e.getMessage());
+            // No lanzamos excepción para no detener el arranque, pero el listener podría
+            // fallar si el grupo no se creó
+        }
     }
 }
