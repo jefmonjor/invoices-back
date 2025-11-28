@@ -8,7 +8,9 @@ import java.time.LocalDateTime;
  * Infrastructure concern - separated from domain model.
  */
 @Entity
-@Table(name = "clients")
+@Table(name = "clients", uniqueConstraints = {
+        @UniqueConstraint(columnNames = { "tax_id", "company_id" })
+})
 public class ClientJpaEntity {
 
     @Id
@@ -18,7 +20,7 @@ public class ClientJpaEntity {
     @Column(name = "business_name", nullable = false, length = 255)
     private String businessName;
 
-    @Column(name = "tax_id", nullable = false, unique = true, length = 20)
+    @Column(name = "tax_id", nullable = false, length = 20)
     private String taxId;
 
     @Column(name = "address", length = 500)

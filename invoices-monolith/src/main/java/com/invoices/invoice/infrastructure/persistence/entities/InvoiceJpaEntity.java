@@ -12,7 +12,10 @@ import java.util.List;
  * Separated from domain to follow Clean Architecture.
  */
 @Entity
-@Table(name = "invoices")
+@Table(name = "invoices", uniqueConstraints = {
+        @UniqueConstraint(name = "uk_invoices_number_company", columnNames = { "invoice_number", "company_id" }),
+        @UniqueConstraint(name = "uk_invoices_hash_company", columnNames = { "document_hash", "company_id" })
+})
 public class InvoiceJpaEntity {
 
     @Id
@@ -28,7 +31,7 @@ public class InvoiceJpaEntity {
     @Column(name = "client_id", nullable = false)
     private Long clientId;
 
-    @Column(name = "invoice_number", nullable = false, unique = true, length = 50)
+    @Column(name = "invoice_number", nullable = false, length = 50)
     private String invoiceNumber;
 
     @Column(name = "settlement_number", length = 50)
