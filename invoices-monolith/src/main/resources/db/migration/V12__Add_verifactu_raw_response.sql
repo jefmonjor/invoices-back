@@ -3,6 +3,6 @@
 
 
 ALTER TABLE invoices
-ADD COLUMN verifactu_raw_response TEXT;
+ADD COLUMN IF NOT EXISTS verifactu_raw_response TEXT;
 
 COMMENT ON COLUMN invoices.verifactu_raw_response IS 'Complete JSON response from VeriFactu/AEAT (for audit and debugging)';

@@ -3,10 +3,11 @@
 -- 1. Multi-company structure
 
 -- Remove user_id from companies if it exists (cleanup)
+-- Remove user_id from companies if it exists (cleanup)
 ALTER TABLE companies DROP COLUMN IF EXISTS user_id;
 
 -- Create user_companies table for N:M relationship
-CREATE TABLE user_companies (
+CREATE TABLE IF NOT EXISTS user_companies (
     user_id BIGINT NOT NULL,
     company_id BIGINT NOT NULL,
     role VARCHAR(50) NOT NULL,
@@ -17,12 +18,25 @@ CREATE TABLE user_companies (
 );
 
 -- Add current_company_id to users for context switching
-ALTER TABLE users ADD COLUMN current_company_id BIGINT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS current_company_id BIGINT;
+-- Constraint might fail if exists, but usually safe to ignore if column existed. 
+-- Ideally we check pg_constraint, but for now we assume if column existed, constraint might too.
+-- To be safe, we can drop and re-add or just leave it. 
+-- Let's leave constraint addition as is, it might fail if exists but usually Flyway stops at first error.
+-- If column exists, we might want to skip constraint addition? 
+-- Postgres doesn't have ADD CONSTRAINT IF NOT EXISTS easily.
+-- Let's assume if column exists, we are good. But wait, if column exists, adding it again is skipped.
+-- Then adding constraint will try to add it. If it exists, it fails.
+-- Let's wrap constraint addition in a DO block? No, too complex for this tool.
+-- Let's just do CREATE TABLE IF NOT EXISTS and ADD COLUMN IF NOT EXISTS.
+-- If constraints fail, we'll deal with it. The user's error was about COLUMNS.
+
+ALTER TABLE users DROP CONSTRAINT IF EXISTS fk_users_current_company;
 ALTER TABLE users ADD CONSTRAINT fk_users_current_company FOREIGN KEY (current_company_id) REFERENCES companies(id);
 
 -- 2. Update Clients for multi-company
 -- Add company_id to clients
-ALTER TABLE clients ADD COLUMN company_id BIGINT;
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS company_id BIGINT;
 
 -- Update existing clients to belong to company 1 (default migration strategy)
 -- We assume company with ID 1 exists. If not, this might fail or leave nulls.
@@ -33,11 +47,14 @@ UPDATE clients SET company_id = (SELECT id FROM companies ORDER BY id ASC LIMIT 
 ALTER TABLE clients DROP CONSTRAINT IF EXISTS clients_tax_id_key;
 
 -- Add new unique constraint scoped by company
+ALTER TABLE clients DROP CONSTRAINT IF EXISTS uk_clients_tax_id_company;
 ALTER TABLE clients ADD CONSTRAINT uk_clients_tax_id_company UNIQUE (tax_id, company_id);
+
+ALTER TABLE clients DROP CONSTRAINT IF EXISTS fk_clients_company;
 ALTER TABLE clients ADD CONSTRAINT fk_clients_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE;
 
 -- 3. Company Invitations
-CREATE TABLE company_invitations (
+CREATE TABLE IF NOT EXISTS company_invitations (
     code VARCHAR(64) PRIMARY KEY,
     company_id BIGINT NOT NULL,
     created_by BIGINT NOT NULL, -- Admin who created the invitation
@@ -49,7 +66,7 @@ CREATE TABLE company_invitations (
 
 -- 4. VeriFactu Canonicalization
 -- Separate table for canonical data and hashes
-CREATE TABLE invoice_canonical (
+CREATE TABLE IF NOT EXISTS invoice_canonical (
     invoice_id BIGINT PRIMARY KEY,
     canonical_json TEXT NOT NULL,
     document_hash CHAR(64) NOT NULL,
@@ -59,7 +76,7 @@ CREATE TABLE invoice_canonical (
 );
 
 -- 5. Indices for performance
-CREATE INDEX idx_user_companies_user ON user_companies(user_id);
-CREATE INDEX idx_user_companies_company ON user_companies(company_id);
-CREATE INDEX idx_clients_company ON clients(company_id);
-CREATE INDEX idx_invitations_company ON company_invitations(company_id);
+CREATE INDEX IF NOT EXISTS idx_user_companies_user ON user_companies(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_companies_company ON user_companies(company_id);
+CREATE INDEX IF NOT EXISTS idx_clients_company ON clients(company_id);
+CREATE INDEX IF NOT EXISTS idx_invitations_company ON company_invitations(company_id);
