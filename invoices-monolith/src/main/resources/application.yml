@@ -110,7 +110,7 @@ security:
   encryption:
     # SECURITY: AES-256 Key (Base64 encoded 32 bytes)
     # Generate with: openssl rand -base64 32
-    key: ${ENCRYPTION_KEY:c29tZS1yYW5kb20tc2VjcmV0LWtleS1mb3ItZGV2LW9ubHkh}
+    key: ${ENCRYPTION_KEY:MTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTI=}
 
 # S3 Configuration (Cloudflare R2 or any S3-compatible storage)
 s3:

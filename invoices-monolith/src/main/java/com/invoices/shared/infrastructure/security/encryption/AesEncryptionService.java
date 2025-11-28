@@ -23,7 +23,17 @@ public class AesEncryptionService implements EncryptionService {
     private final SecureRandom secureRandom;
 
     public AesEncryptionService(@Value("${security.encryption.key}") String base64Key) {
-        byte[] decodedKey = Base64.getDecoder().decode(base64Key);
+        byte[] decodedKey;
+        try {
+            decodedKey = Base64.getDecoder().decode(base64Key);
+        } catch (IllegalArgumentException e) {
+            // Try URL-safe decoder if standard fails
+            try {
+                decodedKey = Base64.getUrlDecoder().decode(base64Key);
+            } catch (IllegalArgumentException ex) {
+                throw new IllegalArgumentException("Invalid Base64 encryption key", ex);
+            }
+        }
         this.secretKey = new SecretKeySpec(decodedKey, "AES");
         this.secureRandom = new SecureRandom();
     }
