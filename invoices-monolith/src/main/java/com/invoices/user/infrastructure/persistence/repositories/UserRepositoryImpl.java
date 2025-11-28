@@ -45,6 +45,12 @@ public class UserRepositoryImpl implements UserRepository {
     }
 
     @Override
+    public org.springframework.data.domain.Page<User> findAll(org.springframework.data.domain.Pageable pageable) {
+        return jpaUserRepository.findAll(pageable)
+                .map(mapper::toDomainEntity);
+    }
+
+    @Override
     public User save(User user) {
         UserJpaEntity jpaEntity = mapper.toJpaEntity(user);
         UserJpaEntity savedEntity = jpaUserRepository.save(jpaEntity);

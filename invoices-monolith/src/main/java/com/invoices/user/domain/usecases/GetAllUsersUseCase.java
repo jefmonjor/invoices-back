@@ -17,11 +17,12 @@ public class GetAllUsersUseCase {
     }
 
     /**
-     * Execute the use case to get all users
+     * Execute the use case to get all users with pagination
      *
-     * @return list of all users
+     * @param pageable pagination information
+     * @return page of users
      */
-    public List<User> execute() {
-        return userRepository.findAll();
+    public org.springframework.data.domain.Page<User> execute(org.springframework.data.domain.Pageable pageable) {
+        return userRepository.findAll(pageable);
     }
 }

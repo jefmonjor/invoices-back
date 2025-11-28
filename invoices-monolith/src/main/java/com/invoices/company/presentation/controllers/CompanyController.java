@@ -32,6 +32,18 @@ public class CompanyController {
     private final CompanyManagementService companyManagementService;
     private final CompanyInvitationService companyInvitationService;
 
+    @GetMapping
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Get my companies", description = "Retrieves the list of companies the authenticated user belongs to.", responses = {
+            @ApiResponse(responseCode = "200", description = "Companies retrieved successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    public ResponseEntity<java.util.List<CompanyDto>> getUserCompanies(
+            @AuthenticationPrincipal UserDetails userDetails) {
+        var companies = companyManagementService.getUserCompanies(userDetails.getUsername());
+        return ResponseEntity.ok(companies);
+    }
+
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Create a new company", description = "**ADMIN only.** Creates an additional company and automatically assigns the authenticated user as ADMIN of the new company.", responses = {

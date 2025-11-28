@@ -36,6 +36,14 @@ public interface UserRepository {
     List<User> findAll();
 
     /**
+     * Find all users with pagination
+     *
+     * @param pageable pagination information
+     * @return page of users
+     */
+    org.springframework.data.domain.Page<User> findAll(org.springframework.data.domain.Pageable pageable);
+
+    /**
      * Save a user (create or update)
      *
      * @param user the user to save

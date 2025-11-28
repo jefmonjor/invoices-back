@@ -100,22 +100,22 @@ public class UserController {
         }
 
         @GetMapping
-        @Operation(summary = "Get all users", description = "Retrieves a list of all users. Available to all authenticated users.")
+        @Operation(summary = "Get all users", description = "Retrieves a paginated list of all users. Available to all authenticated users.")
         @ApiResponses(value = {
-                        @ApiResponse(responseCode = "200", description = "Users retrieved successfully", content = @Content(schema = @Schema(implementation = UserDTO.class))),
+                        @ApiResponse(responseCode = "200", description = "Users retrieved successfully", content = @Content(schema = @Schema(implementation = org.springframework.data.domain.Page.class))),
                         @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing token", content = @Content),
                         @ApiResponse(responseCode = "403", description = "Forbidden - Insufficient permissions", content = @Content)
         })
-        public ResponseEntity<List<UserDTO>> getAllUsers() {
-                log.info("GET /api/users - Fetching all users");
+        public ResponseEntity<org.springframework.data.domain.Page<UserDTO>> getAllUsers(
+                        @org.springdoc.core.annotations.ParameterObject org.springframework.data.domain.Pageable pageable) {
+                log.info("GET /api/users - Fetching all users (page: {}, size: {})", pageable.getPageNumber(),
+                                pageable.getPageSize());
 
-                List<User> users = getAllUsersUseCase.execute();
-                List<UserDTO> userDTOs = users.stream()
-                                .map(mapper::toDTO)
-                                .collect(Collectors.toList());
+                org.springframework.data.domain.Page<User> usersPage = getAllUsersUseCase.execute(pageable);
+                org.springframework.data.domain.Page<UserDTO> userDTOsPage = usersPage.map(mapper::toDTO);
 
-                log.info("Retrieved {} users", userDTOs.size());
-                return ResponseEntity.ok(userDTOs);
+                log.info("Retrieved {} users", userDTOsPage.getTotalElements());
+                return ResponseEntity.ok(userDTOsPage);
         }
 
         @GetMapping("/{id}")
