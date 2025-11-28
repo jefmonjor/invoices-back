@@ -1,0 +1,185 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] -------------------< com.invoices:invoices-monolith >-------------------
+[INFO] Building invoices-monolith 1.0.0
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- jacoco:0.8.11:prepare-agent (prepare-agent) @ invoices-monolith ---
+[INFO] argLine set to -javaagent:/Users/Jefferson/.m2/repository/org/jacoco/org.jacoco.agent/0.8.11/org.jacoco.agent-0.8.11-runtime.jar=destfile=/Users/Jefferson/Documents/proyecto/invoices-back/invoices-monolith/target/jacoco.exec
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ invoices-monolith ---
+[INFO] Copying 25 resources from src/main/resources to target/classes
+[INFO] 
+[INFO] --- compiler:3.13.0:compile (default-compile) @ invoices-monolith ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ invoices-monolith ---
+[INFO] Copying 3 resources from src/test/resources to target/test-classes
+[INFO] 
+[INFO] --- compiler:3.13.0:testCompile (default-testCompile) @ invoices-monolith ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- surefire:3.2.5:test (default-test) @ invoices-monolith ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running com.invoices.invoice.infrastructure.messaging.InvoiceStatusNotificationServiceIT
+Standard Commons Logging discovery in action with spring-jcl: please remove commons-logging.jar from classpath in order to avoid potential conflicts
+00:04:58.835 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.invoices.invoice.infrastructure.messaging.InvoiceStatusNotificationServiceIT]: InvoiceStatusNotificationServiceIT does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+00:04:59.026 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.invoices.InvoicesApplication for test class com.invoices.invoice.infrastructure.messaging.InvoiceStatusNotificationServiceIT
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.4.4)
+
+2025-11-27T00:04:59.576+01:00  INFO 5405 --- [invoices-monolith-test] [           main] i.i.m.InvoiceStatusNotificationServiceIT : Starting InvoiceStatusNotificationServiceIT using Java 21.0.6 with PID 5405 (started by Jefferson in /Users/Jefferson/Documents/proyecto/invoices-back/invoices-monolith)
+2025-11-27T00:04:59.577+01:00  INFO 5405 --- [invoices-monolith-test] [           main] i.i.m.InvoiceStatusNotificationServiceIT : The following 1 profile is active: "test"
+2025-11-27T00:05:01.294+01:00  INFO 5405 --- [invoices-monolith-test] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2025-11-27T00:05:01.296+01:00  INFO 5405 --- [invoices-monolith-test] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2025-11-27T00:05:01.468+01:00  INFO 5405 --- [invoices-monolith-test] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 163 ms. Found 9 JPA repository interfaces.
+2025-11-27T00:05:02.749+01:00  INFO 5405 --- [invoices-monolith-test] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8080 (http)
+2025-11-27T00:05:02.766+01:00  INFO 5405 --- [invoices-monolith-test] [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2025-11-27T00:05:02.766+01:00  INFO 5405 --- [invoices-monolith-test] [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.39]
+2025-11-27T00:05:02.823+01:00  INFO 5405 --- [invoices-monolith-test] [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2025-11-27T00:05:02.825+01:00  INFO 5405 --- [invoices-monolith-test] [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 3233 ms
+Standard Commons Logging discovery in action with spring-jcl: please remove commons-logging.jar from classpath in order to avoid potential conflicts
+Mockito is currently self-attaching to enable the inline-mock-maker. This will no longer work in future releases of the JDK. Please add Mockito as an agent to your build what is described in Mockito's documentation: https://javadoc.io/doc/org.mockito/mockito-core/latest/org/mockito/Mockito.html#0.3
+WARNING: A Java agent has been loaded dynamically (/Users/Jefferson/.m2/repository/net/bytebuddy/byte-buddy-agent/1.15.11/byte-buddy-agent-1.15.11.jar)
+WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning
+WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information
+WARNING: Dynamic loading of agents will be disallowed by default in a future release
+OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+2025-11-27T00:05:05.285+01:00  INFO 5405 --- [invoices-monolith-test] [           main] c.invoices.security.RateLimitingFilter   : Rate limiting filter initialized with limits: General=100/1 min, Auth=10/1 min
+2025-11-27T00:05:06.018+01:00  INFO 5405 --- [invoices-monolith-test] [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2025-11-27T00:05:06.217+01:00  INFO 5405 --- [invoices-monolith-test] [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.6.11.Final
+2025-11-27T00:05:06.314+01:00  INFO 5405 --- [invoices-monolith-test] [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2025-11-27T00:05:06.615+01:00  INFO 5405 --- [invoices-monolith-test] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2025-11-27T00:05:06.691+01:00  INFO 5405 --- [invoices-monolith-test] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2025-11-27T00:05:07.844+01:00  INFO 5405 --- [invoices-monolith-test] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection conn0: url=jdbc:h2:mem:testdb user=SA
+2025-11-27T00:05:07.851+01:00  INFO 5405 --- [invoices-monolith-test] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2025-11-27T00:05:07.906+01:00  WARN 5405 --- [invoices-monolith-test] [           main] org.hibernate.orm.deprecation            : HHH90000025: H2Dialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2025-11-27T00:05:07.944+01:00  INFO 5405 --- [invoices-monolith-test] [           main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [Connecting through datasource 'HikariDataSource (HikariPool-1)']
+	Database driver: undefined/unknown
+	Database version: 2.3.232
+	Autocommit mode: undefined/unknown
+	Isolation level: undefined/unknown
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2025-11-27T00:05:09.444+01:00  INFO 5405 --- [invoices-monolith-test] [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2025-11-27T00:05:09.524+01:00  INFO 5405 --- [invoices-monolith-test] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2025-11-27T00:05:10.426+01:00  INFO 5405 --- [invoices-monolith-test] [           main] o.s.d.j.r.query.QueryEnhancerFactory     : Hibernate is in classpath; If applicable, HQL parser will be used.
+2025-11-27T00:05:13.791+01:00  INFO 5405 --- [invoices-monolith-test] [           main] c.i.i.i.config.TaxRatesService           : Loaded IVA rate: Superreducido - 4.0%
+2025-11-27T00:05:13.791+01:00  INFO 5405 --- [invoices-monolith-test] [           main] c.i.i.i.config.TaxRatesService           : Loaded IVA rate: Reducido - 10.0%
+2025-11-27T00:05:13.791+01:00  INFO 5405 --- [invoices-monolith-test] [           main] c.i.i.i.config.TaxRatesService           : Loaded IVA rate: General - 21.0%
+2025-11-27T00:05:13.791+01:00  INFO 5405 --- [invoices-monolith-test] [           main] c.i.i.i.config.TaxRatesService           : Loaded RE: IVA 21.0% -> RE 5.2%
+2025-11-27T00:05:13.791+01:00  INFO 5405 --- [invoices-monolith-test] [           main] c.i.i.i.config.TaxRatesService           : Loaded RE: IVA 10.0% -> RE 1.4%
+2025-11-27T00:05:13.792+01:00  INFO 5405 --- [invoices-monolith-test] [           main] c.i.i.i.config.TaxRatesService           : Loaded RE: IVA 4.0% -> RE 0.5%
+2025-11-27T00:05:13.792+01:00  INFO 5405 --- [invoices-monolith-test] [           main] c.i.i.i.config.TaxRatesService           : Loaded IRPF rate: Retención profesional estándar - 15.0%
+2025-11-27T00:05:13.792+01:00  INFO 5405 --- [invoices-monolith-test] [           main] c.i.i.i.config.TaxRatesService           : Loaded IRPF rate: Retención reducida (nuevos autónomos) - 7.0%
+2025-11-27T00:05:13.792+01:00  INFO 5405 --- [invoices-monolith-test] [           main] c.i.i.i.config.TaxRatesService           : Loaded IRPF rate: Sin retención / exento - 0.0%
+2025-11-27T00:05:13.792+01:00  INFO 5405 --- [invoices-monolith-test] [           main] c.i.i.i.config.TaxRatesService           : Tax rates loaded successfully from tax_rates_2025.json
+2025-11-27T00:05:14.067+01:00  INFO 5405 --- [invoices-monolith-test] [           main] o.s.ws.soap.saaj.SaajSoapMessageFactory  : Creating SAAJ 1.3 MessageFactory with SOAP 1.1 Protocol
+2025-11-27T00:05:14.085+01:00  WARN 5405 --- [invoices-monolith-test] [           main] o.s.aop.framework.CglibAopProxy          : Unable to proxy interface-implementing method [public final void org.springframework.ws.client.core.support.WebServiceGatewaySupport.afterPropertiesSet() throws java.lang.Exception] because it is marked as final, consider using interface-based JDK proxies instead.
+2025-11-27T00:05:14.754+01:00  WARN 5405 --- [invoices-monolith-test] [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2025-11-27T00:05:14.986+01:00  WARN 5405 --- [invoices-monolith-test] [           main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with an AuthenticationProvider bean. UserDetailsService beans will not be used by Spring Security for automatically configuring username/password login. Consider removing the AuthenticationProvider bean. Alternatively, consider using the UserDetailsService in a manually instantiated DaoAuthenticationProvider. If the current configuration is intentional, to turn off this warning, increase the logging level of 'org.springframework.security.config.annotation.authentication.configuration.InitializeUserDetailsBeanManagerConfigurer' to ERROR
+2025-11-27T00:05:15.107+01:00  INFO 5405 --- [invoices-monolith-test] [           main] com.invoices.config.CorsConfig           : Configuring CORS for origins: *
+2025-11-27T00:05:15.108+01:00  INFO 5405 --- [invoices-monolith-test] [           main] com.invoices.config.CorsConfig           : CORS configured successfully - Allow credentials: true, Max age: 3600s
+2025-11-27T00:05:15.700+01:00  INFO 5405 --- [invoices-monolith-test] [           main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 2 endpoints beneath base path '/actuator'
+2025-11-27T00:05:15.744+01:00  INFO 5405 --- [invoices-monolith-test] [           main] com.invoices.security.SecurityConfig     : Configuring security filter chain
+2025-11-27T00:05:15.745+01:00  INFO 5405 --- [invoices-monolith-test] [           main] com.invoices.security.SecurityConfig     : Configuring CORS in Spring Security for origin patterns: *
+2025-11-27T00:05:15.746+01:00  INFO 5405 --- [invoices-monolith-test] [           main] com.invoices.security.SecurityConfig     : CORS configured - Allow credentials: true, Methods: *
+2025-11-27T00:05:15.786+01:00  INFO 5405 --- [invoices-monolith-test] [           main] com.invoices.security.SecurityConfig     : Security filter chain configured successfully
+2025-11-27T00:05:17.282+01:00  INFO 5405 --- [invoices-monolith-test] [           main] .w.s.a.s.AnnotationActionEndpointMapping : Supporting [WS-Addressing August 2004, WS-Addressing 1.0]
+2025-11-27T00:05:17.395+01:00  INFO 5405 --- [invoices-monolith-test] [           main] o.s.m.s.b.SimpleBrokerMessageHandler     : Starting...
+2025-11-27T00:05:17.396+01:00  INFO 5405 --- [invoices-monolith-test] [           main] o.s.m.s.b.SimpleBrokerMessageHandler     : BrokerAvailabilityEvent[available=true, SimpleBrokerMessageHandler [org.springframework.messaging.simp.broker.DefaultSubscriptionRegistry@75bba413]]
+2025-11-27T00:05:17.397+01:00  INFO 5405 --- [invoices-monolith-test] [           main] o.s.m.s.b.SimpleBrokerMessageHandler     : Started.
+2025-11-27T00:05:17.432+01:00  INFO 5405 --- [invoices-monolith-test] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8080 (http) with context path '/'
+2025-11-27T00:05:17.451+01:00  INFO 5405 --- [invoices-monolith-test] [           main] i.i.m.InvoiceStatusNotificationServiceIT : Started InvoiceStatusNotificationServiceIT in 18.252 seconds (process running for 19.655)
+2025-11-27T00:05:17.660+01:00  INFO 5405 --- [invoices-monolith-test] [nio-8080-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2025-11-27T00:05:17.660+01:00  INFO 5405 --- [invoices-monolith-test] [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2025-11-27T00:05:17.662+01:00  INFO 5405 --- [invoices-monolith-test] [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 1 ms
+[ERROR] Tests run: 3, Failures: 0, Errors: 3, Skipped: 0, Time elapsed: 19.12 s <<< FAILURE! -- in com.invoices.invoice.infrastructure.messaging.InvoiceStatusNotificationServiceIT
+[ERROR] com.invoices.invoice.infrastructure.messaging.InvoiceStatusNotificationServiceIT.shouldReceiveStatusNotification -- Time elapsed: 0.190 s <<< ERROR!
+java.util.concurrent.ExecutionException: jakarta.websocket.DeploymentException: The HTTP response from the server [200] did not permit the HTTP upgrade to WebSocket
+	at java.base/java.util.concurrent.CompletableFuture.reportGet(CompletableFuture.java:396)
+	at java.base/java.util.concurrent.CompletableFuture.get(CompletableFuture.java:2096)
+	at com.invoices.invoice.infrastructure.messaging.InvoiceStatusNotificationServiceIT.shouldReceiveStatusNotification(InvoiceStatusNotificationServiceIT.java:56)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+Caused by: jakarta.websocket.DeploymentException: The HTTP response from the server [200] did not permit the HTTP upgrade to WebSocket
+	at org.apache.tomcat.websocket.WsWebSocketContainer.connectToServerRecursive(WsWebSocketContainer.java:384)
+	at org.apache.tomcat.websocket.WsWebSocketContainer.connectToServer(WsWebSocketContainer.java:179)
+	at org.springframework.web.socket.client.standard.StandardWebSocketClient.lambda$executeInternal$0(StandardWebSocketClient.java:175)
+	at org.springframework.util.concurrent.FutureUtils.lambda$toSupplier$0(FutureUtils.java:74)
+	at java.base/java.util.concurrent.CompletableFuture$AsyncSupply.run(CompletableFuture.java:1768)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+
+[ERROR] com.invoices.invoice.infrastructure.messaging.InvoiceStatusNotificationServiceIT.shouldHandleMultipleSubscribers -- Time elapsed: 0.013 s <<< ERROR!
+java.util.concurrent.ExecutionException: jakarta.websocket.DeploymentException: The HTTP response from the server [200] did not permit the HTTP upgrade to WebSocket
+	at java.base/java.util.concurrent.CompletableFuture.reportGet(CompletableFuture.java:396)
+	at java.base/java.util.concurrent.CompletableFuture.get(CompletableFuture.java:2096)
+	at com.invoices.invoice.infrastructure.messaging.InvoiceStatusNotificationServiceIT.shouldHandleMultipleSubscribers(InvoiceStatusNotificationServiceIT.java:147)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+Caused by: jakarta.websocket.DeploymentException: The HTTP response from the server [200] did not permit the HTTP upgrade to WebSocket
+	at org.apache.tomcat.websocket.WsWebSocketContainer.connectToServerRecursive(WsWebSocketContainer.java:384)
+	at org.apache.tomcat.websocket.WsWebSocketContainer.connectToServer(WsWebSocketContainer.java:179)
+	at org.springframework.web.socket.client.standard.StandardWebSocketClient.lambda$executeInternal$0(StandardWebSocketClient.java:175)
+	at org.springframework.util.concurrent.FutureUtils.lambda$toSupplier$0(FutureUtils.java:74)
+	at java.base/java.util.concurrent.CompletableFuture$AsyncSupply.run(CompletableFuture.java:1768)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+
+[ERROR] com.invoices.invoice.infrastructure.messaging.InvoiceStatusNotificationServiceIT.shouldReceiveStatusWithTxNotification -- Time elapsed: 0.010 s <<< ERROR!
+java.util.concurrent.ExecutionException: jakarta.websocket.DeploymentException: The HTTP response from the server [200] did not permit the HTTP upgrade to WebSocket
+	at java.base/java.util.concurrent.CompletableFuture.reportGet(CompletableFuture.java:396)
+	at java.base/java.util.concurrent.CompletableFuture.get(CompletableFuture.java:2096)
+	at com.invoices.invoice.infrastructure.messaging.InvoiceStatusNotificationServiceIT.shouldReceiveStatusWithTxNotification(InvoiceStatusNotificationServiceIT.java:101)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+Caused by: jakarta.websocket.DeploymentException: The HTTP response from the server [200] did not permit the HTTP upgrade to WebSocket
+	at org.apache.tomcat.websocket.WsWebSocketContainer.connectToServerRecursive(WsWebSocketContainer.java:384)
+	at org.apache.tomcat.websocket.WsWebSocketContainer.connectToServer(WsWebSocketContainer.java:179)
+	at org.springframework.web.socket.client.standard.StandardWebSocketClient.lambda$executeInternal$0(StandardWebSocketClient.java:175)
+	at org.springframework.util.concurrent.FutureUtils.lambda$toSupplier$0(FutureUtils.java:74)
+	at java.base/java.util.concurrent.CompletableFuture$AsyncSupply.run(CompletableFuture.java:1768)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+
+[INFO] 
+[INFO] Results:
+[INFO] 
+[ERROR] Errors: 
+[ERROR]   InvoiceStatusNotificationServiceIT.shouldHandleMultipleSubscribers:147 » Execution jakarta.websocket.DeploymentException: The HTTP response from the server [200] did not permit the HTTP upgrade to WebSocket
+[ERROR]   InvoiceStatusNotificationServiceIT.shouldReceiveStatusNotification:56 » Execution jakarta.websocket.DeploymentException: The HTTP response from the server [200] did not permit the HTTP upgrade to WebSocket
+[ERROR]   InvoiceStatusNotificationServiceIT.shouldReceiveStatusWithTxNotification:101 » Execution jakarta.websocket.DeploymentException: The HTTP response from the server [200] did not permit the HTTP upgrade to WebSocket
+[INFO] 
+[ERROR] Tests run: 3, Failures: 0, Errors: 3, Skipped: 0
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  22.388 s
+[INFO] Finished at: 2025-11-27T00:05:18+01:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-surefire-plugin:3.2.5:test (default-test) on project invoices-monolith: 
+[ERROR] 
+[ERROR] Please refer to /Users/Jefferson/Documents/proyecto/invoices-back/invoices-monolith/target/surefire-reports for the individual test results.
+[ERROR] Please refer to dump files (if any exist) [date].dump, [date]-jvmRun[N].dump and [date].dumpstream.
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException

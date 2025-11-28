@@ -1,0 +1,167 @@
+package com.invoices.auth.application.services;
+
+import com.invoices.auth.domain.entities.PasswordResetToken;
+import com.invoices.auth.infrastructure.persistence.repositories.PasswordResetTokenRepository;
+import com.invoices.user.infrastructure.persistence.repositories.JpaUserRepository;
+import com.invoices.user.infrastructure.persistence.entities.UserJpaEntity;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+/**
+ * Service for password reset operations.
+ */
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class PasswordResetService {
+
+    private final PasswordResetTokenRepository tokenRepository;
+    private final JpaUserRepository jpaUserRepository;
+    private final JavaMailSender mailSender;
+    private final PasswordEncoder passwordEncoder;
+
+    @Value("${security.token.password-reset-expiration-hours:1}")
+    private int tokenExpirationHours;
+
+    @Value("${spring.mail.username}")
+    private String fromEmail;
+
+    @Value("${app.frontend-url:http://localhost:3000}")
+    private String frontendUrl;
+
+    /**
+     * Initiates a password reset by generating a token and sending an email.
+     *
+     * @param email the user's email
+     */
+    @Transactional
+    public void initiatePasswordReset(String email) {
+        log.info("Password reset requested for email: {}", email);
+
+        // Find user by email
+        var userOpt = jpaUserRepository.findByEmail(email);
+        if (userOpt.isEmpty()) {
+            // Don't reveal if email exists or not (security best practice)
+            log.warn("Password reset requested for non-existent email: {}", email);
+            return;
+        }
+
+        UserJpaEntity user = userOpt.get();
+
+        // Invalidate any existing tokens for this user
+        tokenRepository.deleteAllByUserId(user.getId());
+
+        // Generate new token
+        PasswordResetToken resetToken = PasswordResetToken.builder()
+                .userId(user.getId())
+                .token(UUID.randomUUID())
+                .expiresAt(LocalDateTime.now().plusHours(tokenExpirationHours))
+                .used(false)
+                .build();
+
+        tokenRepository.save(resetToken);
+
+        // Send email
+        sendPasswordResetEmail(user, resetToken.getToken());
+
+        log.info("Password reset token created for user ID: {}", user.getId());
+    }
+
+    /**
+     * Verifies if a reset token is valid.
+     *
+     * @param token the token to verify
+     * @return true if the token is valid
+     */
+    public boolean isTokenValid(UUID token) {
+        var tokenOpt = tokenRepository.findValidToken(token);
+        return tokenOpt.isPresent();
+    }
+
+    /**
+     * Resets the password using a valid token.
+     *
+     * @param token       the reset token
+     * @param newPassword the new password
+     * @throws IllegalArgumentException if token is invalid or expired
+     */
+    @Transactional
+    public void resetPassword(UUID token, String newPassword) {
+        log.info("Attempting to reset password with token: {}", token);
+
+        // Find and validate token
+        PasswordResetToken resetToken = tokenRepository.findValidToken(token)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid or expired reset token"));
+
+        // Find user
+        UserJpaEntity user = jpaUserRepository.findById(resetToken.getUserId())
+                .orElseThrow(() -> new IllegalStateException("User not found for reset token"));
+
+        // Update password
+        user.setPassword(passwordEncoder.encode(newPassword));
+        jpaUserRepository.save(user);
+
+        // Mark token as used
+        resetToken.setUsed(true);
+        tokenRepository.save(resetToken);
+
+        log.info("Password successfully reset for user ID: {}", user.getId());
+    }
+
+    /**
+     * Sends the password reset email to the user.
+     *
+     * @param user  the user
+     * @param token the reset token
+     */
+    private void sendPasswordResetEmail(UserJpaEntity user, UUID token) {
+        String resetUrl = frontendUrl + "/reset-password?token=" + token;
+
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(fromEmail);
+        message.setTo(user.getEmail());
+        message.setSubject("Password Reset Request - Invoices System");
+        message.setText(String.format(
+                "Hello %s,\n\n" +
+                        "You requested to reset your password. Please click the link below to reset your password:\n\n"
+                        +
+                        "%s\n\n" +
+                        "This link will expire in %d hour(s).\n\n" +
+                        "If you did not request this, please ignore this email and your password will remain unchanged.\n\n"
+                        +
+                        "Best regards,\n" +
+                        "Invoices System Team",
+                user.getFirstName(),
+                resetUrl,
+                tokenExpirationHours));
+
+        try {
+            mailSender.send(message);
+            log.info("Password reset email sent to: {}", user.getEmail());
+        } catch (Exception e) {
+            log.error("Failed to send password reset email to: {}", user.getEmail(), e);
+            throw new RuntimeException("Failed to send password reset email", e);
+        }
+    }
+
+    /**
+     * Cleanup job to delete expired and used tokens.
+     * Should be called periodically by a scheduled task.
+     */
+    @Transactional
+    public void cleanupExpiredTokens() {
+        int deletedCount = tokenRepository.deleteExpiredAndUsedTokens(LocalDateTime.now());
+        if (deletedCount > 0) {
+            log.info("Cleaned up {} expired/used password reset tokens", deletedCount);
+        }
+    }
+}
