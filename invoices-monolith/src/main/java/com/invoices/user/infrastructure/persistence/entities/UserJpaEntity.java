@@ -71,7 +71,7 @@ public class UserJpaEntity {
     private LocalDateTime lastLogin;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "platform_role", nullable = false)
+    @Column(name = "platform_role", nullable = false, length = 50)
     private PlatformRole platformRole = PlatformRole.REGULAR_USER;
 
     // Constructors
