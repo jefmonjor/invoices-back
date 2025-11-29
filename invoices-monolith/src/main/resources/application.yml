@@ -99,8 +99,8 @@ spring:
 
   # Mailgun Configuration
   mailgun:
-    domain: ${MAILGUN_DOMAIN:sandbox832c646181cd46038927c92abdfdfccf.mailgun.org}
-    api-key: ${MAILGUN_API_KEY:a9ca9818ee0761b225ce54aaf8b6ed0e-67edcffb-e50166fb}
+    domain: ${MAILGUN_DOMAIN}
+    api-key: ${MAILGUN_API_KEY}
     api-base: https://api.mailgun.net/v3
 
 
