@@ -52,7 +52,7 @@ class PlatformAdminServiceTest {
     void shouldGetAllCompanies() {
         // Given
         Company company = new Company(1L, "Test Corp", "123", "Addr", "City", "12345", "Prov", "Country", "Phone",
-                "email", "iban");
+                "email", "iban", null, null);
         when(companyRepository.findAll()).thenReturn(List.of(company));
 
         // When

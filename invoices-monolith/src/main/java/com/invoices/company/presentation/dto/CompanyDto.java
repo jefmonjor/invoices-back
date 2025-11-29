@@ -20,6 +20,9 @@ public class CompanyDto {
     private String province;
     private String phone;
     private String email;
+    private String iban;
+    private java.time.LocalDateTime createdAt;
+    private java.time.LocalDateTime updatedAt;
     private String role; // Role of the current user in this company
     private boolean isDefault;
 
@@ -34,6 +37,9 @@ public class CompanyDto {
                 .province(company.getProvince())
                 .phone(company.getPhone())
                 .email(company.getEmail())
+                .iban(company.getIban())
+                .createdAt(company.getCreatedAt())
+                .updatedAt(company.getUpdatedAt())
                 .build();
     }
 

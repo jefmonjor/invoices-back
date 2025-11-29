@@ -47,6 +47,8 @@ public class CompanyDtoMapper {
                 dto.getCountry(),
                 dto.getPhone(),
                 dto.getEmail(),
-                dto.getIban());
+                dto.getIban(),
+                null,
+                null);
     }
 }

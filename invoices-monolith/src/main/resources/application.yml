@@ -31,11 +31,12 @@ spring:
     password: ${DB_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
     hikari:
-      maximum-pool-size: 20
+      maximum-pool-size: 10
       minimum-idle: 2
-      connection-timeout: 10000
-      idle-timeout: 600000
-      max-lifetime: 1800000
+      connection-timeout: 20000
+      idle-timeout: 300000 # 5 minutes
+      max-lifetime: 600000 # 10 minutes (must be less than DB server timeout)
+      keepalive-time: 30000 # 30 seconds
       initialization-fail-timeout: 10000
       connection-test-query: SELECT 1
 

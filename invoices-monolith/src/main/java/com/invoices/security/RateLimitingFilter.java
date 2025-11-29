@@ -64,6 +64,12 @@ public class RateLimitingFilter implements Filter {
         String clientIp = getClientIp(httpRequest);
         String requestPath = httpRequest.getRequestURI();
 
+        // Skip rate limiting for OPTIONS requests (CORS preflight)
+        if ("OPTIONS".equalsIgnoreCase(httpRequest.getMethod())) {
+            chain.doFilter(request, response);
+            return;
+        }
+
         // Check if it's an auth endpoint
         boolean isAuthEndpoint = requestPath.startsWith("/api/auth/");
 

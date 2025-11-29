@@ -63,18 +63,26 @@ public class CompanyManagementService {
 
     public List<com.invoices.company.presentation.dto.CompanyDto> getUserCompanies(String username) {
         User user = userRepository.findByEmail(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new RuntimeException("User not found: " + username));
 
         List<UserCompany> userCompanies = userCompanyRepository.findByIdUserId(user.getId());
 
         return userCompanies.stream()
                 .map(uc -> {
-                    Company company = companyRepository.findById(uc.getId().getCompanyId())
-                            .orElseThrow(() -> new RuntimeException("Company not found"));
+                    Optional<Company> companyOpt = companyRepository.findById(uc.getId().getCompanyId());
+                    if (companyOpt.isEmpty()) {
+                        // Log warning but don't crash the entire request
+                        // This indicates data inconsistency (orphaned user_company record)
+                        System.err.println("WARNING: Data inconsistency found. UserCompany record exists for companyId "
+                                + uc.getId().getCompanyId() + " but Company entity is missing.");
+                        return null;
+                    }
+                    Company company = companyOpt.get();
                     boolean isDefault = company.getId().equals(user.getCurrentCompanyId());
                     return com.invoices.company.presentation.dto.CompanyDto.fromEntity(company, uc.getRole(),
                             isDefault);
                 })
+                .filter(java.util.Objects::nonNull)
                 .collect(java.util.stream.Collectors.toList());
     }
 

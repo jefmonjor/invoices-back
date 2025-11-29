@@ -2,7 +2,6 @@ package com.invoices.shared.infrastructure.mail;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
@@ -70,7 +69,7 @@ public class MailgunEmailService {
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                 .bodyValue(form)
                 .retrieve()
-                .onStatus(HttpStatus::isError, resp -> resp.bodyToMono(String.class)
+                .onStatus(org.springframework.http.HttpStatusCode::isError, resp -> resp.bodyToMono(String.class)
                         .flatMap(body -> {
                             log.error("Mailgun API error: {}", body);
                             return Mono.error(new RuntimeException("Mailgun error: " + body));

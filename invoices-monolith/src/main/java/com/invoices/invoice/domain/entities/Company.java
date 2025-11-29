@@ -25,6 +25,9 @@ public class Company {
     @ValidIban
     private final String iban; // IBAN para pagos
 
+    private final java.time.LocalDateTime createdAt;
+    private final java.time.LocalDateTime updatedAt;
+
     public Company(
             Long id,
             String businessName,
@@ -36,7 +39,7 @@ public class Company {
             String phone,
             String email,
             String iban) {
-        this(id, businessName, taxId, address, city, postalCode, province, "España", phone, email, iban);
+        this(id, businessName, taxId, address, city, postalCode, province, "España", phone, email, iban, null, null);
     }
 
     public Company(
@@ -50,7 +53,9 @@ public class Company {
             String country,
             String phone,
             String email,
-            String iban) {
+            String iban,
+            java.time.LocalDateTime createdAt,
+            java.time.LocalDateTime updatedAt) {
         validateMandatoryFields(businessName, taxId);
 
         this.id = id;
@@ -64,6 +69,8 @@ public class Company {
         this.phone = phone;
         this.email = email;
         this.iban = iban;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
     }
 
     private void validateMandatoryFields(String businessName, String taxId) {
@@ -145,6 +152,14 @@ public class Company {
         return iban;
     }
 
+    public java.time.LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public java.time.LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
     public Company withDetails(
             String businessName,
             String address,
@@ -164,6 +179,8 @@ public class Company {
                 this.country,
                 phone,
                 email,
-                this.iban);
+                this.iban,
+                this.createdAt,
+                this.updatedAt);
     }
 }

@@ -27,7 +27,9 @@ public class CompanyJpaMapper {
                 jpaEntity.getCountry(),
                 jpaEntity.getPhone(),
                 jpaEntity.getEmail(),
-                jpaEntity.getIban());
+                jpaEntity.getIban(),
+                jpaEntity.getCreatedAt(),
+                jpaEntity.getUpdatedAt());
     }
 
     public CompanyJpaEntity toJpaEntity(Company domain) {
