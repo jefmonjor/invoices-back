@@ -8,10 +8,9 @@ import com.invoices.company.application.services.CompanyManagementService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -19,7 +18,6 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Set;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -33,27 +31,27 @@ public class UserPaginationTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean
+    @MockitoBean
     private CreateUserUseCase createUserUseCase;
-    @MockBean
+    @MockitoBean
     private GetAllUsersUseCase getAllUsersUseCase;
-    @MockBean
+    @MockitoBean
     private GetUserByIdUseCase getUserByIdUseCase;
-    @MockBean
+    @MockitoBean
     private GetUserByEmailUseCase getUserByEmailUseCase;
-    @MockBean
+    @MockitoBean
     private UpdateUserUseCase updateUserUseCase;
-    @MockBean
+    @MockitoBean
     private DeleteUserUseCase deleteUserUseCase;
-    @MockBean
+    @MockitoBean
     private UserDtoMapper mapper;
-    @MockBean
+    @MockitoBean
     private CompanyManagementService companyManagementService;
-    @MockBean
+    @MockitoBean
     private com.invoices.security.JwtAuthenticationFilter jwtAuthenticationFilter;
-    @MockBean
+    @MockitoBean
     private org.springframework.security.core.userdetails.UserDetailsService userDetailsService;
-    @MockBean
+    @MockitoBean
     private com.invoices.security.JwtUtil jwtUtil;
 
     @Test

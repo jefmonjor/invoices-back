@@ -23,7 +23,7 @@ import static org.mockito.Mockito.verify;
  * embedded containers.
  */
 @ExtendWith(MockitoExtension.class)
-@SuppressWarnings({ "unchecked", "rawtypes" }) // ArgumentCaptor with Map generics
+@SuppressWarnings({ "unchecked" }) // ArgumentCaptor with Map generics
 class InvoiceStatusNotificationServiceTest {
 
         @Mock

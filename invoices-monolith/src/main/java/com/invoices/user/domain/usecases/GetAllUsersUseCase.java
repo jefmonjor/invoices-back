@@ -3,8 +3,6 @@ package com.invoices.user.domain.usecases;
 import com.invoices.user.domain.entities.User;
 import com.invoices.user.domain.ports.UserRepository;
 
-import java.util.List;
-
 /**
  * Use case for retrieving all users.
  */
