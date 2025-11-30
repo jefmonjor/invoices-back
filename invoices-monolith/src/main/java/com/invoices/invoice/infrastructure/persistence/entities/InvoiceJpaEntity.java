@@ -61,6 +61,27 @@ public class InvoiceJpaEntity {
     @Column(name = "status", length = 20, nullable = false)
     private String status;
 
+    @Column(name = "is_rectificativa", nullable = false)
+    private boolean isRectificativa = false;
+
+    @Column(name = "rectifies_invoice_id")
+    private Long rectifiesInvoiceId;
+
+    @Column(name = "hash", length = 128)
+    private String hash;
+
+    @Column(name = "last_hash_before", length = 128)
+    private String lastHashBefore;
+
+    @Column(name = "csv_acuse", length = 200)
+    private String csvAcuse;
+
+    @Column(name = "qr_data", columnDefinition = "TEXT")
+    private String qrData;
+
+    @Column(name = "xml_content", columnDefinition = "TEXT")
+    private String xmlContent;
+
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
 
@@ -234,6 +255,62 @@ public class InvoiceJpaEntity {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public boolean isRectificativa() {
+        return isRectificativa;
+    }
+
+    public void setRectificativa(boolean rectificativa) {
+        isRectificativa = rectificativa;
+    }
+
+    public Long getRectifiesInvoiceId() {
+        return rectifiesInvoiceId;
+    }
+
+    public void setRectifiesInvoiceId(Long rectifiesInvoiceId) {
+        this.rectifiesInvoiceId = rectifiesInvoiceId;
+    }
+
+    public String getHash() {
+        return hash;
+    }
+
+    public void setHash(String hash) {
+        this.hash = hash;
+    }
+
+    public String getLastHashBefore() {
+        return lastHashBefore;
+    }
+
+    public void setLastHashBefore(String lastHashBefore) {
+        this.lastHashBefore = lastHashBefore;
+    }
+
+    public String getCsvAcuse() {
+        return csvAcuse;
+    }
+
+    public void setCsvAcuse(String csvAcuse) {
+        this.csvAcuse = csvAcuse;
+    }
+
+    public String getQrData() {
+        return qrData;
+    }
+
+    public void setQrData(String qrData) {
+        this.qrData = qrData;
+    }
+
+    public String getXmlContent() {
+        return xmlContent;
+    }
+
+    public void setXmlContent(String xmlContent) {
+        this.xmlContent = xmlContent;
     }
 
     public String getNotes() {

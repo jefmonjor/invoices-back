@@ -1,6 +1,5 @@
 package com.invoices.user.presentation.controllers;
 
-import com.invoices.auth.application.services.PasswordResetService;
 import com.invoices.company.application.services.CompanyInvitationService;
 import com.invoices.company.application.services.CompanyManagementService;
 import com.invoices.invoice.domain.entities.Company;
@@ -11,9 +10,8 @@ import com.invoices.user.domain.usecases.CreateUserUseCase;
 import com.invoices.user.domain.usecases.UpdateUserLastLoginUseCase;
 import com.invoices.user.presentation.dto.AuthResponse;
 import com.invoices.user.presentation.dto.CreateUserRequest;
-import com.invoices.user.presentation.dto.ForgotPasswordRequest;
 import com.invoices.user.presentation.dto.LoginRequest;
-import com.invoices.user.presentation.dto.ResetPasswordRequest;
+
 import com.invoices.user.presentation.mappers.UserDtoMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -27,7 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.GetMapping;
+
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -51,7 +49,7 @@ public class AuthController {
         private final UpdateUserLastLoginUseCase updateUserLastLoginUseCase;
         private final CompanyManagementService companyManagementService;
         private final CompanyInvitationService companyInvitationService;
-        private final PasswordResetService passwordResetService;
+
         private final JwtUtil jwtUtil;
         private final UserDtoMapper userDtoMapper;
 
@@ -159,56 +157,41 @@ public class AuthController {
         }
 
         /**
-         * Initiates the password reset process.
+         * Switches the current company context for the authenticated user.
          *
-         * @param request the forgot password request containing email
-         * @return response entity
+         * @param companyId the target company ID
+         * @return authentication response with new JWT token
          */
-        @PostMapping("/forgot-password")
-        @Operation(summary = "Request password reset", description = "Sends a password reset email if the account exists")
+        @PostMapping("/switch-company/{companyId}")
+        @Operation(summary = "Switch company", description = "Switches the current company context and returns a new JWT token")
         @ApiResponses(value = {
-                        @ApiResponse(responseCode = "200", description = "Email sent (or simulated if user not found)", content = @Content),
-                        @ApiResponse(responseCode = "400", description = "Validation error", content = @Content)
+                        @ApiResponse(responseCode = "200", description = "Company switched successfully", content = @Content(schema = @Schema(implementation = AuthResponse.class))),
+                        @ApiResponse(responseCode = "400", description = "Invalid company ID", content = @Content),
+                        @ApiResponse(responseCode = "403", description = "User does not belong to the company", content = @Content)
         })
-        public ResponseEntity<Void> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
-                log.info("POST /api/auth/forgot-password - Request for: {}", request.getEmail());
-                passwordResetService.initiatePasswordReset(request.getEmail());
-                // Always return 200 OK to prevent email enumeration
-                return ResponseEntity.ok().build();
-        }
+        public ResponseEntity<AuthResponse> switchCompany(@PathVariable Long companyId) {
+                String email = org.springframework.security.core.context.SecurityContextHolder.getContext()
+                                .getAuthentication().getName();
+                log.info("POST /api/auth/switch-company/{} - User: {}", companyId, email);
 
-        /**
-         * Resets the password using a token.
-         *
-         * @param request the reset password request containing token and new password
-         * @return response entity
-         */
-        @PostMapping("/reset-password")
-        @Operation(summary = "Reset password", description = "Resets the password using a valid token")
-        @ApiResponses(value = {
-                        @ApiResponse(responseCode = "200", description = "Password reset successfully", content = @Content),
-                        @ApiResponse(responseCode = "400", description = "Invalid token or password", content = @Content)
-        })
-        public ResponseEntity<Void> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
-                log.info("POST /api/auth/reset-password - Reset attempt with token");
-                passwordResetService.resetPassword(request.getToken(), request.getNewPassword());
-                return ResponseEntity.ok().build();
-        }
+                // Update user's current company in DB
+                companyManagementService.switchCompany(email, companyId);
 
-        /**
-         * Verifies if a reset token is valid.
-         *
-         * @param token the token to verify
-         * @return response entity with validity status
-         */
-        @GetMapping("/verify-reset-token/{token}")
-        @Operation(summary = "Verify reset token", description = "Checks if a password reset token is valid")
-        @ApiResponses(value = {
-                        @ApiResponse(responseCode = "200", description = "Token verification result", content = @Content)
-        })
-        public ResponseEntity<java.util.Map<String, Boolean>> verifyResetToken(@PathVariable java.util.UUID token) {
-                log.info("GET /api/auth/verify-reset-token/{}", token);
-                boolean isValid = passwordResetService.isTokenValid(token);
-                return ResponseEntity.ok(java.util.Map.of("valid", isValid));
+                // Fetch updated user to generate new token
+                User updatedUser = companyManagementService.getUserByEmail(email)
+                                .orElseThrow(() -> new RuntimeException("User not found after switch"));
+
+                // Generate new JWT token with updated companyId
+                String token = jwtUtil.generateToken(updatedUser.getEmail(), updatedUser.getRoles(),
+                                updatedUser.getCurrentCompanyId());
+
+                AuthResponse response = AuthResponse.builder()
+                                .token(token)
+                                .expiresIn(jwtUtil.getExpirationTime())
+                                .user(userDtoMapper.toDTO(updatedUser))
+                                .build();
+
+                log.info("Company switched successfully for user: {}", email);
+                return ResponseEntity.ok(response);
         }
 }

@@ -1,6 +1,6 @@
 package com.invoices.invoice.domain.usecases;
 
-import com.invoices.invoice.domain.entities.Invoice;
+import com.invoices.invoice.domain.models.InvoiceSummary;
 import com.invoices.invoice.domain.ports.InvoiceRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,109 +38,109 @@ class GetAllInvoicesUseCaseTest {
     void shouldReturnAllInvoicesForCompany() {
         // Arrange
         Long companyId = 1L;
-        List<Invoice> expectedInvoices = Arrays.asList(
-                createTestInvoice(1L, "2025-001"),
-                createTestInvoice(2L, "2025-002"),
-                createTestInvoice(3L, "2025-003"));
+        List<InvoiceSummary> expectedInvoices = Arrays.asList(
+                createTestInvoiceSummary(1L, "2025-001"),
+                createTestInvoiceSummary(2L, "2025-002"),
+                createTestInvoiceSummary(3L, "2025-003"));
 
-        when(invoiceRepository.findByCompanyId(companyId)).thenReturn(expectedInvoices);
+        when(invoiceRepository.findSummariesByCompanyId(companyId)).thenReturn(expectedInvoices);
 
         // Act
-        List<Invoice> result = useCase.execute(companyId);
+        List<InvoiceSummary> result = useCase.execute(companyId);
 
         // Assert
         assertThat(result).isNotNull();
         assertThat(result).hasSize(3);
         assertThat(result).containsExactlyElementsOf(expectedInvoices);
 
-        verify(invoiceRepository, times(1)).findByCompanyId(companyId);
+        verify(invoiceRepository, times(1)).findSummariesByCompanyId(companyId);
     }
 
     @Test
     void shouldReturnEmptyListWhenNoInvoices() {
         // Arrange
         Long companyId = 1L;
-        List<Invoice> emptyList = new ArrayList<>();
+        List<InvoiceSummary> emptyList = new ArrayList<>();
 
-        when(invoiceRepository.findByCompanyId(companyId)).thenReturn(emptyList);
+        when(invoiceRepository.findSummariesByCompanyId(companyId)).thenReturn(emptyList);
 
         // Act
-        List<Invoice> result = useCase.execute(companyId);
+        List<InvoiceSummary> result = useCase.execute(companyId);
 
         // Assert
         assertThat(result).isNotNull();
         assertThat(result).isEmpty();
 
-        verify(invoiceRepository, times(1)).findByCompanyId(companyId);
+        verify(invoiceRepository, times(1)).findSummariesByCompanyId(companyId);
     }
 
     @Test
     void shouldReturnSingleInvoice() {
         // Arrange
         Long companyId = 1L;
-        List<Invoice> singleInvoice = Arrays.asList(
-                createTestInvoice(1L, "2025-001"));
+        List<InvoiceSummary> singleInvoice = Arrays.asList(
+                createTestInvoiceSummary(1L, "2025-001"));
 
-        when(invoiceRepository.findByCompanyId(companyId)).thenReturn(singleInvoice);
+        when(invoiceRepository.findSummariesByCompanyId(companyId)).thenReturn(singleInvoice);
 
         // Act
-        List<Invoice> result = useCase.execute(companyId);
+        List<InvoiceSummary> result = useCase.execute(companyId);
 
         // Assert
         assertThat(result).isNotNull();
         assertThat(result).hasSize(1);
-        assertThat(result.get(0).getId()).isEqualTo(1L);
-        assertThat(result.get(0).getInvoiceNumber()).isEqualTo("2025-001");
+        assertThat(result.get(0).id()).isEqualTo(1L);
+        assertThat(result.get(0).invoiceNumber()).isEqualTo("2025-001");
 
-        verify(invoiceRepository, times(1)).findByCompanyId(companyId);
+        verify(invoiceRepository, times(1)).findSummariesByCompanyId(companyId);
     }
 
     @Test
     void shouldReturnLargeListOfInvoices() {
         // Arrange
         Long companyId = 1L;
-        List<Invoice> manyInvoices = new ArrayList<>();
+        List<InvoiceSummary> manyInvoices = new ArrayList<>();
         for (int i = 1; i <= 100; i++) {
-            manyInvoices.add(createTestInvoice((long) i, "2025-" + String.format("%03d", i)));
+            manyInvoices.add(createTestInvoiceSummary((long) i, "2025-" + String.format("%03d", i)));
         }
 
-        when(invoiceRepository.findByCompanyId(companyId)).thenReturn(manyInvoices);
+        when(invoiceRepository.findSummariesByCompanyId(companyId)).thenReturn(manyInvoices);
 
         // Act
-        List<Invoice> result = useCase.execute(companyId);
+        List<InvoiceSummary> result = useCase.execute(companyId);
 
         // Assert
         assertThat(result).isNotNull();
         assertThat(result).hasSize(100);
 
-        verify(invoiceRepository, times(1)).findByCompanyId(companyId);
+        verify(invoiceRepository, times(1)).findSummariesByCompanyId(companyId);
     }
 
     @Test
     void shouldCallRepositoryExactlyOnce() {
         // Arrange
         Long companyId = 1L;
-        List<Invoice> invoices = Arrays.asList(
-                createTestInvoice(1L, "2025-001"));
+        List<InvoiceSummary> invoices = Arrays.asList(
+                createTestInvoiceSummary(1L, "2025-001"));
 
-        when(invoiceRepository.findByCompanyId(companyId)).thenReturn(invoices);
+        when(invoiceRepository.findSummariesByCompanyId(companyId)).thenReturn(invoices);
 
         // Act
         useCase.execute(companyId);
 
         // Assert
-        verify(invoiceRepository, times(1)).findByCompanyId(companyId);
+        verify(invoiceRepository, times(1)).findSummariesByCompanyId(companyId);
         verifyNoMoreInteractions(invoiceRepository);
     }
 
-    private Invoice createTestInvoice(Long id, String invoiceNumber) {
-        return new Invoice(
+    private InvoiceSummary createTestInvoiceSummary(Long id, String invoiceNumber) {
+        return new InvoiceSummary(
                 id,
-                1L,
-                2L,
                 invoiceNumber,
                 LocalDateTime.now(),
-                new BigDecimal("15.00"),
-                new BigDecimal("5.00"));
+                new BigDecimal("20.00"),
+                "DRAFT",
+                2L,
+                1L);
     }
 }

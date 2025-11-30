@@ -5,11 +5,16 @@ import com.invoices.invoice.domain.entities.Company;
 import com.invoices.invoice.domain.entities.Invoice;
 import com.invoices.invoice.domain.entities.InvoiceItem;
 import com.invoices.invoice.domain.exceptions.InvoiceNotFoundException;
+import com.invoices.invoice.domain.models.InvoiceSummary;
 import com.invoices.invoice.domain.ports.ClientRepository;
 import com.invoices.invoice.domain.ports.CompanyRepository;
 import com.invoices.invoice.domain.ports.InvoiceRepository;
+import com.invoices.invoice.domain.usecases.CreateInvoiceUseCase;
+import com.invoices.invoice.domain.usecases.DeleteInvoiceUseCase;
+import com.invoices.invoice.domain.usecases.GetAllInvoicesUseCase;
+import com.invoices.invoice.domain.usecases.GetInvoiceByIdUseCase;
+import com.invoices.invoice.domain.usecases.UpdateInvoiceUseCase;
 import com.invoices.invoice.domain.ports.PdfGenerator;
-import com.invoices.invoice.domain.usecases.*;
 import com.invoices.invoice.dto.CreateInvoiceItemRequest;
 import com.invoices.invoice.dto.CreateInvoiceRequest;
 import com.invoices.invoice.dto.InvoiceDTO;
@@ -76,10 +81,11 @@ public class InvoiceController {
      */
     @GetMapping
     public ResponseEntity<List<InvoiceDTO>> getAllInvoices() {
+        checkPlatformAdminAccess();
         Long companyId = com.invoices.security.context.CompanyContext.getCompanyId();
-        List<Invoice> invoices = getAllInvoicesUseCase.execute(companyId);
+        List<InvoiceSummary> invoices = getAllInvoicesUseCase.execute(companyId);
         List<InvoiceDTO> dtos = invoices.stream()
-                .map(dtoMapper::toDto)
+                .map(dtoMapper::toSummaryDto)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(dtos);
     }
@@ -89,6 +95,7 @@ public class InvoiceController {
      */
     @PostMapping
     public ResponseEntity<InvoiceDTO> createInvoice(@Valid @RequestBody CreateInvoiceRequest request) {
+        checkPlatformAdminAccess();
         // Convert DTO items to domain InvoiceItems
         List<InvoiceItem> items = request.getItems().stream()
                 .map(this::toDomainItem)
@@ -114,6 +121,7 @@ public class InvoiceController {
      */
     @GetMapping("/{id}")
     public ResponseEntity<InvoiceDTO> getInvoiceById(@PathVariable Long id) {
+        checkPlatformAdminAccess();
         Invoice invoice = getInvoiceByIdUseCase.execute(id);
         InvoiceDTO dto = dtoMapper.toDto(invoice);
         return ResponseEntity.ok(dto);
@@ -389,5 +397,15 @@ public class InvoiceController {
             return 5L; // 5 seconds estimated
         }
         return null;
+    }
+
+    private void checkPlatformAdminAccess() {
+        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
+                .getContext().getAuthentication();
+        if (auth != null && auth.getAuthorities().contains(
+                new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_PLATFORM_ADMIN"))) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "Platform Admins cannot access business data");
+        }
     }
 }

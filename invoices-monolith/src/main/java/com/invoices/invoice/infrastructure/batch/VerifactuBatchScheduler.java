@@ -2,7 +2,7 @@ package com.invoices.invoice.infrastructure.batch;
 
 import com.invoices.invoice.dto.BatchSummary;
 import com.invoices.invoice.infrastructure.persistence.repositories.JpaInvoiceRepository;
-import com.invoices.invoice.infrastructure.services.EmailService;
+import com.invoices.invoice.infrastructure.services.SmtpEmailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -28,7 +28,7 @@ public class VerifactuBatchScheduler {
 
     private final JpaInvoiceRepository invoiceRepository;
     private final RedisTemplate<String, Object> redisTemplate;
-    private final EmailService emailService;
+    private final SmtpEmailService emailService;
 
     /**
      * Scheduled task to retry failed verifications

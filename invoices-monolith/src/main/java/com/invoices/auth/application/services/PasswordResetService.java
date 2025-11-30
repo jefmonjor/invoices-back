@@ -2,7 +2,7 @@ package com.invoices.auth.application.services;
 
 import com.invoices.auth.domain.entities.PasswordResetToken;
 import com.invoices.auth.infrastructure.persistence.repositories.PasswordResetTokenRepository;
-import com.invoices.shared.infrastructure.mail.MailgunEmailService;
+import com.invoices.shared.domain.ports.EmailService;
 import com.invoices.user.infrastructure.persistence.repositories.JpaUserRepository;
 import com.invoices.user.infrastructure.persistence.entities.UserJpaEntity;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +25,7 @@ public class PasswordResetService {
 
     private final PasswordResetTokenRepository tokenRepository;
     private final JpaUserRepository jpaUserRepository;
-    private final MailgunEmailService emailService;
+    private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
 
     @Value("${security.token.password-reset-expiration-hours:1}")
@@ -117,10 +117,12 @@ public class PasswordResetService {
      * @param token the reset token
      */
     private void sendPasswordResetEmail(UserJpaEntity user, String token) {
-        emailService.sendPasswordReset(user.getEmail(), token)
-                .subscribe(
-                        null, // onSuccess
-                        error -> log.error("Failed to send password reset email to: {}", user.getEmail(), error));
+        String resetUrl = "http://localhost:3000/reset-password?token=" + token; // TODO: Use configured frontend URL
+
+        java.util.Map<String, Object> variables = new java.util.HashMap<>();
+        variables.put("resetUrl", resetUrl);
+
+        emailService.sendHtmlEmail(user.getEmail(), "Restablece tu contraseña", "reset-password", variables);
     }
 
     /**

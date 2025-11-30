@@ -1,6 +1,6 @@
 package com.invoices.invoice.domain.usecases;
 
-import com.invoices.invoice.domain.entities.Invoice;
+import com.invoices.invoice.domain.models.InvoiceSummary;
 import com.invoices.invoice.domain.ports.InvoiceRepository;
 
 import java.util.List;
@@ -17,7 +17,7 @@ public class GetAllInvoicesUseCase {
         this.invoiceRepository = invoiceRepository;
     }
 
-    public List<Invoice> execute(Long companyId) {
-        return invoiceRepository.findByCompanyId(companyId);
+    public List<InvoiceSummary> execute(Long companyId) {
+        return invoiceRepository.findSummariesByCompanyId(companyId);
     }
 }

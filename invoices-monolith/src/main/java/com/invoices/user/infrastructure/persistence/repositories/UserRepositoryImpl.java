@@ -51,6 +51,13 @@ public class UserRepositoryImpl implements UserRepository {
     }
 
     @Override
+    public org.springframework.data.domain.Page<User> findAllByCompanyId(Long companyId,
+            org.springframework.data.domain.Pageable pageable) {
+        return jpaUserRepository.findByCompanyId(companyId, pageable)
+                .map(mapper::toDomainEntity);
+    }
+
+    @Override
     public User save(User user) {
         UserJpaEntity jpaEntity = mapper.toJpaEntity(user);
         UserJpaEntity savedEntity = jpaUserRepository.save(jpaEntity);

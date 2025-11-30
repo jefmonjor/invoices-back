@@ -28,6 +28,9 @@ public class CompanyJpaMapper {
                 jpaEntity.getPhone(),
                 jpaEntity.getEmail(),
                 jpaEntity.getIban(),
+                jpaEntity.getLastHash(),
+                jpaEntity.getCertRef(),
+                jpaEntity.getCertPassword(),
                 jpaEntity.getCreatedAt(),
                 jpaEntity.getUpdatedAt());
     }
@@ -49,6 +52,9 @@ public class CompanyJpaMapper {
         jpaEntity.setPhone(domain.getPhone());
         jpaEntity.setEmail(domain.getEmail());
         jpaEntity.setIban(domain.getIban());
+        jpaEntity.setLastHash(domain.getLastHash());
+        jpaEntity.setCertRef(domain.getCertRef());
+        jpaEntity.setCertPassword(domain.getCertPassword());
 
         return jpaEntity;
     }

@@ -1,0 +1,12 @@
+package com.invoices.shared.infrastructure.persistence;
+
+import com.invoices.shared.domain.entities.FeatureFlag;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.Optional;
+
+@Repository
+public interface FeatureFlagRepository extends JpaRepository<FeatureFlag, Long> {
+    Optional<FeatureFlag> findByFeatureName(String featureName);
+}

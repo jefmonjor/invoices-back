@@ -1,6 +1,7 @@
 package com.invoices.invoice.domain.ports;
 
 import com.invoices.invoice.domain.entities.Invoice;
+import com.invoices.invoice.domain.models.InvoiceSummary;
 
 import java.util.List;
 import java.util.Optional;
@@ -31,6 +32,8 @@ public interface InvoiceRepository {
     Optional<String> findLastInvoiceNumberByCompanyAndYear(Long companyId, int year);
 
     List<Invoice> findByCompanyId(Long companyId);
+
+    List<InvoiceSummary> findSummariesByCompanyId(Long companyId);
 
     long countByCompanyId(Long companyId);
 

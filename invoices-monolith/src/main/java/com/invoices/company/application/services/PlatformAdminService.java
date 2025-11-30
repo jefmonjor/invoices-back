@@ -8,6 +8,9 @@ import com.invoices.company.presentation.dto.CompanyMetricsDto;
 import com.invoices.invoice.domain.ports.CompanyRepository;
 import com.invoices.invoice.domain.ports.InvoiceRepository;
 import com.invoices.security.utils.SecurityUtils;
+import com.invoices.user.domain.ports.UserRepository;
+import com.invoices.user.presentation.dto.UserDTO;
+import com.invoices.user.presentation.mappers.UserDtoMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -30,6 +33,8 @@ public class PlatformAdminService {
     private final InvoiceRepository invoiceRepository;
     private final UserCompanyRepository userCompanyRepository;
     private final PlatformAdminAuditLogRepository auditLogRepository;
+    private final UserRepository userRepository;
+    private final UserDtoMapper userDtoMapper;
 
     /**
      * Get all companies in the platform.
@@ -116,5 +121,50 @@ public class PlatformAdminService {
         metrics.setPendingRevenue(java.math.BigDecimal.ZERO);
 
         return metrics;
+    }
+
+    /**
+     * Get all users in the platform.
+     *
+     * @return list of all users
+     */
+    @Transactional(readOnly = true)
+    public List<UserDTO> getAllUsers() {
+        SecurityUtils.requirePlatformAdmin();
+        // Note: We need a UserRepository here. Assuming it's available or we need to
+        // add it.
+        // Let's assume we can inject it. If not, we'll need to add the dependency.
+        // Since we don't have the repository injected yet, let's add it.
+        return userRepository.findAll().stream()
+                .map(userDtoMapper::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Delete (deactivate) a user.
+     *
+     * @param userId the user ID
+     */
+    @Transactional
+    public void deleteUser(Long userId) {
+        SecurityUtils.requirePlatformAdmin();
+
+        log.info("Platform Admin deleting user ID: {}", userId);
+
+        // 1. Remove from all companies
+        userCompanyRepository.deleteByIdUserId(userId);
+
+        // 2. Delete user (or deactivate)
+        // For now, hard delete as per requirement "dar de baja"
+        userRepository.deleteById(userId);
+
+        // Audit log
+        String adminEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        auditLogRepository.save(new PlatformAdminAuditLog(
+                adminEmail,
+                "DELETE_USER",
+                "USER",
+                userId.toString(),
+                "Deleted by Platform Admin"));
     }
 }

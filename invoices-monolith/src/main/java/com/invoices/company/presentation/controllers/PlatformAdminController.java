@@ -41,4 +41,17 @@ public class PlatformAdminController {
     public ResponseEntity<CompanyMetricsDto> getCompanyMetrics(@PathVariable Long id) {
         return ResponseEntity.ok(platformAdminService.getCompanyMetrics(id));
     }
+
+    @GetMapping("/users")
+    @Operation(summary = "List all users", description = "Get a list of all users in the platform")
+    public ResponseEntity<List<com.invoices.user.presentation.dto.UserDTO>> getAllUsers() {
+        return ResponseEntity.ok(platformAdminService.getAllUsers());
+    }
+
+    @DeleteMapping("/users/{id}")
+    @Operation(summary = "Delete a user", description = "Delete (deactivate) a user from the platform")
+    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
+        platformAdminService.deleteUser(id);
+        return ResponseEntity.noContent().build();
+    }
 }

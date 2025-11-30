@@ -52,6 +52,13 @@ public class Invoice {
     private String verifactuRawResponse;
     private Boolean pdfIsFinal;
     private String qrPayload;
+    private String hash;
+    private String lastHashBefore;
+    private String csvAcuse;
+    private String qrData;
+    private String xmlContent;
+    private boolean isRectificativa;
+    private Long rectifiesInvoiceId;
 
     public Invoice(
             Long id,
@@ -171,11 +178,38 @@ public class Invoice {
     }
 
     public void cancel() {
-        if (status == InvoiceStatus.PAID) {
+        if (status == InvoiceStatus.PAID || status == InvoiceStatus.SENT) {
             throw new InvalidInvoiceStateException(
-                    "Cannot cancel paid invoices");
+                    "Cannot cancel paid or sent invoices");
         }
         this.status = InvoiceStatus.CANCELLED;
+        updateTimestamp();
+    }
+
+    public void markAsSending() {
+        if (status != InvoiceStatus.PENDING && status != InvoiceStatus.FINALIZED) {
+            throw new InvalidInvoiceStateException(
+                    "Can only send pending or finalized invoices. Current status: " + status.getDisplayName());
+        }
+        this.status = InvoiceStatus.SENDING;
+        updateTimestamp();
+    }
+
+    public void markAsSent() {
+        if (status != InvoiceStatus.SENDING) {
+            throw new InvalidInvoiceStateException(
+                    "Can only mark as sent from sending status. Current status: " + status.getDisplayName());
+        }
+        this.status = InvoiceStatus.SENT;
+        updateTimestamp();
+    }
+
+    public void markAsRejected() {
+        if (status != InvoiceStatus.SENDING) {
+            throw new InvalidInvoiceStateException(
+                    "Can only mark as rejected from sending status. Current status: " + status.getDisplayName());
+        }
+        this.status = InvoiceStatus.REJECTED;
         updateTimestamp();
     }
 
@@ -530,5 +564,68 @@ public class Invoice {
 
     public BigDecimal getTotalAmount() {
         return calculateTotalAmount();
+    }
+
+    public String getHash() {
+        return hash;
+    }
+
+    public void setHash(String hash) {
+        this.hash = hash;
+        updateTimestamp();
+    }
+
+    public String getLastHashBefore() {
+        return lastHashBefore;
+    }
+
+    public void setLastHashBefore(String lastHashBefore) {
+        this.lastHashBefore = lastHashBefore;
+        updateTimestamp();
+    }
+
+    public String getCsvAcuse() {
+        return csvAcuse;
+    }
+
+    public void setCsvAcuse(String csvAcuse) {
+        this.csvAcuse = csvAcuse;
+        updateTimestamp();
+    }
+
+    public String getQrData() {
+        return qrData;
+    }
+
+    public void setQrData(String qrData) {
+        this.qrData = qrData;
+        updateTimestamp();
+    }
+
+    public String getXmlContent() {
+        return xmlContent;
+    }
+
+    public void setXmlContent(String xmlContent) {
+        this.xmlContent = xmlContent;
+        updateTimestamp();
+    }
+
+    public boolean isRectificativa() {
+        return isRectificativa;
+    }
+
+    public void setRectificativa(boolean rectificativa) {
+        isRectificativa = rectificativa;
+        updateTimestamp();
+    }
+
+    public Long getRectifiesInvoiceId() {
+        return rectifiesInvoiceId;
+    }
+
+    public void setRectifiesInvoiceId(Long rectifiesInvoiceId) {
+        this.rectifiesInvoiceId = rectifiesInvoiceId;
+        updateTimestamp();
     }
 }

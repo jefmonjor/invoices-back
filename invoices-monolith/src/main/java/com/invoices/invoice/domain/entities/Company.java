@@ -25,6 +25,10 @@ public class Company {
     @ValidIban
     private final String iban; // IBAN para pagos
 
+    private final String lastHash;
+    private final String certRef;
+    private final String certPassword;
+
     private final java.time.LocalDateTime createdAt;
     private final java.time.LocalDateTime updatedAt;
 
@@ -54,6 +58,9 @@ public class Company {
             String phone,
             String email,
             String iban,
+            String lastHash,
+            String certRef,
+            String certPassword,
             java.time.LocalDateTime createdAt,
             java.time.LocalDateTime updatedAt) {
         validateMandatoryFields(businessName, taxId);
@@ -69,8 +76,30 @@ public class Company {
         this.phone = phone;
         this.email = email;
         this.iban = iban;
+        this.lastHash = lastHash;
+        this.certRef = certRef;
+        this.certPassword = certPassword;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
+    }
+
+    // Constructor override for backward compatibility
+    public Company(
+            Long id,
+            String businessName,
+            String taxId,
+            String address,
+            String city,
+            String postalCode,
+            String province,
+            String country,
+            String phone,
+            String email,
+            String iban,
+            java.time.LocalDateTime createdAt,
+            java.time.LocalDateTime updatedAt) {
+        this(id, businessName, taxId, address, city, postalCode, province, country, phone, email, iban, null, null,
+                null, createdAt, updatedAt);
     }
 
     private void validateMandatoryFields(String businessName, String taxId) {
@@ -152,6 +181,18 @@ public class Company {
         return iban;
     }
 
+    public String getLastHash() {
+        return lastHash;
+    }
+
+    public String getCertRef() {
+        return certRef;
+    }
+
+    public String getCertPassword() {
+        return certPassword;
+    }
+
     public java.time.LocalDateTime getCreatedAt() {
         return createdAt;
     }
@@ -180,7 +221,40 @@ public class Company {
                 phone,
                 email,
                 this.iban,
+                this.lastHash,
+                this.certRef,
+                this.certPassword,
                 this.createdAt,
                 this.updatedAt);
+    }
+
+    public void setLastHash(String lastHash) {
+        // This method is needed for the service to update the hash
+        // Ideally Company should be immutable, but for now we follow the pattern
+        // Or we should return a new Company instance
+        // Since fields are final, we can't set it.
+        // We need to change fields to non-final or provide a withLastHash method.
+        // Given the existing code structure, let's add a withLastHash method.
+        throw new UnsupportedOperationException("Company is immutable, use withLastHash");
+    }
+
+    public Company withLastHash(String lastHash) {
+        return new Company(
+                this.id,
+                this.businessName,
+                this.taxId,
+                this.address,
+                this.city,
+                this.postalCode,
+                this.province,
+                this.country,
+                this.phone,
+                this.email,
+                this.iban,
+                lastHash,
+                this.certRef,
+                this.certPassword,
+                this.createdAt,
+                java.time.LocalDateTime.now());
     }
 }

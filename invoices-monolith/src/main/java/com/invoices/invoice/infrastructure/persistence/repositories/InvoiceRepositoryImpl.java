@@ -1,9 +1,11 @@
 package com.invoices.invoice.infrastructure.persistence.repositories;
 
 import com.invoices.invoice.domain.entities.Invoice;
+import com.invoices.invoice.domain.models.InvoiceSummary;
 import com.invoices.invoice.domain.ports.InvoiceRepository;
 import com.invoices.invoice.infrastructure.persistence.entities.InvoiceJpaEntity;
 import com.invoices.invoice.infrastructure.persistence.mappers.InvoiceJpaMapper;
+
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -100,5 +102,19 @@ public class InvoiceRepositoryImpl implements InvoiceRepository {
     public Optional<Invoice> findLastInvoiceByCompanyIdAndIdNot(Long companyId, Long excludedInvoiceId) {
         return jpaRepository.findFirstByCompanyIdAndIdNotOrderByCreatedAtDesc(companyId, excludedInvoiceId)
                 .map(mapper::toDomainEntity);
+    }
+
+    @Override
+    public List<InvoiceSummary> findSummariesByCompanyId(Long companyId) {
+        return jpaRepository.findProjectedByCompanyId(companyId).stream()
+                .map(view -> new InvoiceSummary(
+                        view.getId(),
+                        view.getInvoiceNumber(),
+                        view.getIssueDate(),
+                        view.getTotalAmount(),
+                        view.getStatus(),
+                        view.getClientId(),
+                        view.getCompanyId()))
+                .collect(Collectors.toList());
     }
 }

@@ -37,4 +37,18 @@ public class SecurityUtils {
             throw new AccessDeniedException("Platform Administrator privileges required");
         }
     }
+
+    /**
+     * Get the current company ID from the security context.
+     *
+     * @return the company ID
+     * @throws IllegalStateException if company ID is not found
+     */
+    public static Long getCurrentCompanyId() {
+        Long companyId = com.invoices.security.context.CompanyContext.getCompanyId();
+        if (companyId == null) {
+            throw new IllegalStateException("Current company ID not found in security context");
+        }
+        return companyId;
+    }
 }

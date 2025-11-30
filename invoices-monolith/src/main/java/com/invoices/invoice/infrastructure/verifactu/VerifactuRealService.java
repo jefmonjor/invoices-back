@@ -45,14 +45,14 @@ public class VerifactuRealService implements VerifactuServiceInterface {
             com.invoices.invoice.domain.entities.Client client = clientRepository.findById(invoice.getClientId())
                     .orElseThrow(() -> new RuntimeException("Client not found: " + invoice.getClientId()));
 
-            // Calculate Canonical Hash
-            String canonicalHash = canonicalService.calculateInvoiceHash(invoice, company, client, "");
-
             // Get Previous Hash
             String previousHash = invoiceRepository
                     .findLastInvoiceByCompanyIdAndIdNot(invoice.getCompanyId(), invoice.getId())
                     .map(Invoice::getDocumentHash)
                     .orElse(""); // Genesis block or legacy invoice: empty hash
+
+            // Calculate Canonical Hash
+            String canonicalHash = canonicalService.calculateInvoiceHash(invoice, company, client, previousHash);
 
             // 1. Build XML
             Document xml = xmlBuilder.buildAltaFacturaXml(invoice, company, client, canonicalHash, previousHash);

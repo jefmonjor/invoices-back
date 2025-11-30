@@ -2,12 +2,14 @@ package com.invoices.user.infrastructure.persistence.repositories;
 
 import com.invoices.user.infrastructure.persistence.entities.UserJpaEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
 import java.util.Optional;
 
 /**
  * Spring Data JPA repository for UserJpaEntity.
- * This interface provides CRUD operations and custom queries for user persistence.
+ * This interface provides CRUD operations and custom queries for user
+ * persistence.
  * No @Repository needed - Spring Data JPA auto-detects this interface.
  */
 public interface JpaUserRepository extends JpaRepository<UserJpaEntity, Long> {
@@ -27,4 +29,8 @@ public interface JpaUserRepository extends JpaRepository<UserJpaEntity, Long> {
      * @return true if exists, false otherwise
      */
     boolean existsByEmail(String email);
+
+    @Query("SELECT u FROM UserJpaEntity u WHERE u.id IN (SELECT uc.id.userId FROM UserCompany uc WHERE uc.id.companyId = :companyId)")
+    org.springframework.data.domain.Page<UserJpaEntity> findByCompanyId(Long companyId,
+            org.springframework.data.domain.Pageable pageable);
 }

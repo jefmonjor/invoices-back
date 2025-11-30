@@ -34,20 +34,20 @@ public class CompanyRepositoryImpl implements CompanyRepository {
     @Override
     public Optional<Company> findById(Long id) {
         return jpaRepository.findById(id)
-            .map(mapper::toDomain);
+                .map(mapper::toDomain);
     }
 
     @Override
     public Optional<Company> findByTaxId(String taxId) {
         return jpaRepository.findByTaxId(taxId)
-            .map(mapper::toDomain);
+                .map(mapper::toDomain);
     }
 
     @Override
     public List<Company> findAll() {
         return jpaRepository.findAll().stream()
-            .map(mapper::toDomain)
-            .collect(Collectors.toList());
+                .map(mapper::toDomain)
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -58,5 +58,16 @@ public class CompanyRepositoryImpl implements CompanyRepository {
     @Override
     public boolean existsById(Long id) {
         return jpaRepository.existsById(id);
+    }
+
+    @Override
+    public long count() {
+        return jpaRepository.count();
+    }
+
+    @Override
+    public Optional<Company> findByIdWithLock(Long id) {
+        return jpaRepository.findByIdWithLock(id)
+                .map(mapper::toDomain);
     }
 }

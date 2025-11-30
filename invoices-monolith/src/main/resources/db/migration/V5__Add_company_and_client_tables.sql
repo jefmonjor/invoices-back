@@ -7,9 +7,9 @@ CREATE TABLE companies (
     city VARCHAR(100),
     postal_code VARCHAR(10),
     province VARCHAR(100),
-    phone VARCHAR(20),
-    email VARCHAR(100),
-    iban VARCHAR(34),
+    phone VARCHAR(100),
+    email VARCHAR(255),
+    iban VARCHAR(255),
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );

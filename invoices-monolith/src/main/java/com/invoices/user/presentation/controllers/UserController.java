@@ -109,7 +109,27 @@ public class UserController {
                 log.info("GET /api/users - Fetching all users (page: {}, size: {})", pageable.getPageNumber(),
                                 pageable.getPageSize());
 
-                org.springframework.data.domain.Page<User> usersPage = getAllUsersUseCase.execute(pageable);
+                Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+                boolean isPlatformAdmin = auth.getAuthorities()
+                                .contains(new SimpleGrantedAuthority("ROLE_PLATFORM_ADMIN"));
+                boolean isAdmin = auth.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_ADMIN"));
+
+                // Regular users cannot list users
+                if (!isPlatformAdmin && !isAdmin) {
+                        throw new AccessDeniedException("Regular users cannot list users");
+                }
+
+                org.springframework.data.domain.Page<User> usersPage;
+
+                if (isPlatformAdmin) {
+                        // Platform Admin sees ALL users
+                        usersPage = getAllUsersUseCase.execute(pageable, null);
+                } else {
+                        // Company Admin sees only users in their company
+                        Long currentCompanyId = com.invoices.security.context.CompanyContext.getCompanyId();
+                        usersPage = getAllUsersUseCase.execute(pageable, currentCompanyId);
+                }
+
                 org.springframework.data.domain.Page<UserDTO> userDTOsPage = usersPage.map(mapper::toDTO);
 
                 log.info("Retrieved {} users", userDTOsPage.getTotalElements());
@@ -181,8 +201,11 @@ public class UserController {
                 // Check if user can access this profile
                 checkUserAccess(existingUser.getEmail());
 
-                // If not admin and trying to modify roles, deny
-                if (!isAdmin && request.getRoles() != null) {
+                boolean isPlatformAdmin = auth.getAuthorities()
+                                .contains(new SimpleGrantedAuthority("ROLE_PLATFORM_ADMIN"));
+
+                // If not admin (company or platform) and trying to modify roles, deny
+                if (!isAdmin && !isPlatformAdmin && request.getRoles() != null) {
                         log.warn("Non-admin user {} attempted to modify roles for user {}",
                                         auth.getName(), id);
                         throw new AccessDeniedException("Only administrators can modify user roles");
@@ -278,7 +301,10 @@ public class UserController {
                 boolean isAdmin = auth.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_ADMIN"));
 
                 // Allow if admin or accessing own profile
-                if (!isAdmin && !currentUserEmail.equals(targetUserEmail)) {
+                boolean isPlatformAdmin = auth.getAuthorities()
+                                .contains(new SimpleGrantedAuthority("ROLE_PLATFORM_ADMIN"));
+
+                if (!isAdmin && !isPlatformAdmin && !currentUserEmail.equals(targetUserEmail)) {
                         log.warn("User {} attempted to access user {} without permission",
                                         currentUserEmail, targetUserEmail);
                         throw new AccessDeniedException("You don't have permission to access this user's data");

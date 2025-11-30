@@ -44,6 +44,16 @@ public interface UserRepository {
     org.springframework.data.domain.Page<User> findAll(org.springframework.data.domain.Pageable pageable);
 
     /**
+     * Find all users with pagination filtered by company
+     *
+     * @param companyId the company ID
+     * @param pageable  pagination information
+     * @return page of users
+     */
+    org.springframework.data.domain.Page<User> findAllByCompanyId(Long companyId,
+            org.springframework.data.domain.Pageable pageable);
+
+    /**
      * Save a user (create or update)
      *
      * @param user the user to save

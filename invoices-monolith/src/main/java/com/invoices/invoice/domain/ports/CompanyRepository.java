@@ -22,4 +22,8 @@ public interface CompanyRepository {
     void deleteById(Long id);
 
     boolean existsById(Long id);
+
+    long count();
+
+    Optional<Company> findByIdWithLock(Long id);
 }

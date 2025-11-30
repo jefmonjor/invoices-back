@@ -12,5 +12,7 @@ public interface UserCompanyRepository extends JpaRepository<UserCompany, UserCo
 
     void deleteByIdCompanyId(Long companyId);
 
+    void deleteByIdUserId(Long userId);
+
     long countByIdCompanyId(Long companyId);
 }

@@ -9,7 +9,10 @@ public enum InvoiceStatus {
     PENDING("Pendiente"),
     PAID("Pagada"),
     CANCELLED("Cancelada"),
-    FINALIZED("Finalizada");
+    FINALIZED("Finalizada"),
+    SENDING("Enviando"),
+    SENT("Enviada"),
+    REJECTED("Rechazada");
 
     private final String displayName;
 

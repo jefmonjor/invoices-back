@@ -1,6 +1,7 @@
 package com.invoices.invoice.infrastructure.persistence.repositories;
 
 import com.invoices.invoice.infrastructure.persistence.entities.InvoiceJpaEntity;
+import com.invoices.invoice.infrastructure.persistence.projections.InvoiceSummaryView;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.LocalDateTime;
@@ -16,6 +17,8 @@ public interface JpaInvoiceRepository extends JpaRepository<InvoiceJpaEntity, Lo
         List<InvoiceJpaEntity> findByUserId(Long userId);
 
         List<InvoiceJpaEntity> findByCompanyId(Long companyId);
+
+        List<InvoiceSummaryView> findProjectedByCompanyId(Long companyId);
 
         boolean existsByInvoiceNumber(String invoiceNumber);
 

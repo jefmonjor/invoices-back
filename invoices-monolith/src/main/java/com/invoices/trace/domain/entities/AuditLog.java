@@ -31,20 +31,6 @@ public class AuditLog {
     private String eventData;
     private LocalDateTime createdAt;
 
-    /**
-     * Validates required fields for the audit log.
-     */
-    private void validateRequiredFields(String eventType) {
-        if (eventType == null || eventType.trim().isEmpty()) {
-            throw new IllegalArgumentException("Event type cannot be null or empty");
-        }
-    }
-
-    // Business methods
-
-    /**
-     * Checks if this audit log is related to an invoice.
-     */
     public boolean hasInvoice() {
         return invoiceId != null;
     }

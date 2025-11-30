@@ -9,7 +9,7 @@ import com.invoices.document.presentation.controllers.DocumentController;
 import com.invoices.document.exception.DocumentNotFoundException;
 import com.invoices.document.exception.FileUploadException;
 import com.invoices.document.exception.InvalidFileTypeException;
-import com.invoices.exception.GlobalExceptionHandler;
+import com.invoices.shared.infrastructure.exception.GlobalExceptionHandler;
 import com.invoices.security.infrastructure.interceptor.CompanySecurityInterceptor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

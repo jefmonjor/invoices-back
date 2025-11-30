@@ -31,6 +31,9 @@ public class UserDtoMapper {
         dto.setFirstName(domainUser.getFirstName());
         dto.setLastName(domainUser.getLastName());
         dto.setRoles(domainUser.getRoles().stream().collect(Collectors.toSet()));
+        if (domainUser.getPlatformRole() == PlatformRole.PLATFORM_ADMIN) {
+            dto.getRoles().add("ROLE_PLATFORM_ADMIN");
+        }
         dto.setEnabled(domainUser.isEnabled());
         dto.setCurrentCompanyId(domainUser.getCurrentCompanyId());
         dto.setCreatedAt(domainUser.getCreatedAt());

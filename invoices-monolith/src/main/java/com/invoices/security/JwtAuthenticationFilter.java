@@ -56,33 +56,26 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             if (jwt != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 authenticateWithJwt(jwt, request);
             }
+            filterChain.doFilter(request, response);
         } catch (InvalidTokenException e) {
             log.warn("Invalid JWT token in request: {}", e.getMessage());
             // Continue filter chain without authentication
+            filterChain.doFilter(request, response);
         } catch (TokenExpiredException e) {
             log.warn("Expired JWT token in request: {}", e.getMessage());
             // Continue filter chain without authentication
+            filterChain.doFilter(request, response);
         } catch (Exception e) {
             log.error("Error processing JWT authentication: {}", e.getMessage(), e);
             // Continue filter chain without authentication
+            filterChain.doFilter(request, response);
+        } finally {
+            // Clear company context to prevent data leakage in thread pool
+            com.invoices.security.context.CompanyContext.clear();
         }
-
-        filterChain.doFilter(request, response);
     }
 
-    /**
-     * Skip JWT filter for WebSocket endpoints to avoid interfering with the
-     * WebSocket handshake.
-     * 
-     * @param request the HTTP request
-     * @return true if the filter should not be applied
-     */
-    @Override
-    protected boolean shouldNotFilter(@NonNull HttpServletRequest request) {
-        String path = request.getRequestURI();
-        // Skip filter for WebSocket endpoints
-        return path.startsWith("/ws");
-    }
+    // ... (skip other methods)
 
     /**
      * Extracts JWT token from the Authorization header.
@@ -122,6 +115,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
             SecurityContextHolder.getContext().setAuthentication(authentication);
+
+            // Set company context from token
+            Long companyId = jwtUtil.extractCompanyId(jwt);
+            if (companyId != null) {
+                com.invoices.security.context.CompanyContext.setCompanyId(companyId);
+                log.debug("Set company context to: {}", companyId);
+            }
 
             log.info("Successfully authenticated user: {}", username);
         } else {

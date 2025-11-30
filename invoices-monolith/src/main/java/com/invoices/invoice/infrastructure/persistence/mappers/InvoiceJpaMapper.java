@@ -88,7 +88,15 @@ public class InvoiceJpaMapper {
         jpaEntity.setVerifactuRawResponse(invoice.getVerifactuRawResponse());
         jpaEntity.setPdfServerPath(invoice.getPdfServerPath());
         jpaEntity.setPdfIsFinal(invoice.getPdfIsFinal());
+        jpaEntity.setPdfIsFinal(invoice.getPdfIsFinal());
         jpaEntity.setQrPayload(invoice.getQrPayload());
+        jpaEntity.setHash(invoice.getHash());
+        jpaEntity.setLastHashBefore(invoice.getLastHashBefore());
+        jpaEntity.setCsvAcuse(invoice.getCsvAcuse());
+        jpaEntity.setQrData(invoice.getQrData());
+        jpaEntity.setXmlContent(invoice.getXmlContent());
+        jpaEntity.setRectificativa(invoice.isRectificativa());
+        jpaEntity.setRectifiesInvoiceId(invoice.getRectifiesInvoiceId());
 
         List<InvoiceItemJpaEntity> itemEntities = invoice.getItems().stream()
                 .map(item -> toJpaItemEntity(item, jpaEntity))
@@ -170,6 +178,25 @@ public class InvoiceJpaMapper {
         }
         if (jpaEntity.getQrPayload() != null) {
             invoice.setQrPayload(jpaEntity.getQrPayload());
+        }
+        if (jpaEntity.getHash() != null) {
+            invoice.setHash(jpaEntity.getHash());
+        }
+        if (jpaEntity.getLastHashBefore() != null) {
+            invoice.setLastHashBefore(jpaEntity.getLastHashBefore());
+        }
+        if (jpaEntity.getCsvAcuse() != null) {
+            invoice.setCsvAcuse(jpaEntity.getCsvAcuse());
+        }
+        if (jpaEntity.getQrData() != null) {
+            invoice.setQrData(jpaEntity.getQrData());
+        }
+        if (jpaEntity.getXmlContent() != null) {
+            invoice.setXmlContent(jpaEntity.getXmlContent());
+        }
+        invoice.setRectificativa(jpaEntity.isRectificativa());
+        if (jpaEntity.getRectifiesInvoiceId() != null) {
+            invoice.setRectifiesInvoiceId(jpaEntity.getRectifiesInvoiceId());
         }
 
         return invoice;

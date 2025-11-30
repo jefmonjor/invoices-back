@@ -38,17 +38,27 @@ public class CompanyJpaEntity {
     @Column(name = "country", length = 100)
     private String country;
 
-    @Column(name = "phone", length = 20)
+    @Column(name = "phone", length = 100)
     @Convert(converter = EncryptedStringConverter.class)
     private String phone;
 
-    @Column(name = "email", length = 100)
+    @Column(name = "email", length = 255)
     @Convert(converter = EncryptedStringConverter.class)
     private String email;
 
-    @Column(name = "iban", length = 34)
+    @Column(name = "iban", length = 255)
     @Convert(converter = EncryptedStringConverter.class)
     private String iban;
+
+    @Column(name = "last_hash", length = 128)
+    private String lastHash;
+
+    @Column(name = "cert_ref", length = 255)
+    private String certRef;
+
+    @Column(name = "cert_password", length = 255)
+    @Convert(converter = EncryptedStringConverter.class)
+    private String certPassword;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -158,6 +168,30 @@ public class CompanyJpaEntity {
 
     public void setIban(String iban) {
         this.iban = iban;
+    }
+
+    public String getLastHash() {
+        return lastHash;
+    }
+
+    public void setLastHash(String lastHash) {
+        this.lastHash = lastHash;
+    }
+
+    public String getCertRef() {
+        return certRef;
+    }
+
+    public void setCertRef(String certRef) {
+        this.certRef = certRef;
+    }
+
+    public String getCertPassword() {
+        return certPassword;
+    }
+
+    public void setCertPassword(String certPassword) {
+        this.certPassword = certPassword;
     }
 
     public LocalDateTime getCreatedAt() {
