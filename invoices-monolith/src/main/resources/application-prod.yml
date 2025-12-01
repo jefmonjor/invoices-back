@@ -8,6 +8,13 @@ spring:
   websocket:
     allowed-origins: ${ALLOWED_ORIGINS:https://yourdomain.com}
 
+# Disable Swagger UI in production (security best practice)
+springdoc:
+  swagger-ui:
+    enabled: false
+  api-docs:
+    enabled: false
+
 # VeriFactu AEAT Production Endpoint
 verifactu:
   mode: PRODUCTION
