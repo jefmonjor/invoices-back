@@ -20,7 +20,7 @@ public class ClientJpaEntity {
     @Column(name = "business_name", nullable = false, length = 255)
     private String businessName;
 
-    @Column(name = "tax_id", nullable = false, length = 20)
+    @Column(name = "tax_id", nullable = false, length = 50)
     private String taxId;
 
     @Column(name = "address", length = 500)
