@@ -6,7 +6,6 @@ import com.invoices.invoice.domain.entities.Invoice;
 import com.invoices.verifactu.domain.model.AeatResponse;
 import com.invoices.verifactu.domain.model.VerifactuMode;
 import com.invoices.verifactu.domain.model.VerifactuResponse;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -45,7 +44,6 @@ import xades4j.algorithms.EnvelopedSignatureTransform;
  * Handles XML generation, digital signing, and SOAP communication.
  */
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class VerifactuIntegrationService {
 
@@ -59,6 +57,13 @@ public class VerifactuIntegrationService {
     private int timeout;
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+
+    private final org.springframework.web.reactive.function.client.WebClient webClient;
+
+    public VerifactuIntegrationService(
+            org.springframework.web.reactive.function.client.WebClient.Builder webClientBuilder) {
+        this.webClient = webClientBuilder.build();
+    }
 
     /**
      * Builds canonical XML for an invoice according to Veri*Factu specifications.
@@ -216,13 +221,6 @@ public class VerifactuIntegrationService {
             throw new BusinessException("SIGNATURE_ERROR", "Error signing invoice XML: " + e.getMessage(),
                     org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR);
         }
-    }
-
-    private final org.springframework.web.reactive.function.client.WebClient webClient;
-
-    public VerifactuIntegrationService(
-            org.springframework.web.reactive.function.client.WebClient.Builder webClientBuilder) {
-        this.webClient = webClientBuilder.build();
     }
 
     /**
