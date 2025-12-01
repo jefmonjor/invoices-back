@@ -257,4 +257,24 @@ public class Company {
                 this.createdAt,
                 java.time.LocalDateTime.now());
     }
+
+    public Company withCertificateData(String certRef, String certPassword) {
+        return new Company(
+                this.id,
+                this.businessName,
+                this.taxId,
+                this.address,
+                this.city,
+                this.postalCode,
+                this.province,
+                this.country,
+                this.phone,
+                this.email,
+                this.iban,
+                this.lastHash,
+                certRef,
+                certPassword,
+                this.createdAt,
+                java.time.LocalDateTime.now());
+    }
 }
