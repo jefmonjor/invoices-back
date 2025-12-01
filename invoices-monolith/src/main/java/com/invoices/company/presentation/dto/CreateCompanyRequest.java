@@ -36,6 +36,8 @@ public class CreateCompanyRequest {
 
     private String phone;
 
+    private String iban; // IBAN for bank account (optional)
+
     public void setBusinessName(String businessName) {
         this.businessName = InputSanitizer.sanitize(businessName);
     }
