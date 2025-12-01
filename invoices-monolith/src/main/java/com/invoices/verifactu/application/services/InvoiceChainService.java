@@ -26,7 +26,6 @@ import java.util.HexFormat;
 public class InvoiceChainService {
 
     private final CompanyRepository companyRepository;
-    private final InvoiceRepository invoiceRepository;
 
     /**
      * Calculates chained hash for an invoice using SHA-256.

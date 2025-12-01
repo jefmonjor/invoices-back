@@ -33,7 +33,6 @@ public class VerifactuIntegrationService {
     private int timeout;
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd-MM-yyyy");
-    private static final DateTimeFormatter DATETIME_FORMATTER = DateTimeFormatter.ofPattern("dd-MM-yyyy'T'HH:mm:ss");
 
     /**
      * Builds canonical XML for an invoice according to Veri*Factu specifications.
