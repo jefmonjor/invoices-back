@@ -1,125 +1,131 @@
 package com.invoices.verifactu.application.services;
 
+import com.invoices.invoice.domain.entities.Client;
 import com.invoices.invoice.domain.entities.Company;
 import com.invoices.invoice.domain.entities.Invoice;
-import com.invoices.invoice.domain.ports.CompanyRepository;
+import com.invoices.invoice.domain.ports.ClientRepository;
 import com.invoices.invoice.domain.ports.InvoiceRepository;
 import com.invoices.shared.domain.exception.BusinessException;
+import com.invoices.verifactu.domain.model.AeatResponse;
+import com.invoices.verifactu.domain.model.VerifactuMode;
+import com.invoices.verifactu.domain.model.VerifactuResponse;
 import com.invoices.verifactu.domain.ports.VerifactuPort;
+import com.invoices.verifactu.infrastructure.aeat.VerifactuIntegrationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.HexFormat;
+import java.security.KeyStore;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class VerifactuService implements VerifactuPort {
 
-    private final CompanyRepository companyRepository;
     private final InvoiceRepository invoiceRepository;
+    private final ClientRepository clientRepository;
+    private final InvoiceChainService chainService;
+    private final CompanyCertificateService certificateService;
+    private final VerifactuIntegrationService integrationService;
+
+    @Value("${verifactu.mode:SANDBOX}")
+    private String verifactuModeConfig;
+
+    @Override
+    @Transactional
+    public void sendInvoice(Long invoiceId) {
+        // Fetch invoice to get companyId
+        Invoice invoice = invoiceRepository.findById(invoiceId)
+                .orElseThrow(() -> new BusinessException("INVOICE_NOT_FOUND", "Invoice not found: " + invoiceId));
+
+        sendInvoice(invoice.getCompanyId(), invoiceId);
+    }
+
+    @Override
+    public void processWebhook(String payload) {
+        log.info("Received Veri*Factu webhook payload: {}", payload);
+        // TODO: Implement webhook processing logic (parse XML/JSON, update invoice
+        // status)
+    }
 
     @Override
     @Transactional
     public void sendInvoice(Long companyId, Long invoiceId) {
         log.info("Starting Veri*Factu send process for invoice {} of company {}", invoiceId, companyId);
 
-        // 1. Lock company to ensure serial processing and hash chain integrity
-        Company company = companyRepository.findByIdWithLock(companyId)
-                .orElseThrow(() -> new BusinessException("COMPANY_NOT_FOUND", "Company not found: " + companyId));
-
-        // 2. Fetch invoice
+        // 1. Lock company and validate invoice
+        Company company = chainService.lockTenantForUpdate(companyId);
         Invoice invoice = invoiceRepository.findById(invoiceId)
                 .orElseThrow(() -> new BusinessException("INVOICE_NOT_FOUND", "Invoice not found: " + invoiceId));
 
-        if (invoice.getStatus() != com.invoices.invoice.domain.entities.InvoiceStatus.PENDING) {
-            // In a real scenario, we might allow re-sending if it failed, but for now
-            // strict check
-            log.warn("Invoice {} is not in PENDING status. Current status: {}", invoiceId, invoice.getStatus());
-            // throw new BusinessException("INVALID_STATUS", "Invoice is not in PENDING
-            // status");
-        }
+        chainService.validateInvoiceBeforeSending(invoice);
 
-        // 3. Calculate Hash
-        String lastHash = company.getLastHash();
-        // Use InvoiceCanonicalService for robust hashing
-        // We need to fetch Client as well if CanonicalService needs it.
-        // Invoice entity has clientId but not Client object loaded unless we fetch it.
-        // CanonicalService signature: calculateInvoiceHash(Invoice, Company, Client,
-        // String)
-        // We need to fetch the client.
-        // For now, let's assume we can fetch it or pass null if allowed
-        // (CanonicalService might need it).
-        // Let's check CanonicalService again. It uses client.
-        // We need ClientRepository.
+        // 2. Fetch Client (needed for XML)
+        Client client = clientRepository.findById(invoice.getClientId())
+                .orElseThrow(
+                        () -> new BusinessException("CLIENT_NOT_FOUND", "Client not found: " + invoice.getClientId()));
 
-        // Let's stick to the simple hashing in VerifactuService for this iteration to
-        // avoid fetching Client
-        // OR better, fetch the client.
-        // But I don't have ClientRepository injected.
-        // Let's keep the simple hashing for now as a placeholder, but comment that it
-        // should use CanonicalService.
-        // actually, I will just use the simple hash I wrote before but make it a bit
-        // more robust if needed.
-        // The previous implementation was:
-        String newHash = calculateHash(invoice, lastHash);
-
-        // 4. Update Invoice with snapshot of previous hash
-        invoice.setLastHashBefore(lastHash);
-        invoice.setHash(newHash);
-        invoice.markAsSending();
-        invoiceRepository.save(invoice);
-
-        // 5. Sign XML (Placeholder)
-        String signedXml = signInvoice(invoice, company);
-        invoice.setXmlContent(signedXml);
-
-        // 6. Send to AEAT (Mock/Placeholder)
-        // In a real implementation, this would call the SOAP client
-        // For now, we simulate a success response
-        simulateAeatResponse(invoice, company, newHash);
-    }
-
-    private String calculateHash(Invoice invoice, String lastHash) {
         try {
-            // Simplified chaining logic: SHA256(invoice_number + total + last_hash)
-            // In production, this must follow strict Veri*Factu technical specs (canonical
-            // XML)
-            String dataToHash = invoice.getInvoiceNumber() +
-                    (invoice.getTotalAmount() != null ? invoice.getTotalAmount().toString() : "0") +
-                    (lastHash != null ? lastHash : "");
+            // 3. Prepare for chaining (calculate hash)
+            chainService.prepareInvoiceForChaining(invoice, company);
+            invoice.markAsSending();
+            invoiceRepository.save(invoice);
 
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] encodedhash = digest.digest(dataToHash.getBytes(StandardCharsets.UTF_8));
-            return HexFormat.of().formatHex(encodedhash);
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("SHA-256 algorithm not found", e);
+            // 4. Get Certificate
+            KeyStore certificate = certificateService.getCertificateForSigning(companyId);
+
+            // 5. Build and Sign XML
+            String xml = integrationService.buildCanonicalXML(invoice, company, client);
+            String signedXml = integrationService.signXML(xml, certificate);
+            invoice.setXmlContent(signedXml);
+
+            // 6. Send to AEAT
+            VerifactuMode mode = VerifactuMode.valueOf(verifactuModeConfig.toUpperCase());
+            // Override mode if company has specific setting (future feature)
+
+            AeatResponse rawResponse = integrationService.callAEATEndpoint(signedXml, mode);
+            VerifactuResponse response = integrationService.parseResponse(rawResponse);
+
+            // 7. Handle Response
+            if (response.isSuccess()) {
+                handleSuccess(invoice, company, response);
+            } else {
+                handleError(invoice, response);
+            }
+
+        } catch (Exception e) {
+            log.error("Error sending invoice {} to Veri*Factu", invoiceId, e);
+            invoice.markAsRejected();
+            // In a real worker, we might schedule a retry here
+            invoiceRepository.save(invoice);
+            throw new BusinessException("VERIFACTU_SEND_ERROR", "Error sending to AEAT: " + e.getMessage());
         }
     }
 
-    private String signInvoice(Invoice invoice, Company company) {
-        // Placeholder for XAdES-BES signing
-        // Would use company.getCertRef() to load certificate from KMS/Vault
-        return "<xml>Signed Content for " + invoice.getInvoiceNumber() + "</xml>";
-    }
+    private void handleSuccess(Invoice invoice, Company company, VerifactuResponse response) {
+        log.info("Invoice {} accepted by AEAT. CSV: {}", invoice.getInvoiceNumber(), response.getCsv());
 
-    private void simulateAeatResponse(Invoice invoice, Company company, String newHash) {
-        // Simulate success
         invoice.markAsSent();
-
-        invoice.setCsvAcuse("CSV-MOCK-" + System.currentTimeMillis());
-        invoice.setQrData("QR-DATA-" + newHash);
+        invoice.setCsvAcuse(response.getCsv());
+        invoice.setQrData(response.getQrData());
         invoiceRepository.save(invoice);
 
-        // Update Company last hash
-        Company updatedCompany = company.withLastHash(newHash);
-        companyRepository.save(updatedCompany);
+        // Update company hash chain
+        chainService.updateTenantLastHash(company.getId(), invoice.getHash());
+    }
 
-        log.info("Invoice {} sent successfully. New Company Hash: {}", invoice.getId(), newHash);
+    private void handleError(Invoice invoice, VerifactuResponse response) {
+        log.error("Invoice {} rejected by AEAT. Code: {}, Message: {}",
+                invoice.getInvoiceNumber(), response.getErrorCode(), response.getErrorMessage());
+
+        invoice.markAsRejected();
+        // Store error details in invoice notes or separate audit log
+        // For now, we just update status
+        invoiceRepository.save(invoice);
+
+        throw new BusinessException("VERIFACTU_REJECTED",
+                "AEAT Rejected: " + response.getErrorMessage() + " (" + response.getErrorCode() + ")");
     }
 }

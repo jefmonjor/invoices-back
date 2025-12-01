@@ -4,7 +4,6 @@ import com.invoices.invoice.domain.entities.Company;
 import com.invoices.invoice.domain.entities.Invoice;
 import com.invoices.invoice.domain.entities.InvoiceStatus;
 import com.invoices.invoice.domain.ports.CompanyRepository;
-import com.invoices.invoice.domain.ports.InvoiceRepository;
 import com.invoices.shared.domain.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

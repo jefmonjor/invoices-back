@@ -1,6 +1,6 @@
 package com.invoices.invoice.presentation.controllers;
 
-import com.invoices.invoice.infrastructure.verifactu.VerifactuServiceInterface;
+import com.invoices.verifactu.domain.ports.VerifactuPort;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
@@ -28,7 +28,7 @@ import java.util.Base64;
 @Tag(name = "VeriFactu Webhooks", description = "Callbacks from AEAT VeriFactu system")
 public class VerifactuWebhookController {
 
-    private final VerifactuServiceInterface verifactuService;
+    private final VerifactuPort verifactuService;
 
     @Value("${verifactu.webhook.secret:change-me-in-production}")
     private String webhookSecret;

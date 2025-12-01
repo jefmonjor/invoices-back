@@ -1,8 +1,7 @@
 package com.invoices.invoice.infrastructure.messaging;
 
-import com.invoices.invoice.infrastructure.verifactu.VerifactuServiceInterface;
+import com.invoices.verifactu.domain.ports.VerifactuPort;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.connection.stream.MapRecord;
 import org.springframework.data.redis.connection.stream.ReadOffset;
@@ -34,7 +33,7 @@ public class VerifactuConsumer {
     private static final long[] RETRY_DELAYS_MS = { 0, 5000, 30000, 120000 }; // 0s, 5s, 30s, 2min
 
     private final RedisTemplate<String, Object> redisTemplate;
-    private final VerifactuServiceInterface verifactuService;
+    private final VerifactuPort verifactuService;
     private final InvoiceStatusNotificationService notificationService;
 
     @Value("${verifactu.stream.key:verifactu-queue}")
@@ -48,7 +47,7 @@ public class VerifactuConsumer {
 
     public VerifactuConsumer(
             RedisTemplate<String, Object> redisTemplate,
-            @Qualifier("verifactuMockService") VerifactuServiceInterface verifactuService,
+            VerifactuPort verifactuService,
             InvoiceStatusNotificationService notificationService) {
         this.redisTemplate = redisTemplate;
         this.verifactuService = verifactuService;
@@ -107,7 +106,7 @@ public class VerifactuConsumer {
                 notificationService.notifyStatus(invoiceId, "processing");
 
                 // Process with VeriFactu service
-                verifactuService.processInvoice(invoiceId);
+                verifactuService.sendInvoice(invoiceId);
 
                 // Success - acknowledge message
                 acknowledgeMessage(message);
