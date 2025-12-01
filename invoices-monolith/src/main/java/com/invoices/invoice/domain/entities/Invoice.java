@@ -628,4 +628,24 @@ public class Invoice {
         this.rectifiesInvoiceId = rectifiesInvoiceId;
         updateTimestamp();
     }
+
+    /**
+     * Returns the base amount (taxable base) for the invoice.
+     * Calculates from items if not explicitly set.
+     */
+    public BigDecimal getBaseAmount() {
+        if (items == null || items.isEmpty()) {
+            return BigDecimal.ZERO;
+        }
+        return items.stream()
+                .map(item -> item.calculateSubtotal())
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    /**
+     * Returns whether this invoice is a rectificative (corrective) invoice.
+     */
+    public Boolean getIsRectificativa() {
+        return isRectificativa;
+    }
 }
