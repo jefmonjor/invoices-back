@@ -17,8 +17,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.security.KeyStore;
-
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -74,11 +72,11 @@ public class VerifactuService implements VerifactuPort {
             invoiceRepository.save(invoice);
 
             // 4. Get Certificate
-            KeyStore certificate = certificateService.getCertificateForSigning(companyId);
+            CompanyCertificateService.CertificateData certData = certificateService.getCertificateForSigning(companyId);
 
             // 5. Build and Sign XML
             String xml = integrationService.buildCanonicalXML(invoice, company, client);
-            String signedXml = integrationService.signXML(xml, certificate);
+            String signedXml = integrationService.signXML(xml, certData.getKeyStore(), certData.getPassword());
             invoice.setXmlContent(signedXml);
 
             // 6. Send to AEAT

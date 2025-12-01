@@ -8,7 +8,7 @@ import com.invoices.company.application.services.CompanyManagementService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -31,27 +31,27 @@ public class UserPaginationTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockitoBean
+    @MockBean
     private CreateUserUseCase createUserUseCase;
-    @MockitoBean
+    @MockBean
     private GetAllUsersUseCase getAllUsersUseCase;
-    @MockitoBean
+    @MockBean
     private GetUserByIdUseCase getUserByIdUseCase;
-    @MockitoBean
+    @MockBean
     private GetUserByEmailUseCase getUserByEmailUseCase;
-    @MockitoBean
+    @MockBean
     private UpdateUserUseCase updateUserUseCase;
-    @MockitoBean
+    @MockBean
     private DeleteUserUseCase deleteUserUseCase;
-    @MockitoBean
+    @MockBean
     private UserDtoMapper mapper;
-    @MockitoBean
+    @MockBean
     private CompanyManagementService companyManagementService;
-    @MockitoBean
+    @MockBean
     private com.invoices.security.JwtAuthenticationFilter jwtAuthenticationFilter;
-    @MockitoBean
+    @MockBean
     private org.springframework.security.core.userdetails.UserDetailsService userDetailsService;
-    @MockitoBean
+    @MockBean
     private com.invoices.security.JwtUtil jwtUtil;
 
     @Test

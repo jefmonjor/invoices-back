@@ -18,6 +18,12 @@ public class GetAllInvoicesUseCase {
     }
 
     public List<InvoiceSummary> execute(Long companyId) {
-        return invoiceRepository.findSummariesByCompanyId(companyId);
+        // Default to first page, 50 items if not specified (soft limit to prevent OOM)
+        // Ideally, we should deprecate this and force pagination
+        return invoiceRepository.findSummariesByCompanyId(companyId, 0, 50);
+    }
+
+    public List<InvoiceSummary> execute(Long companyId, int page, int size) {
+        return invoiceRepository.findSummariesByCompanyId(companyId, page, size);
     }
 }

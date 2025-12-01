@@ -6,30 +6,23 @@ spring:
   
   # WebSocket configuration
   websocket:
-    allowed-origins:
-      - https://your-production-domain.com
-      - https://www.your-production-domain.com
+    allowed-origins: ${ALLOWED_ORIGINS:https://yourdomain.com}
 
 # VeriFactu AEAT Production Endpoint
 verifactu:
+  mode: PRODUCTION
   keystore:
     path: ${VERIFACTU_KEYSTORE_PATH:/app/keystore.jks}
-    password: ${VERIFACTU_KEYSTORE_PASSWORD:changeit}
+    password: ${VERIFACTU_KEYSTORE_PASSWORD}
     alias: ${VERIFACTU_KEYSTORE_ALIAS:verifactu}
   aeat:
-    endpoint-sandbox: https://www2.agenciatributaria.gob.es/static_files/common/internet/dep/aplicaciones/es/aeat/tike/cont/ws/SuministroInformacion.xsd
     endpoint-production: https://www2.agenciatributaria.gob.es/wlpl/TIKE-CONT/ws/SuministroInformacion
     timeout: 30000
-    retry-attempts: 3
-
-# Spring WebSocket configuration
-spring:
-  websocket:
-    allowed-origins: ${ALLOWED_ORIGINS:https://yourdomain.com,https://www.yourdomain.com}
 
 # Logging
 logging:
   level:
+    root: INFO
     com.invoices: INFO
-    org.springframework.web.socket: INFO
-    org.springframework.messaging: INFO
+    org.springframework.web: WARN
+    org.hibernate: WARN

@@ -228,8 +228,8 @@ public class GlobalExceptionHandler {
         public ResponseEntity<ErrorResponse> handleGeneric(Exception e) {
                 log.error("Unhandled exception", e);
 
-                // In production, we might want to hide the detail message
-                String message = e.getMessage();
+                // Secure default message for production
+                String message = "An unexpected error occurred. Please contact support.";
 
                 return ResponseEntity.internalServerError().body(
                                 ErrorResponse.generic(message));

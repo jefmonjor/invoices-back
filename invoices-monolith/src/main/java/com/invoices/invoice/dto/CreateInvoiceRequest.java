@@ -30,6 +30,29 @@ public class CreateInvoiceRequest {
     @NotNull(message = "Client ID is required")
     private Long clientId;
 
+    /**
+     * Invoice number (optional for creation).
+     * 
+     * <p>
+     * <b>Auto-Generation Behavior:</b>
+     * </p>
+     * <ul>
+     * <li>If {@code null} or empty → Backend auto-generates sequential number
+     * (e.g., "001/2025", "002/2025")</li>
+     * <li>If provided → Backend validates:
+     * <ul>
+     * <li>Format matches: {@code ^[A-Za-z0-9./-]+$}</li>
+     * <li>Uniqueness per company (no duplicates)</li>
+     * <li>Max length: 50 characters</li>
+     * </ul>
+     * </li>
+     * </ul>
+     * 
+     * <p>
+     * <b>Frontend Recommendation:</b> Send empty string or omit field to use
+     * auto-generation.
+     * </p>
+     */
     @Size(max = 50, message = "Invoice number must not exceed 50 characters")
     // @Pattern(regexp = "^[A-Za-z0-9./-]+$", message = "Formato inválido (solo
     // letras, números, guiones, puntos y barras)")

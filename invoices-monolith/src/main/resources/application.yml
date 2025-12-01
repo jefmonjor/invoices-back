@@ -2,6 +2,7 @@ server:
   port: ${PORT:8080}
   servlet:
     context-path: /
+  forward-headers-strategy: framework
 
 
 
@@ -248,10 +249,12 @@ verifactu:
     key: verifactu-dlq  # Dead Letter Queue for failed verifications
   keystore:
     path: classpath:keystore.jks
-    password: changeit
+    password: ${VERIFACTU_KEYSTORE_PASSWORD:changeit}
     alias: myalias
   aeat:
-    endpoint: https://prewww1.aeat.es/wlpl/TIKE-CONT/ws/V1_0/static_files/common/internet/dep/aplicaciones/es/aeat/tike/cont/ws/SuministroLR.xsd
+    endpoint-sandbox: https://prewww1.aeat.es/wlpl/TIKE-CONT/ws/V1_0/static_files/common/internet/dep/aplicaciones/es/aeat/tike/cont/ws/SuministroLR.xsd
+    endpoint-production: https://www1.agenciatributaria.gob.es/wlpl/TIKE-CONT/ws/V1_0/static_files/common/internet/dep/aplicaciones/es/aeat/tike/cont/ws/SuministroLR.xsd
+    timeout: 30000
   webhook:
     # SECURITY: Webhook secret for HMAC-SHA256 signature validation
     # Generate with: openssl rand -hex 32

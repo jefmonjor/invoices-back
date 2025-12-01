@@ -3,6 +3,7 @@ package com.invoices.invoice.infrastructure.batch;
 import com.invoices.invoice.dto.BatchSummary;
 import com.invoices.invoice.infrastructure.persistence.repositories.JpaInvoiceRepository;
 import com.invoices.invoice.infrastructure.services.SmtpEmailService;
+import com.invoices.verifactu.application.services.CompanyCertificateService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -29,6 +30,7 @@ public class VerifactuBatchScheduler {
     private final JpaInvoiceRepository invoiceRepository;
     private final RedisTemplate<String, Object> redisTemplate;
     private final SmtpEmailService emailService;
+    private final CompanyCertificateService certificateService;
 
     /**
      * Scheduled task to retry failed verifications
@@ -159,6 +161,20 @@ public class VerifactuBatchScheduler {
             redisTemplate.opsForHash().increment(key, "total_requeued", requeued);
         } catch (Exception e) {
             log.error("[VeriFactu Batch] Error updating metrics", e);
+        }
+    }
+
+    /**
+     * Daily certificate expiration check
+     * Runs daily at 08:00 AM
+     */
+    @Scheduled(cron = "${verifactu.batch.certificate-check-cron:0 0 8 * * ?}")
+    public void checkCertificateExpirations() {
+        log.info("[VeriFactu Batch] Checking for expiring certificates...");
+        try {
+            certificateService.checkExpiringCertificates(30); // Check for expiration within 30 days
+        } catch (Exception e) {
+            log.error("[VeriFactu Batch] Error checking certificate expirations", e);
         }
     }
 }

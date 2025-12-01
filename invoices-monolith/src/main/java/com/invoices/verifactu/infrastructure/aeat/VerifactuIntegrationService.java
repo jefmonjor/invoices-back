@@ -14,6 +14,32 @@ import org.springframework.stereotype.Service;
 import java.security.KeyStore;
 import java.time.format.DateTimeFormatter;
 
+import com.invoices.shared.domain.exception.BusinessException;
+import org.w3c.dom.Document;
+import org.xml.sax.InputSource;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+import java.io.StringReader;
+import java.io.StringWriter;
+import java.security.KeyStoreException;
+import java.security.PrivateKey;
+import java.security.cert.Certificate;
+import java.security.cert.X509Certificate;
+import java.util.ArrayList;
+import java.util.List;
+
+import xades4j.providers.KeyingDataProvider;
+import xades4j.production.XadesSigningProfile;
+import xades4j.production.XadesBesSigningProfile;
+import xades4j.production.XadesSigner;
+import xades4j.production.SignedDataObjects;
+import xades4j.properties.DataObjectDesc;
+import xades4j.production.DataObjectReference;
+import xades4j.algorithms.EnvelopedSignatureTransform;
+
 /**
  * Service for integrating with AEAT (Spanish Tax Agency) Veri*Factu system.
  * Handles XML generation, digital signing, and SOAP communication.
@@ -112,25 +138,91 @@ public class VerifactuIntegrationService {
      * 
      * @param xml         XML string to sign
      * @param certificate Certificate from company's KeyStore
+     * @param password    Password for the private key (usually same as keystore
+     *                    password)
      * @return Signed XML string
      */
-    public String signXML(String xml, KeyStore certificate) {
+    public String signXML(String xml, KeyStore certificate, String password) {
         log.debug("Signing XML with XAdES-BES signature");
 
-        // TODO: Implement XAdES-BES signing
-        // This requires:
-        // 1. Load private key from certificate
-        // 2. Create XML Signature (XMLSignature)
-        // 3. Apply XAdES-BES transformations
-        // 4. Embed signature in XML
+        try {
+            // 1. Parse XML string to Document
+            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+            dbf.setNamespaceAware(true);
+            Document document = dbf.newDocumentBuilder().parse(new InputSource(new StringReader(xml)));
 
-        // For now, return a placeholder
-        // In production, use libraries like:
-        // - Apache Santuario (XML Security)
-        // - DSS (Digital Signature Service) from EU
+            // 2. Prepare KeyingDataProvider from KeyStore
+            String alias = certificate.aliases().nextElement();
+            KeyStore.PrivateKeyEntry keyEntry = (KeyStore.PrivateKeyEntry) certificate.getEntry(alias,
+                    new KeyStore.PasswordProtection(password.toCharArray()));
 
-        log.warn("XAdES-BES signing not yet implemented - returning unsigned XML");
-        return xml; // PLACEHOLDER
+            if (keyEntry == null) {
+                throw new BusinessException("CERTIFICATE_ERROR", "No private key found in keystore",
+                        org.springframework.http.HttpStatus.BAD_REQUEST);
+            }
+
+            KeyingDataProvider keyingDataProvider = new KeyingDataProvider() {
+                @Override
+                public List<X509Certificate> getSigningCertificateChain() {
+                    try {
+                        Certificate[] chain = certificate.getCertificateChain(alias);
+                        List<X509Certificate> x509Chain = new ArrayList<>();
+                        if (chain != null) {
+                            for (Certificate c : chain) {
+                                if (c instanceof X509Certificate) {
+                                    x509Chain.add((X509Certificate) c);
+                                }
+                            }
+                        }
+                        return x509Chain;
+                    } catch (KeyStoreException e) {
+                        throw new RuntimeException("Error getting certificate chain", e);
+                    }
+                }
+
+                @Override
+                public PrivateKey getSigningKey(X509Certificate signingCert) {
+                    try {
+                        return keyEntry.getPrivateKey();
+                    } catch (Exception e) {
+                        throw new RuntimeException("Error getting private key", e);
+                    }
+                }
+            };
+
+            // 3. Create Signing Profile
+            XadesSigningProfile p = new XadesBesSigningProfile(keyingDataProvider);
+
+            // 4. Create Signer
+            XadesSigner signer = p.newSigner();
+
+            // 5. Sign
+            // We sign the whole document (DataObjectDesc with empty URI means whole doc)
+            DataObjectDesc obj = new DataObjectReference("");
+            obj.withTransform(new EnvelopedSignatureTransform());
+
+            signer.sign(new SignedDataObjects(obj), document.getDocumentElement());
+
+            // 6. Convert back to String
+            TransformerFactory tf = TransformerFactory.newInstance();
+            Transformer transformer = tf.newTransformer();
+            StringWriter writer = new StringWriter();
+            transformer.transform(new DOMSource(document), new StreamResult(writer));
+
+            return writer.getBuffer().toString();
+
+        } catch (Exception e) {
+            log.error("Error signing XML", e);
+            throw new BusinessException("SIGNATURE_ERROR", "Error signing invoice XML: " + e.getMessage(),
+                    org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    private final org.springframework.web.reactive.function.client.WebClient webClient;
+
+    public VerifactuIntegrationService(
+            org.springframework.web.reactive.function.client.WebClient.Builder webClientBuilder) {
+        this.webClient = webClientBuilder.build();
     }
 
     /**
@@ -144,15 +236,80 @@ public class VerifactuIntegrationService {
         String endpoint = mode == VerifactuMode.PRODUCTION ? productionEndpoint : sandboxEndpoint;
         log.info("Calling AEAT endpoint: {} (mode: {})", endpoint, mode);
 
-        // TODO: Implement SOAP client
-        // Options:
-        // 1. Spring WS (WebServiceTemplate)
-        // 2. Apache CXF
-        // 3. JAX-WS
+        String soapRequest = wrapInSoapEnvelope(signedXml);
+        log.debug("SOAP Request: {}", soapRequest);
 
-        // For now, simulate response
-        log.warn("AEAT SOAP client not yet implemented - returning mock response");
-        return createMockResponse();
+        try {
+            String soapResponse = webClient.post()
+                    .uri(endpoint)
+                    .header("Content-Type", "text/xml; charset=utf-8")
+                    .bodyValue(soapRequest)
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .block(); // Synchronous call
+
+            log.debug("SOAP Response: {}", soapResponse);
+            return parseSoapResponse(soapResponse);
+
+        } catch (Exception e) {
+            log.error("Error calling AEAT", e);
+            throw new BusinessException("AEAT_CONNECTION_ERROR", "Error connecting to AEAT: " + e.getMessage(),
+                    org.springframework.http.HttpStatus.BAD_GATEWAY);
+        }
+    }
+
+    private String wrapInSoapEnvelope(String payload) {
+        // Remove XML declaration if present in payload to avoid double declaration
+        String cleanPayload = payload.replace("<?xml version=\"1.0\" encoding=\"UTF-8\"?>", "");
+
+        return "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
+                "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\">" +
+                "<soapenv:Header/>" +
+                "<soapenv:Body>" +
+                cleanPayload +
+                "</soapenv:Body>" +
+                "</soapenv:Envelope>";
+    }
+
+    private AeatResponse parseSoapResponse(String soapResponse) {
+        AeatResponse response = new AeatResponse();
+        try {
+            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+            dbf.setNamespaceAware(true);
+            Document doc = dbf.newDocumentBuilder().parse(new InputSource(new StringReader(soapResponse)));
+
+            // Basic parsing logic - needs to be refined based on actual AEAT response
+            // structure
+            // Assuming <EstadoRegistro>Correcto</EstadoRegistro> or similar
+            // This is a simplified parser for the "Unblocker" phase
+
+            // Check for Fault
+            if (doc.getElementsByTagName("soapenv:Fault").getLength() > 0) {
+                response.setSuccess(false);
+                response.setCode("SOAP_FAULT");
+                response.setMessage(doc.getElementsByTagName("faultstring").item(0).getTextContent());
+                return response;
+            }
+
+            // Look for specific Veri*Factu response tags
+            // Note: tag names depend on the specific AEAT service version
+            // For now, we'll look for generic success indicators or return raw content for
+            // debugging
+
+            // Placeholder logic:
+            response.setSuccess(true);
+            response.setCode("200");
+            response.setMessage("Response received (Parsing to be implemented fully)");
+            // response.setCsv(...)
+
+            return response;
+        } catch (Exception e) {
+            log.error("Error parsing SOAP response", e);
+            response.setSuccess(false);
+            response.setCode("PARSE_ERROR");
+            response.setMessage("Error parsing AEAT response: " + e.getMessage());
+            return response;
+        }
     }
 
     /**
@@ -189,8 +346,7 @@ public class VerifactuIntegrationService {
         if (response.getCsv() != null) {
             return response.getCsv();
         }
-        log.warn("CSV extraction not fully implemented - using placeholder");
-        return "CSV-" + System.currentTimeMillis(); // PLACEHOLDER
+        return null;
     }
 
     /**
@@ -203,19 +359,6 @@ public class VerifactuIntegrationService {
             return "https://www2.agenciatributaria.gob.es/wlpl/TIKE-CONT/verificar?csv=" + csv;
         }
         return null;
-    }
-
-    /**
-     * Creates mock AEAT response for testing (until real SOAP client is
-     * implemented).
-     */
-    private AeatResponse createMockResponse() {
-        AeatResponse response = new AeatResponse();
-        response.setSuccess(true);
-        response.setCode("0000");
-        response.setMessage("Factura registrada correctamente");
-        response.setCsv("MOCK-CSV-" + System.currentTimeMillis());
-        return response;
     }
 
     /**

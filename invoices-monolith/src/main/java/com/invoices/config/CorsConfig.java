@@ -39,7 +39,7 @@ public class CorsConfig implements WebMvcConfigurer {
         log.info("Configuring CORS for origins: {}", String.join(", ", allowedOrigins));
 
         registry.addMapping("/api/**")
-                .allowedOrigins(allowedOrigins)
+                .allowedOriginPatterns(allowedOrigins)
                 .allowedMethods(allowedMethods)
                 .allowedHeaders(allowedHeaders)
                 .exposedHeaders(exposedHeaders)
@@ -47,6 +47,6 @@ public class CorsConfig implements WebMvcConfigurer {
                 .maxAge(maxAge);
 
         log.info("CORS configured successfully - Allow credentials: {}, Max age: {}s",
-            allowCredentials, maxAge);
+                allowCredentials, maxAge);
     }
 }

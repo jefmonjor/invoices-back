@@ -99,13 +99,20 @@ public class CompanyCertificateService {
         }
     }
 
+    @lombok.Data
+    @lombok.AllArgsConstructor
+    public static class CertificateData {
+        private KeyStore keyStore;
+        private String password;
+    }
+
     /**
      * Retrieves and decrypts certificate for signing operations
      * 
      * @param companyId Company ID
-     * @return KeyStore ready for signing
+     * @return CertificateData containing KeyStore and password
      */
-    public KeyStore getCertificateForSigning(Long companyId) {
+    public CertificateData getCertificateForSigning(Long companyId) {
         log.debug("Retrieving certificate for signing, company {}", companyId);
 
         Company company = companyRepository.findById(companyId)
@@ -125,7 +132,8 @@ public class CompanyCertificateService {
             String decryptedPassword = encryptionService.decrypt(company.getCertPassword());
 
             // 3. Load KeyStore
-            return loadKeyStore(certificateBytes, decryptedPassword);
+            KeyStore keyStore = loadKeyStore(certificateBytes, decryptedPassword);
+            return new CertificateData(keyStore, decryptedPassword);
 
         } catch (Exception e) {
             log.error("Error retrieving certificate for company {}", companyId, e);
@@ -170,5 +178,49 @@ public class CompanyCertificateService {
         log.info("Certificate validated: Subject={}, Valid until={}",
                 cert.getSubjectX500Principal().getName(),
                 cert.getNotAfter());
+    }
+
+    /**
+     * Checks for certificates expiring within the specified days.
+     * 
+     * @param daysThreshold Number of days to check for expiration
+     */
+    @Transactional(readOnly = true)
+    public void checkExpiringCertificates(int daysThreshold) {
+        log.info("Checking for certificates expiring within {} days", daysThreshold);
+        java.util.List<Company> companies = companyRepository.findAll();
+
+        for (Company company : companies) {
+            if (company.getCertRef() != null && company.getCertPassword() != null) {
+                try {
+                    CertificateData certData = getCertificateForSigning(company.getId());
+                    KeyStore keyStore = certData.getKeyStore();
+                    Enumeration<String> aliases = keyStore.aliases();
+                    if (aliases.hasMoreElements()) {
+                        String alias = aliases.nextElement();
+                        X509Certificate cert = (X509Certificate) keyStore.getCertificate(alias);
+
+                        java.util.Date expirationDate = cert.getNotAfter();
+                        long daysUntilExpiration = java.time.temporal.ChronoUnit.DAYS.between(
+                                java.time.Instant.now(),
+                                expirationDate.toInstant());
+
+                        if (daysUntilExpiration <= daysThreshold) {
+                            if (daysUntilExpiration < 0) {
+                                log.error("Certificate EXPIRED for company {}: {} (expired {} days ago)",
+                                        company.getId(), company.getBusinessName(), Math.abs(daysUntilExpiration));
+                                // TODO: Send alert email
+                            } else {
+                                log.warn("Certificate EXPIRING SOON for company {}: {} (expires in {} days)",
+                                        company.getId(), company.getBusinessName(), daysUntilExpiration);
+                                // TODO: Send warning email
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    log.error("Error checking certificate for company {}", company.getId(), e);
+                }
+            }
+        }
     }
 }

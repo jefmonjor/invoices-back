@@ -43,4 +43,5 @@ public class InvoiceDTO {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private List<InvoiceItemDTO> items;
+    private String verifactuError; // Error message from VeriFactu if rejected
 }

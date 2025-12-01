@@ -35,6 +35,9 @@ public interface InvoiceRepository {
 
     List<InvoiceSummary> findSummariesByCompanyId(Long companyId);
 
+    // Pagination support
+    List<InvoiceSummary> findSummariesByCompanyId(Long companyId, int page, int size);
+
     long countByCompanyId(Long companyId);
 
     void deleteByCompanyId(Long companyId);

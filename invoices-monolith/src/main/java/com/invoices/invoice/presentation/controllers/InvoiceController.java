@@ -77,17 +77,28 @@ public class InvoiceController {
     }
 
     /**
-     * GET /invoices - Get all invoices
+     * GET /invoices - Get all invoices (paginated)
+     * Returns paginated list of invoices with X-Total-Count header for frontend
+     * pagination
      */
     @GetMapping
-    public ResponseEntity<List<InvoiceDTO>> getAllInvoices() {
+    public ResponseEntity<List<InvoiceDTO>> getAllInvoices(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
         checkPlatformAdminAccess();
         Long companyId = com.invoices.security.context.CompanyContext.getCompanyId();
-        List<InvoiceSummary> invoices = getAllInvoicesUseCase.execute(companyId);
+
+        // Get total count for X-Total-Count header
+        long totalCount = invoiceRepository.countByCompanyId(companyId);
+
+        List<InvoiceSummary> invoices = getAllInvoicesUseCase.execute(companyId, page, size);
         List<InvoiceDTO> dtos = invoices.stream()
                 .map(dtoMapper::toSummaryDto)
                 .collect(Collectors.toList());
-        return ResponseEntity.ok(dtos);
+
+        return ResponseEntity.ok()
+                .header("X-Total-Count", String.valueOf(totalCount))
+                .body(dtos);
     }
 
     /**

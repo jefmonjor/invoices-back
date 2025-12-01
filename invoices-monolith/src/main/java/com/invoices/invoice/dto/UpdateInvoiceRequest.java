@@ -17,20 +17,38 @@ import java.util.List;
  * Request DTO for updating an existing invoice.
  * Matches OpenAPI specification v2.0.
  *
- * IMMUTABLE FIELDS (validated by backend):
- * - companyId: Cannot be changed after invoice creation
+ * <p>
+ * <b>IMMUTABLE FIELDS</b> (validated/rejected by backend if changed):
+ * </p>
+ * <ul>
+ * <li><b>companyId</b> - Cannot be changed after invoice creation (tenant
+ * boundary)</li>
+ * <li><b>invoiceNumber</b> - Cannot be changed after invoice creation
+ * (regulatory requirement)</li>
+ * </ul>
  *
- * UPDATABLE FIELDS:
- * - invoiceNumber: Can be updated to any valid format
- * - clientId: Can be updated (backend validates client exists)
- * - irpfPercentage: Can be updated (affects invoice calculations)
- * - rePercentage: Can be updated (affects invoice calculations)
- * - settlementNumber: Can be updated
- * - notes: Can be updated
- * - items: Can be updated (replaces all items)
+ * <p>
+ * <b>UPDATABLE FIELDS:</b>
+ * </p>
+ * <ul>
+ * <li>clientId - Can be updated (backend validates client exists)</li>
+ * <li>irpfPercentage - Can be updated (affects invoice calculations)</li>
+ * <li>rePercentage - Can be updated (affects invoice calculations)</li>
+ * <li>settlementNumber - Can be updated</li>
+ * <li>notes - Can be updated</li>
+ * <li>items - Can be updated (replaces all items)</li>
+ * </ul>
  *
+ * <p>
+ * Fields sent in request but marked immutable will cause backend to return
+ * <code>400 Bad Request</code>
+ * with message: "Cannot change invoice number" or "Cannot change company ID".
+ * </p>
+ *
+ * <p>
  * Ignores unknown fields (like 'id', 'status', 'createdAt', etc.) from
  * frontend.
+ * </p>
  */
 @Data
 @Builder
@@ -39,11 +57,17 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class UpdateInvoiceRequest {
 
-    // Immutable fields (included for deserialization but not updated)
+    // IMMUTABLE FIELDS - included for validation, rejected if different from
+    // existing invoice
+    /** Company ID (IMMUTABLE) - Backend validates this matches existing invoice */
     private Long companyId;
 
-    // Updatable fields
+    /**
+     * Invoice Number (IMMUTABLE) - Backend validates this matches existing invoice
+     */
     private String invoiceNumber;
+
+    // UPDATABLE FIELDS
     private Long clientId;
 
     @Size(max = 50, message = "Settlement number must not exceed 50 characters")

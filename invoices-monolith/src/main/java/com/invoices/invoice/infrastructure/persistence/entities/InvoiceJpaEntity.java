@@ -119,6 +119,9 @@ public class InvoiceJpaEntity {
     @Column(name = "verifactu_raw_response", columnDefinition = "jsonb")
     private String verifactuRawResponse;
 
+    @Column(name = "verifactu_error", columnDefinition = "TEXT")
+    private String verifactuError;
+
     @Column(name = "pdf_server_path", length = 500)
     private String pdfServerPath;
 
@@ -434,5 +437,13 @@ public class InvoiceJpaEntity {
 
     public void setQrPayload(String qrPayload) {
         this.qrPayload = qrPayload;
+    }
+
+    public String getVerifactuError() {
+        return verifactuError;
+    }
+
+    public void setVerifactuError(String verifactuError) {
+        this.verifactuError = verifactuError;
     }
 }

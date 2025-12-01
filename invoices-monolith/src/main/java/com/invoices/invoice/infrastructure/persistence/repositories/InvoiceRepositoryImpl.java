@@ -117,4 +117,19 @@ public class InvoiceRepositoryImpl implements InvoiceRepository {
                         view.getCompanyId()))
                 .collect(Collectors.toList());
     }
+
+    @Override
+    public List<InvoiceSummary> findSummariesByCompanyId(Long companyId, int page, int size) {
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size);
+        return jpaRepository.findProjectedByCompanyId(companyId, pageable).stream()
+                .map(view -> new InvoiceSummary(
+                        view.getId(),
+                        view.getInvoiceNumber(),
+                        view.getIssueDate(),
+                        view.getTotalAmount(),
+                        view.getStatus(),
+                        view.getClientId(),
+                        view.getCompanyId()))
+                .collect(Collectors.toList());
+    }
 }

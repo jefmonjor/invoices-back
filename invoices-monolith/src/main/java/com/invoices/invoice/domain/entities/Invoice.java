@@ -59,6 +59,7 @@ public class Invoice {
     private String xmlContent;
     private boolean isRectificativa;
     private Long rectifiesInvoiceId;
+    private String verifactuError; // Error message from VeriFactu if rejected
 
     public Invoice(
             Long id,
@@ -647,5 +648,14 @@ public class Invoice {
      */
     public Boolean getIsRectificativa() {
         return isRectificativa;
+    }
+
+    public String getVerifactuError() {
+        return verifactuError;
+    }
+
+    public void setVerifactuError(String verifactuError) {
+        this.verifactuError = verifactuError;
+        updateTimestamp();
     }
 }

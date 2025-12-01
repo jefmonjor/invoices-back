@@ -20,6 +20,9 @@ public interface JpaInvoiceRepository extends JpaRepository<InvoiceJpaEntity, Lo
 
         List<InvoiceSummaryView> findProjectedByCompanyId(Long companyId);
 
+        org.springframework.data.domain.Page<InvoiceSummaryView> findProjectedByCompanyId(Long companyId,
+                        org.springframework.data.domain.Pageable pageable);
+
         boolean existsByInvoiceNumber(String invoiceNumber);
 
         @org.springframework.data.jpa.repository.Query("SELECT i.invoiceNumber FROM InvoiceJpaEntity i WHERE YEAR(i.issueDate) = :year ORDER BY i.invoiceNumber DESC LIMIT 1")

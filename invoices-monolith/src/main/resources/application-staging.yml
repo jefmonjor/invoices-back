@@ -1,0 +1,28 @@
+spring:
+  config:
+    activate:
+      on-profile: staging
+
+  datasource:
+    # Staging database - defaults to local 'invoices_staging' if env vars not set
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/invoices_staging}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+
+  jpa:
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+
+verifactu:
+  mode: SANDBOX
+  aeat:
+    # Explicitly define endpoints to ensure clarity
+    endpoint-sandbox: https://www2.agenciatributaria.gob.es/static_files/common/internet/dep/aplicaciones/es/aeat/tike/cont/ws/SuministroInformacion.xsd
+    endpoint-production: https://www2.agenciatributaria.gob.es/wlpl/TIKE-CONT/ws/SuministroInformacion
+
+logging:
+  level:
+    root: INFO
+    com.invoices: DEBUG # Debug logging for staging troubleshooting

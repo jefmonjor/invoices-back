@@ -75,13 +75,8 @@ public class SecurityConfig {
                                                 .frameOptions(frame -> frame.deny())
 
                                                 // Prevent MIME type sniffing
-                                                .contentTypeOptions(contentType -> contentType.disable())
-
-                                                // Enable XSS protection
-                                                .xssProtection(xss -> xss
-                                                                .headerValue(org.springframework.security.web.header.writers.XXssProtectionHeaderWriter.HeaderValue.ENABLED_MODE_BLOCK))
-
-                                                // Force HTTPS in production (Strict-Transport-Security)
+                                                .contentTypeOptions(org.springframework.security.config.Customizer
+                                                                .withDefaults())
                                                 .httpStrictTransportSecurity(hsts -> hsts
                                                                 .includeSubDomains(true)
                                                                 .maxAgeInSeconds(31536000) // 1 year

@@ -86,6 +86,7 @@ public class InvoiceJpaMapper {
         jpaEntity.setVerifactuStatus(invoice.getVerifactuStatus());
         jpaEntity.setVerifactuTxId(invoice.getVerifactuTxId());
         jpaEntity.setVerifactuRawResponse(invoice.getVerifactuRawResponse());
+        jpaEntity.setVerifactuError(invoice.getVerifactuError());
         jpaEntity.setPdfServerPath(invoice.getPdfServerPath());
         jpaEntity.setPdfIsFinal(invoice.getPdfIsFinal());
         jpaEntity.setPdfIsFinal(invoice.getPdfIsFinal());
@@ -193,6 +194,9 @@ public class InvoiceJpaMapper {
         }
         if (jpaEntity.getXmlContent() != null) {
             invoice.setXmlContent(jpaEntity.getXmlContent());
+        }
+        if (jpaEntity.getVerifactuError() != null) {
+            invoice.setVerifactuError(jpaEntity.getVerifactuError());
         }
         invoice.setRectificativa(jpaEntity.isRectificativa());
         if (jpaEntity.getRectifiesInvoiceId() != null) {

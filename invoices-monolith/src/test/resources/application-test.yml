@@ -84,7 +84,9 @@ websocket:
 # VeriFactu Mock Configuration for tests
 verifactu:
   aeat:
-    url: http://localhost:8888/mock-aeat  # Mock AEAT server
+    endpoint-sandbox: http://localhost:8888/mock-aeat-sandbox
+    endpoint-production: http://localhost:8888/mock-aeat-production
+    timeout: 5000
   keystore:
     path: classpath:test-keystore.jks
     password: test-password
