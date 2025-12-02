@@ -17,5 +17,5 @@ CREATE INDEX IF NOT EXISTS idx_clients_business_name ON clients(business_name);
 CREATE INDEX IF NOT EXISTS idx_users_names ON users(last_name, first_name);
 
 -- 4. Optimizaciones para Veri*Factu
-CREATE INDEX IF NOT EXISTS idx_invoices_chain_hash ON invoices(last_hash);
+CREATE INDEX IF NOT EXISTS idx_invoices_chain_hash ON invoices(last_hash_before);
 CREATE INDEX IF NOT EXISTS idx_companies_verifactu_mode ON companies(verifactu_mode);

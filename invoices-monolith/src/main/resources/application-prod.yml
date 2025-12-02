@@ -33,3 +33,21 @@ logging:
     com.invoices: INFO
     org.springframework.web: WARN
     org.hibernate: WARN
+
+# Memory Optimization: Limit Thread & Connection Pools
+server:
+  tomcat:
+    threads:
+      max: 50        # Default is 200. Reducing to 50 saves ~75MB stack memory.
+      min-spare: 5
+    connection-timeout: 20000
+    max-connections: 1000
+
+spring:
+  datasource:
+    hikari:
+      maximum-pool-size: 5  # Default is 10. 5 is enough for this traffic and saves RAM.
+      minimum-idle: 2
+      idle-timeout: 300000
+      connection-timeout: 20000
+      max-lifetime: 1200000
