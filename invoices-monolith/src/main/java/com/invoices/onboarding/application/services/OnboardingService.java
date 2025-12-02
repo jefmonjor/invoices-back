@@ -2,8 +2,8 @@ package com.invoices.onboarding.application.services;
 
 import com.invoices.onboarding.domain.entities.DemoTemplate;
 import com.invoices.onboarding.domain.entities.OnboardingProgress;
-import com.invoices.onboarding.infrastructure.persistence.repositories.DemoTemplateRepository;
-import com.invoices.onboarding.infrastructure.persistence.repositories.OnboardingProgressRepository;
+import com.invoices.onboarding.domain.ports.DemoTemplateRepository;
+import com.invoices.onboarding.domain.ports.OnboardingProgressRepository;
 import com.invoices.onboarding.presentation.dto.OnboardingProgressDTO;
 import com.invoices.security.utils.SecurityUtils;
 import lombok.RequiredArgsConstructor;

@@ -1,7 +1,7 @@
 package com.invoices.company.application.services;
 
-import com.invoices.company.infrastructure.persistence.entities.CompanyInvitation;
-import com.invoices.company.infrastructure.persistence.repositories.CompanyInvitationRepository;
+import com.invoices.company.domain.entities.CompanyInvitation;
+import com.invoices.company.domain.ports.CompanyInvitationRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

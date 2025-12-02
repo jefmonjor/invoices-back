@@ -1,8 +1,8 @@
 package com.invoices.company.application.services;
 
-import com.invoices.company.infrastructure.persistence.entities.UserCompany;
-import com.invoices.company.infrastructure.persistence.entities.UserCompanyId;
-import com.invoices.company.infrastructure.persistence.repositories.UserCompanyRepository;
+import com.invoices.company.domain.entities.UserCompany;
+import com.invoices.company.domain.entities.UserCompanyId;
+import com.invoices.company.domain.ports.UserCompanyRepository;
 import com.invoices.invoice.domain.entities.Company;
 import com.invoices.invoice.domain.entities.InvoiceStatus;
 import com.invoices.invoice.domain.ports.CompanyRepository;
