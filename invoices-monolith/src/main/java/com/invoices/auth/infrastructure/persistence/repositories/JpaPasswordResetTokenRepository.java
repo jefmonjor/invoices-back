@@ -1,6 +1,7 @@
 package com.invoices.auth.infrastructure.persistence.repositories;
 
 import com.invoices.auth.domain.entities.PasswordResetToken;
+import com.invoices.auth.domain.ports.PasswordResetTokenRepository;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -15,7 +16,8 @@ import java.util.UUID;
  * Repository for password reset tokens.
  */
 @Repository
-public interface PasswordResetTokenRepository extends JpaRepository<PasswordResetToken, UUID> {
+public interface JpaPasswordResetTokenRepository
+        extends JpaRepository<PasswordResetToken, UUID>, PasswordResetTokenRepository {
 
     /**
      * Find a valid (not used, not expired) token.

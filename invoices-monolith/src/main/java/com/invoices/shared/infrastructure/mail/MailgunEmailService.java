@@ -53,12 +53,9 @@ public class MailgunEmailService implements EmailService {
                     .retrieve()
                     .bodyToMono(String.class)
                     .timeout(Duration.ofSeconds(10))
-                    .block(Duration.ofSeconds(15));  // Blocking call with timeout
+                    .block(Duration.ofSeconds(15)); // Blocking call with timeout
 
             log.info("Email sent successfully to: {}", to);
-        } catch (java.util.concurrent.TimeoutException e) {
-            log.error("Timeout sending email to {} after 10 seconds", to);
-            // In production, might want to retry or queue
         } catch (Exception e) {
             log.error("Error sending email to {}: {}", to, e.getMessage(), e);
             // In production, might want to retry or queue for later delivery
@@ -84,12 +81,9 @@ public class MailgunEmailService implements EmailService {
                     .retrieve()
                     .bodyToMono(String.class)
                     .timeout(Duration.ofSeconds(10))
-                    .block(Duration.ofSeconds(15));  // Blocking call with timeout
+                    .block(Duration.ofSeconds(15)); // Blocking call with timeout
 
             log.info("HTML email sent successfully to: {}", to);
-        } catch (java.util.concurrent.TimeoutException e) {
-            log.error("Timeout sending HTML email to {} after 10 seconds", to);
-            // In production, might want to retry or queue
         } catch (Exception e) {
             log.error("Error sending HTML email to {}: {}", to, e.getMessage(), e);
             // In production, might want to retry or queue for later delivery

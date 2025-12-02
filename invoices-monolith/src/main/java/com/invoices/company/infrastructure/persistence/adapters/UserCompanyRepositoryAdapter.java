@@ -3,9 +3,6 @@ package com.invoices.company.infrastructure.persistence.adapters;
 import com.invoices.company.domain.entities.UserCompany;
 import com.invoices.company.domain.entities.UserCompanyId;
 import com.invoices.company.domain.ports.UserCompanyRepository;
-import com.invoices.company.infrastructure.persistence.repositories.UserCompanyRepository as JpaUserCompanyRepository;
-import com.invoices.company.infrastructure.persistence.entities.UserCompany as JpaUserCompany;
-import com.invoices.company.infrastructure.persistence.entities.UserCompanyId as JpaUserCompanyId;
 import org.springframework.stereotype.Repository;
 import lombok.RequiredArgsConstructor;
 
@@ -14,18 +11,20 @@ import java.util.Optional;
 
 /**
  * Adapter implementing domain UserCompanyRepository port.
- * Bridges domain layer (which expects domain entities) and infrastructure layer (JPA entities).
+ * Bridges domain layer (which expects domain entities) and infrastructure layer
+ * (JPA entities).
  * Converts between domain and JPA entity representations.
  */
 @Repository("domainUserCompanyRepository")
 @RequiredArgsConstructor
 public class UserCompanyRepositoryAdapter implements UserCompanyRepository {
 
-    private final JpaUserCompanyRepository jpaRepository;
+    private final com.invoices.company.infrastructure.persistence.repositories.UserCompanyRepository jpaRepository;
 
     @Override
     public Optional<UserCompany> findById(UserCompanyId id) {
-        JpaUserCompanyId jpaId = new JpaUserCompanyId(id.getUserId(), id.getCompanyId());
+        com.invoices.company.infrastructure.persistence.entities.UserCompanyId jpaId = new com.invoices.company.infrastructure.persistence.entities.UserCompanyId(
+                id.getUserId(), id.getCompanyId());
         return jpaRepository.findById(jpaId).map(this::toDomain);
     }
 
@@ -69,14 +68,14 @@ public class UserCompanyRepositoryAdapter implements UserCompanyRepository {
 
     @Override
     public UserCompany save(UserCompany userCompany) {
-        JpaUserCompany jpaEntity = toJpa(userCompany);
-        JpaUserCompany saved = jpaRepository.save(jpaEntity);
+        com.invoices.company.infrastructure.persistence.entities.UserCompany jpaEntity = toJpa(userCompany);
+        com.invoices.company.infrastructure.persistence.entities.UserCompany saved = jpaRepository.save(jpaEntity);
         return toDomain(saved);
     }
 
     @Override
     public void delete(UserCompany userCompany) {
-        JpaUserCompany jpaEntity = toJpa(userCompany);
+        com.invoices.company.infrastructure.persistence.entities.UserCompany jpaEntity = toJpa(userCompany);
         jpaRepository.delete(jpaEntity);
     }
 
@@ -90,12 +89,19 @@ public class UserCompanyRepositoryAdapter implements UserCompanyRepository {
         jpaRepository.deleteByIdUserId(userId);
     }
 
+    @Override
+    public void deleteAll(List<UserCompany> userCompanies) {
+        List<com.invoices.company.infrastructure.persistence.entities.UserCompany> jpaEntities = userCompanies.stream()
+                .map(this::toJpa)
+                .toList();
+        jpaRepository.deleteAll(jpaEntities);
+    }
+
     // Entity conversion methods
-    private UserCompany toDomain(JpaUserCompany jpaEntity) {
+    private UserCompany toDomain(com.invoices.company.infrastructure.persistence.entities.UserCompany jpaEntity) {
         UserCompanyId id = new UserCompanyId(
                 jpaEntity.getId().getUserId(),
-                jpaEntity.getId().getCompanyId()
-        );
+                jpaEntity.getId().getCompanyId());
         UserCompany domain = new UserCompany(id, jpaEntity.getRole());
         // Note: Company and User relationships are loaded separately when needed
         if (jpaEntity.getCompany() != null) {
@@ -107,11 +113,10 @@ public class UserCompanyRepositoryAdapter implements UserCompanyRepository {
         return domain;
     }
 
-    private JpaUserCompany toJpa(UserCompany domain) {
-        JpaUserCompanyId jpaId = new JpaUserCompanyId(
+    private com.invoices.company.infrastructure.persistence.entities.UserCompany toJpa(UserCompany domain) {
+        com.invoices.company.infrastructure.persistence.entities.UserCompanyId jpaId = new com.invoices.company.infrastructure.persistence.entities.UserCompanyId(
                 domain.getId().getUserId(),
-                domain.getId().getCompanyId()
-        );
-        return new JpaUserCompany(jpaId, domain.getRole());
+                domain.getId().getCompanyId());
+        return new com.invoices.company.infrastructure.persistence.entities.UserCompany(jpaId, domain.getRole());
     }
 }

@@ -43,7 +43,7 @@ class GetAllInvoicesUseCaseTest {
                 createTestInvoiceSummary(2L, "2025-002"),
                 createTestInvoiceSummary(3L, "2025-003"));
 
-        when(invoiceRepository.findSummariesByCompanyId(companyId)).thenReturn(expectedInvoices);
+        when(invoiceRepository.findSummariesByCompanyId(companyId, 0, 50)).thenReturn(expectedInvoices);
 
         // Act
         List<InvoiceSummary> result = useCase.execute(companyId);
@@ -53,7 +53,7 @@ class GetAllInvoicesUseCaseTest {
         assertThat(result).hasSize(3);
         assertThat(result).containsExactlyElementsOf(expectedInvoices);
 
-        verify(invoiceRepository, times(1)).findSummariesByCompanyId(companyId);
+        verify(invoiceRepository, times(1)).findSummariesByCompanyId(companyId, 0, 50);
     }
 
     @Test
@@ -62,7 +62,7 @@ class GetAllInvoicesUseCaseTest {
         Long companyId = 1L;
         List<InvoiceSummary> emptyList = new ArrayList<>();
 
-        when(invoiceRepository.findSummariesByCompanyId(companyId)).thenReturn(emptyList);
+        when(invoiceRepository.findSummariesByCompanyId(companyId, 0, 50)).thenReturn(emptyList);
 
         // Act
         List<InvoiceSummary> result = useCase.execute(companyId);
@@ -71,7 +71,7 @@ class GetAllInvoicesUseCaseTest {
         assertThat(result).isNotNull();
         assertThat(result).isEmpty();
 
-        verify(invoiceRepository, times(1)).findSummariesByCompanyId(companyId);
+        verify(invoiceRepository, times(1)).findSummariesByCompanyId(companyId, 0, 50);
     }
 
     @Test
@@ -81,7 +81,7 @@ class GetAllInvoicesUseCaseTest {
         List<InvoiceSummary> singleInvoice = Arrays.asList(
                 createTestInvoiceSummary(1L, "2025-001"));
 
-        when(invoiceRepository.findSummariesByCompanyId(companyId)).thenReturn(singleInvoice);
+        when(invoiceRepository.findSummariesByCompanyId(companyId, 0, 50)).thenReturn(singleInvoice);
 
         // Act
         List<InvoiceSummary> result = useCase.execute(companyId);
@@ -92,7 +92,7 @@ class GetAllInvoicesUseCaseTest {
         assertThat(result.get(0).id()).isEqualTo(1L);
         assertThat(result.get(0).invoiceNumber()).isEqualTo("2025-001");
 
-        verify(invoiceRepository, times(1)).findSummariesByCompanyId(companyId);
+        verify(invoiceRepository, times(1)).findSummariesByCompanyId(companyId, 0, 50);
     }
 
     @Test
@@ -104,7 +104,7 @@ class GetAllInvoicesUseCaseTest {
             manyInvoices.add(createTestInvoiceSummary((long) i, "2025-" + String.format("%03d", i)));
         }
 
-        when(invoiceRepository.findSummariesByCompanyId(companyId)).thenReturn(manyInvoices);
+        when(invoiceRepository.findSummariesByCompanyId(companyId, 0, 50)).thenReturn(manyInvoices);
 
         // Act
         List<InvoiceSummary> result = useCase.execute(companyId);
@@ -113,7 +113,7 @@ class GetAllInvoicesUseCaseTest {
         assertThat(result).isNotNull();
         assertThat(result).hasSize(100);
 
-        verify(invoiceRepository, times(1)).findSummariesByCompanyId(companyId);
+        verify(invoiceRepository, times(1)).findSummariesByCompanyId(companyId, 0, 50);
     }
 
     @Test
@@ -123,13 +123,13 @@ class GetAllInvoicesUseCaseTest {
         List<InvoiceSummary> invoices = Arrays.asList(
                 createTestInvoiceSummary(1L, "2025-001"));
 
-        when(invoiceRepository.findSummariesByCompanyId(companyId)).thenReturn(invoices);
+        when(invoiceRepository.findSummariesByCompanyId(companyId, 0, 50)).thenReturn(invoices);
 
         // Act
         useCase.execute(companyId);
 
         // Assert
-        verify(invoiceRepository, times(1)).findSummariesByCompanyId(companyId);
+        verify(invoiceRepository, times(1)).findSummariesByCompanyId(companyId, 0, 50);
         verifyNoMoreInteractions(invoiceRepository);
     }
 

@@ -15,9 +15,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Rate limiting filter using Bucket4j token bucket algorithm.
@@ -154,8 +152,7 @@ public class RateLimitingFilter implements Filter {
         // Only clean periodically to avoid excessive overhead
         // Clean every 100 requests (probabilistic)
         if (System.nanoTime() % 100 == 0) {
-            cache.entrySet().removeIf(entry ->
-                    (currentTime - entry.getValue().lastAccessTime) > ttlMillis);
+            cache.entrySet().removeIf(entry -> (currentTime - entry.getValue().lastAccessTime) > ttlMillis);
         }
     }
 

@@ -36,7 +36,7 @@ public class MailgunConfig {
 
         return WebClient.builder()
                 .baseUrl(mailgunApiBase)
-                .clientConnector(new org.springframework.web.reactive.function.client.ReactorClientHttpConnector(httpClient))
+                .clientConnector(new org.springframework.http.client.reactive.ReactorClientHttpConnector(httpClient))
                 .defaultHeaders(headers -> headers.setBasicAuth("api", mailgunApiKey))
                 .build();
     }

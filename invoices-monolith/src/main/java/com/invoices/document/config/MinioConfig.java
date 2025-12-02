@@ -57,15 +57,9 @@ public class MinioConfig {
 
         @PreDestroy
         public void shutdown() {
-            if (minioClient != null) {
-                try {
-                    // MinioClient maintains HTTP connections that should be closed
-                    minioClient.close();
-                    log.info("MinioClient closed successfully");
-                } catch (Exception e) {
-                    log.warn("Error closing MinioClient: {}", e.getMessage());
-                }
-            }
+            // MinioClient (v8+) uses OkHttp which manages its own connection pool.
+            // No explicit close() method is available or needed for the client itself.
+            log.info("MinioClient lifecycle manager shutdown");
         }
     }
 

@@ -40,13 +40,15 @@ import xades4j.properties.DataObjectDesc;
 import xades4j.production.DataObjectReference;
 import xades4j.algorithms.EnvelopedSignatureTransform;
 
+import com.invoices.verifactu.domain.ports.VerifactuIntegrationPort;
+
 /**
  * Service for integrating with AEAT (Spanish Tax Agency) Veri*Factu system.
  * Handles XML generation, digital signing, and SOAP communication.
  */
 @Service
 @Slf4j
-public class VerifactuIntegrationService {
+public class VerifactuIntegrationService implements VerifactuIntegrationPort {
 
     @Value("${verifactu.aeat.endpoint-sandbox}")
     private String sandboxEndpoint;
@@ -246,16 +248,12 @@ public class VerifactuIntegrationService {
                     .bodyValue(soapRequest)
                     .retrieve()
                     .bodyToMono(String.class)
-                    .timeout(Duration.ofSeconds(30))  // Prevent indefinite blocking
-                    .block(Duration.ofSeconds(35));   // Block with explicit timeout
+                    .timeout(Duration.ofSeconds(30)) // Prevent indefinite blocking
+                    .block(Duration.ofSeconds(35)); // Block with explicit timeout
 
             log.debug("SOAP Response: {}", soapResponse);
             return parseSoapResponse(soapResponse);
 
-        } catch (java.util.concurrent.TimeoutException e) {
-            log.error("Timeout calling AEAT endpoint after 30 seconds", e);
-            throw new BusinessException("AEAT_TIMEOUT", "AEAT service timeout - please retry",
-                    org.springframework.http.HttpStatus.GATEWAY_TIMEOUT);
         } catch (Exception e) {
             log.error("Error calling AEAT endpoint: {}", e.getMessage(), e);
             throw new BusinessException("AEAT_CONNECTION_ERROR", "Error connecting to AEAT: " + e.getMessage(),
@@ -284,7 +282,8 @@ public class VerifactuIntegrationService {
             dbf.setXIncludeAware(false);
             dbf.setExpandEntityReferences(false);
         } catch (Exception e) {
-            log.warn("Could not disable XXE features completely, some features may not be supported: {}", e.getMessage());
+            log.warn("Could not disable XXE features completely, some features may not be supported: {}",
+                    e.getMessage());
             // Still try to configure what we can
         }
 

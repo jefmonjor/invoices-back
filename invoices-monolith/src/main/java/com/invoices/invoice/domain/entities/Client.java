@@ -63,6 +63,10 @@ public class Client {
         this(id, businessName, taxId, address, city, postalCode, province, "España", phone, email, companyId);
     }
 
+    public Client(Long id, Long companyId, String businessName, String taxId, String email) {
+        this(id, businessName, taxId, null, null, null, null, "España", null, email, companyId);
+    }
+
     private void validateMandatoryFields(String businessName, String taxId) {
         if (businessName == null || businessName.trim().isEmpty()) {
             throw new IllegalArgumentException("Business name cannot be null or empty");
@@ -140,5 +144,15 @@ public class Client {
 
     public Long getCompanyId() {
         return companyId;
+    }
+
+    public Client withBusinessName(String businessName) {
+        return new Client(this.id, businessName, this.taxId, this.address, this.city, this.postalCode, this.province,
+                this.country, this.phone, this.email, this.companyId);
+    }
+
+    public Client withEmail(String email) {
+        return new Client(this.id, this.businessName, this.taxId, this.address, this.city, this.postalCode,
+                this.province, this.country, this.phone, email, this.companyId);
     }
 }

@@ -1,5 +1,6 @@
 package com.invoices.shared.infrastructure.security.encryption;
 
+import com.invoices.shared.domain.ports.EncryptionService;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,7 +22,11 @@ public class EncryptedStringConverter implements AttributeConverter<String, Stri
         if (attribute == null) {
             return null;
         }
-        return encryptionService.encrypt(attribute);
+        try {
+            return encryptionService.encrypt(attribute);
+        } catch (Exception e) {
+            throw new RuntimeException("Error encrypting attribute", e);
+        }
     }
 
     @Override
@@ -29,6 +34,10 @@ public class EncryptedStringConverter implements AttributeConverter<String, Stri
         if (dbData == null) {
             return null;
         }
-        return encryptionService.decrypt(dbData);
+        try {
+            return encryptionService.decrypt(dbData);
+        } catch (Exception e) {
+            throw new RuntimeException("Error decrypting attribute", e);
+        }
     }
 }

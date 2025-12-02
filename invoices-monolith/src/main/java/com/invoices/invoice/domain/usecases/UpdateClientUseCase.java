@@ -38,12 +38,12 @@ public class UpdateClientUseCase {
      * 4. Save changes if anything changed
      * 5. Publish ClientUpdated event only if changed
      *
-     * @param clientId ID of the client to update
+     * @param clientId     ID of the client to update
      * @param businessName New business name (optional)
-     * @param email New email (optional)
+     * @param email        New email (optional)
      * @return Updated Client entity
      * @throws ResourceNotFoundException if client doesn't exist
-     * @throws IllegalArgumentException if validation fails
+     * @throws IllegalArgumentException  if validation fails
      */
     public Client execute(Long clientId, String businessName, String email) {
         log.debug("Updating client {}", clientId);
@@ -61,17 +61,18 @@ public class UpdateClientUseCase {
             if (!client.getBusinessName().equals(businessName.trim())) {
                 log.debug("Updating business name for client {}: {} -> {}",
                         clientId, client.getBusinessName(), businessName);
-                client.setBusinessName(businessName.trim());
+                client = client.withBusinessName(businessName.trim());
                 changed = true;
             }
         }
 
         // Update email if provided
         if (email != null && !email.trim().isEmpty()) {
-            if (!email.trim().equals(client.getEmail())) {
+            String newEmail = email.trim();
+            if (client.getEmail() == null || !client.getEmail().equals(newEmail)) {
                 log.debug("Updating email for client {}: {} -> {}",
                         clientId, client.getEmail(), email);
-                client.setEmail(email.trim());
+                client = client.withEmail(newEmail);
                 changed = true;
             }
         }

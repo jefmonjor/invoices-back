@@ -1,7 +1,7 @@
 package com.invoices.company.application.services;
 
-import com.invoices.audit.infrastructure.persistence.repositories.PlatformAdminAuditLogRepository;
-import com.invoices.company.infrastructure.persistence.repositories.UserCompanyRepository;
+import com.invoices.audit.domain.ports.PlatformAdminAuditLogRepository;
+import com.invoices.company.domain.ports.UserCompanyRepository;
 import com.invoices.company.presentation.dto.CompanyDto;
 import com.invoices.company.presentation.dto.CompanyMetricsDto;
 import com.invoices.invoice.domain.entities.Company;

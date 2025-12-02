@@ -57,7 +57,7 @@ public interface UserCompanyRepository {
      * Count users with a specific role in a company.
      *
      * @param companyId the company ID
-     * @param role the role to count
+     * @param role      the role to count
      * @return number of users with that role
      */
     long countByIdCompanyIdAndRole(Long companyId, String role);
@@ -91,6 +91,13 @@ public interface UserCompanyRepository {
      * @param companyId the company ID
      */
     void deleteByIdCompanyId(Long companyId);
+
+    /**
+     * Delete a list of user-company relationships.
+     *
+     * @param userCompanies the list of relationships to delete
+     */
+    void deleteAll(List<UserCompany> userCompanies);
 
     /**
      * Delete all user-company relationships for a user.

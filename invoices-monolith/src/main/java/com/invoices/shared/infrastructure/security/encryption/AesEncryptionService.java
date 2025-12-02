@@ -1,5 +1,6 @@
 package com.invoices.shared.infrastructure.security.encryption;
 
+import com.invoices.shared.domain.ports.EncryptionService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 

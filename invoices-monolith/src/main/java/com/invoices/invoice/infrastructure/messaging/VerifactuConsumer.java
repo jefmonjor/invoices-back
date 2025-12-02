@@ -62,7 +62,7 @@ public class VerifactuConsumer {
         this.notificationService = notificationService;
         // Initialize with default, will be replaced after @Value injection
         this.retryExecutor = Executors.newScheduledThreadPool(5, r -> {
-            Thread t = new Thread(r, "verifactu-retry-" + Thread.currentThread().getId());
+            Thread t = new Thread(r, "verifactu-retry-" + Thread.currentThread().threadId());
             t.setDaemon(false);
             return t;
         });
@@ -70,18 +70,17 @@ public class VerifactuConsumer {
 
     @PreDestroy
     public void shutdown() {
-        // Graceful shutdown with timeout
-        if (retryExecutor != null && !retryExecutor.isShutdown()) {
-            retryExecutor.shutdown();
-            try {
-                if (!retryExecutor.awaitTermination(10, TimeUnit.SECONDS)) {
-                    log.warn("VeriFactu executor did not terminate gracefully, forcing shutdown");
-                    retryExecutor.shutdownNow();
-                }
-            } catch (InterruptedException e) {
-                log.error("Error waiting for VeriFactu executor shutdown", e);
+        log.info("[VeriFactu Consumer] Shutting down retry executor service");
+        retryExecutor.shutdown();
+        try {
+            if (!retryExecutor.awaitTermination(10, TimeUnit.SECONDS)) {
+                log.warn("[VeriFactu Consumer] Executor service did not terminate within timeout, forcing shutdown");
                 retryExecutor.shutdownNow();
             }
+        } catch (InterruptedException e) {
+            log.error("[VeriFactu Consumer] Interrupted while waiting for executor shutdown", e);
+            retryExecutor.shutdownNow();
+            Thread.currentThread().interrupt();
         }
     }
 
@@ -278,19 +277,4 @@ public class VerifactuConsumer {
         return value != null ? Long.parseLong(value) : 0L;
     }
 
-    @PreDestroy
-    public void shutdown() {
-        log.info("[VeriFactu Consumer] Shutting down retry executor service");
-        retryExecutor.shutdown();
-        try {
-            if (!retryExecutor.awaitTermination(10, TimeUnit.SECONDS)) {
-                log.warn("[VeriFactu Consumer] Executor service did not terminate within timeout, forcing shutdown");
-                retryExecutor.shutdownNow();
-            }
-        } catch (InterruptedException e) {
-            log.error("[VeriFactu Consumer] Interrupted while waiting for executor shutdown", e);
-            retryExecutor.shutdownNow();
-            Thread.currentThread().interrupt();
-        }
-    }
 }

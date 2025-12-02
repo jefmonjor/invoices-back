@@ -26,7 +26,7 @@ public class GeneratePdfUseCase {
         private final ClientRepository clientRepository;
         private final PdfGenerator pdfGenerator;
         private final FileStorageService fileStorageService;
-        private final com.invoices.invoice.infrastructure.messaging.RedisVerifactuProducer redisVerifactuProducer;
+        private final com.invoices.invoice.domain.ports.VerifactuVerificationPublisher verifactuPublisher;
         private final com.invoices.invoice.infrastructure.services.InvoiceCanonicalizer invoiceCanonicalizer;
         private final com.invoices.document.domain.services.StorageKeyGenerator storageKeyGenerator;
         private final com.invoices.invoice.infrastructure.services.HashingService hashingService;
@@ -78,7 +78,7 @@ public class GeneratePdfUseCase {
                 invoiceRepository.save(invoice);
 
                 // 8. Enqueue for VeriFactu verification
-                redisVerifactuProducer.enqueueInvoice(invoice.getId());
+                verifactuPublisher.enqueueForVerification(invoice.getId());
                 log.info("PDF generated, stored, and enqueued for VeriFactu. Invoice: {}, Hash: {}",
                                 invoice.getInvoiceNumber(), canonicalHash);
 

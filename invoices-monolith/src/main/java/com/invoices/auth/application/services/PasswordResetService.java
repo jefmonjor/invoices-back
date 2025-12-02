@@ -106,8 +106,8 @@ public class PasswordResetService {
                 .orElseThrow(() -> new IllegalStateException("User not found for reset token"));
 
         // Update password
-        user.setPassword(passwordEncoder.encode(newPassword));
-        userRepository.save(user);
+        User updatedUser = user.withPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(updatedUser);
 
         // Mark token as used
         resetToken.setUsed(true);
