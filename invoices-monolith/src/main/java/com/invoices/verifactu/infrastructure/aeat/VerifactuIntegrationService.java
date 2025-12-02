@@ -152,9 +152,8 @@ public class VerifactuIntegrationService {
         log.debug("Signing XML with XAdES-BES signature");
 
         try {
-            // 1. Parse XML string to Document
-            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-            dbf.setNamespaceAware(true);
+            // 1. Parse XML string to Document with XXE protections
+            DocumentBuilderFactory dbf = createSecureDocumentBuilderFactory();
             Document document = dbf.newDocumentBuilder().parse(new InputSource(new StringReader(xml)));
 
             // 2. Prepare KeyingDataProvider from KeyStore
@@ -264,6 +263,34 @@ public class VerifactuIntegrationService {
         }
     }
 
+    /**
+     * Creates a DocumentBuilderFactory with XXE protections enabled.
+     * Prevents XML External Entity (XXE) injection attacks.
+     *
+     * @return secure DocumentBuilderFactory
+     * @throws Exception if security features cannot be configured
+     */
+    private DocumentBuilderFactory createSecureDocumentBuilderFactory() throws Exception {
+        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+        dbf.setNamespaceAware(true);
+
+        // Disable XXE and DTD processing
+        try {
+            // Prevent XXE attacks by disabling DTD processing
+            dbf.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+            dbf.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+            dbf.setFeature("http://xml.org/sax/features/external-general-entities", false);
+            dbf.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+            dbf.setXIncludeAware(false);
+            dbf.setExpandEntityReferences(false);
+        } catch (Exception e) {
+            log.warn("Could not disable XXE features completely, some features may not be supported: {}", e.getMessage());
+            // Still try to configure what we can
+        }
+
+        return dbf;
+    }
+
     private String wrapInSoapEnvelope(String payload) {
         // Remove XML declaration if present in payload to avoid double declaration
         String cleanPayload = payload.replace("<?xml version=\"1.0\" encoding=\"UTF-8\"?>", "");
@@ -280,8 +307,8 @@ public class VerifactuIntegrationService {
     private AeatResponse parseSoapResponse(String soapResponse) {
         AeatResponse response = new AeatResponse();
         try {
-            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-            dbf.setNamespaceAware(true);
+            // Use secure DocumentBuilderFactory with XXE protections
+            DocumentBuilderFactory dbf = createSecureDocumentBuilderFactory();
             Document doc = dbf.newDocumentBuilder().parse(new InputSource(new StringReader(soapResponse)));
 
             // Basic parsing logic - needs to be refined based on actual AEAT response

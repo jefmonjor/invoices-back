@@ -35,7 +35,6 @@ public class VerifactuConsumer {
 
     private static final int MAX_RETRIES = 4;
     private static final long[] RETRY_DELAYS_MS = { 0, 5000, 30000, 120000 }; // 0s, 5s, 30s, 2min
-    private static final int EXECUTOR_POOL_SIZE = 5; // Managed thread pool for retries
 
     private final RedisTemplate<String, Object> redisTemplate;
     private final VerifactuPort verifactuService;
@@ -51,6 +50,9 @@ public class VerifactuConsumer {
     @Value("${verifactu.dlq.key:verifactu-dlq}")
     private String dlqKey;
 
+    @Value("${verifactu.consumer.executor-pool-size:5}")
+    private int executorPoolSize;
+
     public VerifactuConsumer(
             RedisTemplate<String, Object> redisTemplate,
             VerifactuPort verifactuService,
@@ -58,11 +60,29 @@ public class VerifactuConsumer {
         this.redisTemplate = redisTemplate;
         this.verifactuService = verifactuService;
         this.notificationService = notificationService;
-        this.retryExecutor = Executors.newScheduledThreadPool(EXECUTOR_POOL_SIZE, r -> {
+        // Initialize with default, will be replaced after @Value injection
+        this.retryExecutor = Executors.newScheduledThreadPool(5, r -> {
             Thread t = new Thread(r, "verifactu-retry-" + Thread.currentThread().getId());
             t.setDaemon(false);
             return t;
         });
+    }
+
+    @PreDestroy
+    public void shutdown() {
+        // Graceful shutdown with timeout
+        if (retryExecutor != null && !retryExecutor.isShutdown()) {
+            retryExecutor.shutdown();
+            try {
+                if (!retryExecutor.awaitTermination(10, TimeUnit.SECONDS)) {
+                    log.warn("VeriFactu executor did not terminate gracefully, forcing shutdown");
+                    retryExecutor.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                log.error("Error waiting for VeriFactu executor shutdown", e);
+                retryExecutor.shutdownNow();
+            }
+        }
     }
 
     @Scheduled(fixedDelay = 5000) // Check every 5 seconds

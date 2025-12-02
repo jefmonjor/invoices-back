@@ -4,6 +4,7 @@ import io.minio.BucketExistsArgs;
 import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
 import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -37,6 +38,35 @@ public class MinioConfig {
                 .credentials(properties.getAccessKey(), properties.getSecretKey())
                 .region(properties.getRegion())
                 .build();
+    }
+
+    /**
+     * Wrapper component to manage MinioClient lifecycle.
+     * Ensures connections are properly closed on shutdown.
+     */
+    @Component
+    @Slf4j
+    public static class MinioClientLifecycleManager {
+
+        private final MinioClient minioClient;
+
+        public MinioClientLifecycleManager(MinioClient minioClient) {
+            this.minioClient = minioClient;
+            log.info("MinioClient lifecycle manager initialized");
+        }
+
+        @PreDestroy
+        public void shutdown() {
+            if (minioClient != null) {
+                try {
+                    // MinioClient maintains HTTP connections that should be closed
+                    minioClient.close();
+                    log.info("MinioClient closed successfully");
+                } catch (Exception e) {
+                    log.warn("Error closing MinioClient: {}", e.getMessage());
+                }
+            }
+        }
     }
 
     @Component
