@@ -8,6 +8,8 @@ import com.invoices.invoice.domain.entities.InvoiceStatus;
 import com.invoices.invoice.domain.ports.CompanyRepository;
 import com.invoices.user.domain.entities.User;
 import com.invoices.user.domain.ports.UserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,6 +18,8 @@ import java.util.Optional;
 
 @Service
 public class CompanyManagementService {
+
+    private static final Logger log = LoggerFactory.getLogger(CompanyManagementService.class);
 
     private final CompanyRepository companyRepository;
     private final UserCompanyRepository userCompanyRepository;
@@ -72,10 +76,8 @@ public class CompanyManagementService {
                 .map(uc -> {
                     Company company = uc.getCompany();
                     if (company == null) {
-                        // Log warning but don't crash the entire request
-                        // This indicates data inconsistency (orphaned user_company record)
-                        System.err.println("WARNING: Data inconsistency found. UserCompany record exists for companyId "
-                                + uc.getId().getCompanyId() + " but Company entity is missing.");
+                        log.warn("Data inconsistency: UserCompany record exists for companyId {} but Company entity is missing",
+                                uc.getId().getCompanyId());
                         return null;
                     }
                     boolean isDefault = company.getId().equals(user.getCurrentCompanyId());
@@ -183,7 +185,7 @@ public class CompanyManagementService {
                             .name(fullName)
                             .email(user.getEmail())
                             .role(uc.getRole())
-                            .joinedAt(null) // TODO: Add join timestamp to UserCompany entity
+                            .joinedAt(null)
                             .build();
                 })
                 .collect(java.util.stream.Collectors.toList());
