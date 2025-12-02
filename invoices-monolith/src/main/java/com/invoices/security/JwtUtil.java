@@ -13,7 +13,6 @@ import io.jsonwebtoken.security.SignatureException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
@@ -23,7 +22,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 /**
  * Utility class for generating and validating JWT tokens.
@@ -42,33 +40,6 @@ public class JwtUtil {
 
     @Value("${jwt.issuer}")
     private String issuer;
-
-    /**
-     * Generates a JWT token for the given user details.
-     *
-     * @param userDetails the user details
-     * @return the generated JWT token
-     */
-    public String generateToken(UserDetails userDetails) {
-        Map<String, Object> claims = new HashMap<>();
-
-        // Add roles to claims
-        String roles = userDetails.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .collect(Collectors.joining(","));
-        claims.put("roles", roles);
-
-        // Add platformRole if present
-        userDetails.getAuthorities().stream()
-                .filter(a -> a.getAuthority().startsWith("ROLE_PLATFORM_"))
-                .findFirst()
-                .ifPresent(a -> claims.put("platformRole", a.getAuthority().replace("ROLE_", "")));
-
-        String token = createToken(claims, userDetails.getUsername());
-        log.info("Generated JWT token for user: {}", userDetails.getUsername());
-
-        return token;
-    }
 
     /**
      * Generates a JWT token for the given email, roles and companyId.
@@ -98,17 +69,6 @@ public class JwtUtil {
         log.info("Generated JWT token for user: {} with companyId: {}", email, companyId);
 
         return token;
-    }
-
-    /**
-     * Generates a JWT token for the given email and roles (legacy support).
-     *
-     * @param email the user's email
-     * @param roles the user's roles
-     * @return the generated JWT token
-     */
-    public String generateToken(String email, java.util.Set<String> roles) {
-        return generateToken(email, roles, null);
     }
 
     /**

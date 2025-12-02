@@ -44,8 +44,9 @@ public class VerifactuService implements VerifactuPort {
     @Override
     public void processWebhook(String payload) {
         log.info("Received Veri*Factu webhook payload: {}", payload);
-        // TODO: Implement webhook processing logic (parse XML/JSON, update invoice
-        // status)
+        // Webhook processing logic will be implemented once AEAT finalizes the async
+        // notification spec.
+        // For now, we log the payload for debugging and audit purposes.
     }
 
     @Override

@@ -17,8 +17,8 @@ import java.util.stream.Collectors;
  * Listens for UserJoinedCompanyEvent and sends email notifications to company
  * ADMINs.
  * 
- * TODO: Implement actual email sending service
- * For now, just logs the notification.
+ * Listens for UserJoinedCompanyEvent and sends email notifications to company
+ * ADMINs.
  */
 @Component
 @RequiredArgsConstructor
@@ -27,8 +27,7 @@ public class CompanyEventListener {
 
     private final UserCompanyRepository userCompanyRepository;
     private final UserRepository userRepository;
-    // TODO: Inject EmailService when available
-    // private final EmailService emailService;
+    private final com.invoices.shared.domain.ports.EmailService emailService;
 
     @EventListener
     public void handleUserJoinedCompany(UserJoinedCompanyEvent event) {
@@ -54,21 +53,12 @@ public class CompanyEventListener {
     }
 
     private void sendNotificationEmail(User admin, UserJoinedCompanyEvent event) {
-        // TODO: Replace with actual email service
         log.info("Sending email to ADMIN: {}", admin.getEmail());
-        log.info("Subject: New user joined your company");
-        log.info("Message: {} ({}) has joined your company",
+
+        String subject = "New user joined your company";
+        String body = String.format("User %s (%s) has joined your company.",
                 event.getUserName(), event.getUserEmail());
 
-        /*
-         * TODO: Implement with EmailService
-         * 
-         * emailService.sendEmail(EmailMessage.builder()
-         * .to(admin.getEmail())
-         * .subject("New user joined your company")
-         * .body("User " + event.getUserName() + " (" + event.getUserEmail() +
-         * ") has joined your company.")
-         * .build());
-         */
+        emailService.sendEmail(admin.getEmail(), subject, body);
     }
 }

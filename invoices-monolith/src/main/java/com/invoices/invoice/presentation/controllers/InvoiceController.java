@@ -40,6 +40,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/invoices")
 @Slf4j
+@org.springframework.security.access.prepost.PreAuthorize("!hasRole('PLATFORM_ADMIN')")
 public class InvoiceController {
 
     private final GetInvoiceByIdUseCase getInvoiceByIdUseCase;
@@ -85,7 +86,7 @@ public class InvoiceController {
     public ResponseEntity<List<InvoiceDTO>> getAllInvoices(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        checkPlatformAdminAccess();
+        // checkPlatformAdminAccess(); // Handled by @PreAuthorize
         Long companyId = com.invoices.security.context.CompanyContext.getCompanyId();
 
         // Get total count for X-Total-Count header
@@ -106,7 +107,7 @@ public class InvoiceController {
      */
     @PostMapping
     public ResponseEntity<InvoiceDTO> createInvoice(@Valid @RequestBody CreateInvoiceRequest request) {
-        checkPlatformAdminAccess();
+        // checkPlatformAdminAccess(); // Handled by @PreAuthorize
         // Convert DTO items to domain InvoiceItems
         List<InvoiceItem> items = request.getItems().stream()
                 .map(this::toDomainItem)
@@ -132,7 +133,7 @@ public class InvoiceController {
      */
     @GetMapping("/{id}")
     public ResponseEntity<InvoiceDTO> getInvoiceById(@PathVariable Long id) {
-        checkPlatformAdminAccess();
+        // checkPlatformAdminAccess(); // Handled by @PreAuthorize
         Invoice invoice = getInvoiceByIdUseCase.execute(id);
         InvoiceDTO dto = dtoMapper.toDto(invoice);
         return ResponseEntity.ok(dto);
@@ -410,13 +411,5 @@ public class InvoiceController {
         return null;
     }
 
-    private void checkPlatformAdminAccess() {
-        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
-                .getContext().getAuthentication();
-        if (auth != null && auth.getAuthorities().contains(
-                new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_PLATFORM_ADMIN"))) {
-            throw new org.springframework.security.access.AccessDeniedException(
-                    "Platform Admins cannot access business data");
-        }
-    }
+    // checkPlatformAdminAccess() removed - replaced by @PreAuthorize
 }
