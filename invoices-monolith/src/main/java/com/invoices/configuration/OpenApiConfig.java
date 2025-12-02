@@ -28,6 +28,15 @@ public class OpenApiConfig {
     @Value("${spring.application.version:2.0.0}")
     private String applicationVersion;
 
+    @Value("${openapi.servers.development:http://localhost:8080}")
+    private String developmentServerUrl;
+
+    @Value("${openapi.servers.production:https://api.invoices.com}")
+    private String productionServerUrl;
+
+    @Value("${openapi.servers.staging:}")
+    private String stagingServerUrl;
+
     @Bean
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
@@ -84,13 +93,30 @@ public class OpenApiConfig {
     }
 
     private List<Server> serverList() {
-        return List.of(
-                new Server()
-                        .url("http://localhost:8080")
-                        .description("Local Development Server"),
-                new Server()
-                        .url("https://api.invoices.com")
-                        .description("Production Server (if applicable)"));
+        List<Server> servers = new java.util.ArrayList<>();
+
+        // Development server
+        if (developmentServerUrl != null && !developmentServerUrl.isEmpty()) {
+            servers.add(new Server()
+                    .url(developmentServerUrl)
+                    .description("Local Development Server"));
+        }
+
+        // Staging server (if configured)
+        if (stagingServerUrl != null && !stagingServerUrl.isEmpty()) {
+            servers.add(new Server()
+                    .url(stagingServerUrl)
+                    .description("Staging Server"));
+        }
+
+        // Production server
+        if (productionServerUrl != null && !productionServerUrl.isEmpty()) {
+            servers.add(new Server()
+                    .url(productionServerUrl)
+                    .description("Production Server"));
+        }
+
+        return servers;
     }
 
     private SecurityRequirement securityRequirement() {

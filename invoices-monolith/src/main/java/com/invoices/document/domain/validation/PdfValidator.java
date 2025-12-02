@@ -19,8 +19,8 @@ public class PdfValidator {
 
     private final Tika tika;
 
-    public PdfValidator() {
-        this.tika = new Tika();
+    public PdfValidator(Tika tika) {
+        this.tika = tika;
     }
 
     /**

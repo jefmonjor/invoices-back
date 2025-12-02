@@ -105,6 +105,11 @@ public class InvoiceRepositoryImpl implements InvoiceRepository {
     }
 
     @Override
+    public Optional<String> findLastInvoiceNumberByCompanyAndYearWithLock(Long companyId, int year) {
+        return jpaRepository.findLastInvoiceNumberByCompanyAndYearWithLock(companyId, year);
+    }
+
+    @Override
     public List<InvoiceSummary> findSummariesByCompanyId(Long companyId) {
         return jpaRepository.findProjectedByCompanyId(companyId).stream()
                 .map(view -> new InvoiceSummary(
