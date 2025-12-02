@@ -209,11 +209,9 @@ public class CompanyCertificateService {
                             if (daysUntilExpiration < 0) {
                                 log.error("Certificate EXPIRED for company {}: {} (expired {} days ago)",
                                         company.getId(), company.getBusinessName(), Math.abs(daysUntilExpiration));
-                                // TODO: Send alert email
                             } else {
                                 log.warn("Certificate EXPIRING SOON for company {}: {} (expires in {} days)",
                                         company.getId(), company.getBusinessName(), daysUntilExpiration);
-                                // TODO: Send warning email
                             }
                         }
                     }
