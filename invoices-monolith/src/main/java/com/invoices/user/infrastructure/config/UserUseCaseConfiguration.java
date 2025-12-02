@@ -1,5 +1,6 @@
 package com.invoices.user.infrastructure.config;
 
+import com.invoices.company.domain.ports.UserCompanyRepository;
 import com.invoices.user.domain.ports.PasswordHasher;
 import com.invoices.user.domain.ports.UserRepository;
 import com.invoices.user.domain.usecases.*;
@@ -24,8 +25,9 @@ public class UserUseCaseConfiguration {
     @Bean
     public AuthenticateUserUseCase authenticateUserUseCase(
             UserRepository userRepository,
-            PasswordHasher passwordHasher) {
-        return new AuthenticateUserUseCase(userRepository, passwordHasher);
+            PasswordHasher passwordHasher,
+            UserCompanyRepository userCompanyRepository) {
+        return new AuthenticateUserUseCase(userRepository, passwordHasher, userCompanyRepository);
     }
 
     @Bean

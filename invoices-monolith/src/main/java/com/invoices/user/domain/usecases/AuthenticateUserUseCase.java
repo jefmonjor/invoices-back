@@ -1,10 +1,14 @@
 package com.invoices.user.domain.usecases;
 
+import com.invoices.company.domain.entities.UserCompany;
+import com.invoices.company.domain.ports.UserCompanyRepository;
 import com.invoices.user.domain.entities.User;
 import com.invoices.user.domain.ports.PasswordHasher;
 import com.invoices.user.domain.ports.UserRepository;
 import com.invoices.user.exception.InvalidCredentialsException;
 import lombok.extern.slf4j.Slf4j;
+
+import java.util.List;
 
 /**
  * Use case for authenticating a user with email and password.
@@ -15,16 +19,19 @@ public class AuthenticateUserUseCase {
 
     private final UserRepository userRepository;
     private final PasswordHasher passwordHasher;
+    private final UserCompanyRepository userCompanyRepository;
 
-    public AuthenticateUserUseCase(UserRepository userRepository, PasswordHasher passwordHasher) {
+    public AuthenticateUserUseCase(UserRepository userRepository, PasswordHasher passwordHasher,
+            UserCompanyRepository userCompanyRepository) {
         this.userRepository = userRepository;
         this.passwordHasher = passwordHasher;
+        this.userCompanyRepository = userCompanyRepository;
     }
 
     /**
      * Execute the use case to authenticate a user
      *
-     * @param email the user's email
+     * @param email         the user's email
      * @param plainPassword the user's plain text password
      * @return the authenticated user
      * @throws InvalidCredentialsException if credentials are invalid
@@ -47,16 +54,14 @@ public class AuthenticateUserUseCase {
         if (!user.isEnabled()) {
             log.warn("User account is disabled: {}", email);
             throw new InvalidCredentialsException(
-                "User account is disabled"
-            );
+                    "User account is disabled");
         }
 
         // Business rule: Account must be valid (not expired, not locked)
         if (!user.isAccountValid()) {
             log.warn("User account is not valid: {}", email);
             throw new InvalidCredentialsException(
-                "User account is not valid (expired, locked, or credentials expired)"
-            );
+                    "User account is not valid (expired, locked, or credentials expired)");
         }
 
         // Verify password
@@ -67,11 +72,26 @@ public class AuthenticateUserUseCase {
         if (!matches) {
             log.warn("Password mismatch for user: {}", email);
             throw new InvalidCredentialsException(
-                "Invalid email or password"
-            );
+                    "Invalid email or password");
         }
 
         log.info("Authentication successful for user: {}", email);
+
+        // Auto-select first company if currentCompanyId is null
+        if (user.getCurrentCompanyId() == null) {
+            log.debug("User {} has no currentCompanyId set, attempting to auto-select first company", email);
+            List<UserCompany> userCompanies = userCompanyRepository.findByIdUserId(user.getId());
+
+            if (!userCompanies.isEmpty()) {
+                Long firstCompanyId = userCompanies.get(0).getId().getCompanyId();
+                log.info("Auto-selected company {} for user {}", firstCompanyId, email);
+                return user.withCurrentCompany(firstCompanyId);
+            } else {
+                log.warn("User {} has no associated companies", email);
+                // Return user as-is - they may be a platform admin or new user
+            }
+        }
+
         return user;
     }
 }
