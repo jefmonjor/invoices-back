@@ -62,25 +62,22 @@ public class DocumentController {
                 log.info("POST /api/documents - Uploading document: {}, size: {} bytes, contentType: {}",
                                 file.getOriginalFilename(), file.getSize(), file.getContentType());
 
-                // Validate file is not empty
                 if (file.isEmpty()) {
                         log.error("Upload failed: File is empty");
                         throw new IllegalArgumentException("File cannot be empty");
                 }
-                // Convert MultipartFile to domain FileContent
+
                 FileContent fileContent = new FileContent(
                                 file::getInputStream,
                                 file.getSize(),
                                 file.getContentType());
 
-                // Execute use case
                 Document uploadedDocument = uploadDocumentUseCase.execute(
                                 fileContent,
                                 file.getOriginalFilename(),
                                 invoiceId,
                                 uploadedBy);
 
-                // Map to response DTO
                 UploadDocumentResponse response = mapper.toUploadResponse(uploadedDocument);
 
                 log.info("Document uploaded successfully with ID: {}", uploadedDocument.getId());
@@ -115,10 +112,8 @@ public class DocumentController {
                         @Parameter(description = "Document ID", required = true) @PathVariable Long id) {
                 log.info("GET /api/documents/{}/download - Downloading document", id);
 
-                // Get metadata first to get original filename
                 Document metadata = downloadDocumentUseCase.getDocumentMetadata(id);
 
-                // Get file content
                 try (InputStream inputStream = downloadDocumentUseCase.execute(id)) {
                         byte[] content = inputStream.readAllBytes();
 

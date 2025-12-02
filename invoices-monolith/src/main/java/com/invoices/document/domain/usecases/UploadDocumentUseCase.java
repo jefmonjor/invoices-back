@@ -92,16 +92,14 @@ public class UploadDocumentUseCase {
                 fileContent.getContentType(), // contentType
                 fileContent.getSize(), // fileSize
                 uniqueFilename, // storageObjectName
-                invoiceId, // invoiceId (can be null)
-                uploadedBy != null ? uploadedBy : "system" // uploadedBy
+                invoiceId,
+                uploadedBy != null ? uploadedBy : "system"
         );
 
-        // Save metadata to repository
         return documentRepository.save(document);
     }
 
     private String generateFilename(com.invoices.invoice.domain.entities.Invoice invoice) {
-        // Check for vehicle plate in items
         String plate = invoice.getItems().stream()
                 .map(com.invoices.invoice.domain.entities.InvoiceItem::getVehiclePlate)
                 .filter(p -> p != null && !p.trim().isEmpty())
@@ -109,20 +107,16 @@ public class UploadDocumentUseCase {
                 .orElse(null);
 
         if (plate != null) {
-            // Format: PLATE-MONTH-YEAR.pdf
             String month = getSpanishMonthAbbreviation(invoice.getIssueDate().getMonthValue());
             int year = invoice.getIssueDate().getYear();
             return String.format("%s-%s-%d.pdf", plate.toUpperCase(), month, year);
-        } else {
-            // Format: FacturaXXX.pdf
-            // Extract number part from invoice number (e.g., 001/2025 -> 001)
-            String invoiceNumber = invoice.getInvoiceNumber();
-            String numberPart = invoiceNumber;
-            if (invoiceNumber != null && invoiceNumber.contains("/")) {
-                numberPart = invoiceNumber.split("/")[0];
-            }
-            return String.format("Factura%s.pdf", numberPart);
         }
+
+        String invoiceNumber = invoice.getInvoiceNumber();
+        String numberPart = invoiceNumber != null && invoiceNumber.contains("/")
+                ? invoiceNumber.split("/")[0]
+                : invoiceNumber;
+        return String.format("Factura%s.pdf", numberPart);
     }
 
     private String getSpanishMonthAbbreviation(int month) {
