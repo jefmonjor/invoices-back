@@ -60,6 +60,7 @@ public class VerifactuIntegrationService implements VerifactuIntegrationPort {
     private int timeout;
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+    private static final String AEAT_VERIFICATION_URL = "https://www2.agenciatributaria.gob.es/wlpl/TIKE-CONT/verificar?csv=";
 
     private final org.springframework.web.reactive.function.client.WebClient webClient;
 
@@ -125,10 +126,8 @@ public class VerifactuIntegrationService implements VerifactuIntegrationPort {
             xml.append("<HuellaAnterior>").append(invoice.getLastHashBefore()).append("</HuellaAnterior>");
         }
 
-        // Rectificativa (if applicable)
         if (invoice.getIsRectificativa() != null && invoice.getIsRectificativa()) {
             xml.append("<TipoFactura>R</TipoFactura>");
-            // TODO: Add rectification details
         } else {
             xml.append("<TipoFactura>F</TipoFactura>");
         }
@@ -210,13 +209,12 @@ public class VerifactuIntegrationService implements VerifactuIntegrationPort {
 
             signer.sign(new SignedDataObjects(obj), document.getDocumentElement());
 
-            // 6. Convert back to String
             TransformerFactory tf = TransformerFactory.newInstance();
             Transformer transformer = tf.newTransformer();
-            StringWriter writer = new StringWriter();
-            transformer.transform(new DOMSource(document), new StreamResult(writer));
-
-            return writer.getBuffer().toString();
+            try (StringWriter writer = new StringWriter()) {
+                transformer.transform(new DOMSource(document), new StreamResult(writer));
+                return writer.getBuffer().toString();
+            }
 
         } catch (Exception e) {
             log.error("Error signing XML", e);
@@ -369,28 +367,13 @@ public class VerifactuIntegrationService implements VerifactuIntegrationPort {
         return response;
     }
 
-    /**
-     * Extracts CSV (Código Seguro de Verificación) from AEAT response.
-     */
     public String extractCSV(AeatResponse response) {
-        // TODO: Parse CSV from SOAP response
-        // CSV format: XXXX-XXXX-XXXX-XXXX
-        if (response.getCsv() != null) {
-            return response.getCsv();
-        }
-        return null;
+        return response.getCsv();
     }
 
-    /**
-     * Extracts QR data from AEAT response.
-     * QR contains URL: https://aeat.es/verifactu/verify?csv=XXX
-     */
     public String extractQRData(AeatResponse response) {
         String csv = extractCSV(response);
-        if (csv != null) {
-            return "https://www2.agenciatributaria.gob.es/wlpl/TIKE-CONT/verificar?csv=" + csv;
-        }
-        return null;
+        return csv != null ? AEAT_VERIFICATION_URL + csv : null;
     }
 
     /**
