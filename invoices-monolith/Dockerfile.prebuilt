@@ -32,7 +32,7 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
 # Run the application
     "-Xmx450m", \
     "-Xms256m", \
-    "-XX:MaxMetaspaceSize=300m", \
+    "-XX:MaxMetaspaceSize=512m", \
     "-Xss512k", \
     "-XX:+UseContainerSupport", \
     "-XX:+ExitOnOutOfMemoryError", \
