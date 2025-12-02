@@ -29,6 +29,7 @@ import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
+import java.time.Duration;
 
 import xades4j.providers.KeyingDataProvider;
 import xades4j.production.XadesSigningProfile;
@@ -238,19 +239,26 @@ public class VerifactuIntegrationService {
         log.debug("SOAP Request: {}", soapRequest);
 
         try {
+            // Block with timeout to prevent thread pool exhaustion
+            // AEAT timeout is typically 30 seconds
             String soapResponse = webClient.post()
                     .uri(endpoint)
                     .header("Content-Type", "text/xml; charset=utf-8")
                     .bodyValue(soapRequest)
                     .retrieve()
                     .bodyToMono(String.class)
-                    .block(); // Synchronous call
+                    .timeout(Duration.ofSeconds(30))  // Prevent indefinite blocking
+                    .block(Duration.ofSeconds(35));   // Block with explicit timeout
 
             log.debug("SOAP Response: {}", soapResponse);
             return parseSoapResponse(soapResponse);
 
+        } catch (java.util.concurrent.TimeoutException e) {
+            log.error("Timeout calling AEAT endpoint after 30 seconds", e);
+            throw new BusinessException("AEAT_TIMEOUT", "AEAT service timeout - please retry",
+                    org.springframework.http.HttpStatus.GATEWAY_TIMEOUT);
         } catch (Exception e) {
-            log.error("Error calling AEAT", e);
+            log.error("Error calling AEAT endpoint: {}", e.getMessage(), e);
             throw new BusinessException("AEAT_CONNECTION_ERROR", "Error connecting to AEAT: " + e.getMessage(),
                     org.springframework.http.HttpStatus.BAD_GATEWAY);
         }

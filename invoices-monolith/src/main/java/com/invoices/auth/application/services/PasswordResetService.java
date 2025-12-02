@@ -34,6 +34,9 @@ public class PasswordResetService {
     @Value("${security.token.password-reset-expiration-hours:1}")
     private int tokenExpirationHours;
 
+    @Value("${app.frontend.url:http://localhost:3000}")
+    private String frontendUrl;
+
     /**
      * Initiates a password reset by generating a token and sending an email.
      *
@@ -120,11 +123,13 @@ public class PasswordResetService {
      * @param token the reset token
      */
     private void sendPasswordResetEmail(User user, String token) {
-        String resetUrl = "http://localhost:3000/reset-password?token=" + token; // TODO: Use configured frontend URL
+        String resetUrl = frontendUrl + "/reset-password?token=" + token;
 
         java.util.Map<String, Object> variables = new java.util.HashMap<>();
         variables.put("resetUrl", resetUrl);
+        variables.put("tokenExpirationHours", tokenExpirationHours);
 
+        log.debug("Sending password reset email to {} with URL: {}", user.getEmail(), resetUrl);
         emailService.sendHtmlEmail(user.getEmail(), "Restablece tu contraseña", "reset-password", variables);
     }
 

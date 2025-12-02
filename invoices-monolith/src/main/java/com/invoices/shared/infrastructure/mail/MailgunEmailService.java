@@ -11,6 +11,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;
 
+import java.time.Duration;
 import java.util.Map;
 
 @Service
@@ -37,40 +38,61 @@ public class MailgunEmailService implements EmailService {
     }
 
     public void sendSimpleEmail(String to, String subject, String body) {
-        log.info("Sending email to: {}", to);
+        log.info("Sending simple email to: {}", to);
 
-        webClient.post()
-                .uri("https://api.mailgun.net/v3/" + mailgunDomain + "/messages")
-                .headers(headers -> headers.setBasicAuth("api", mailgunApiKey))
-                .body(BodyInserters.fromFormData("from", fromEmail)
-                        .with("to", to)
-                        .with("subject", subject)
-                        .with("text", body))
-                .retrieve()
-                .bodyToMono(String.class)
-                .doOnSuccess(response -> log.info("Email sent successfully: {}", response))
-                .doOnError(error -> log.error("Error sending email", error))
-                .subscribe();
+        try {
+            // Block with timeout to ensure email sends within reasonable time
+            // Password reset and verification emails are critical
+            webClient.post()
+                    .uri("https://api.mailgun.net/v3/" + mailgunDomain + "/messages")
+                    .headers(headers -> headers.setBasicAuth("api", mailgunApiKey))
+                    .body(BodyInserters.fromFormData("from", fromEmail)
+                            .with("to", to)
+                            .with("subject", subject)
+                            .with("text", body))
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .timeout(Duration.ofSeconds(10))
+                    .block(Duration.ofSeconds(15));  // Blocking call with timeout
+
+            log.info("Email sent successfully to: {}", to);
+        } catch (java.util.concurrent.TimeoutException e) {
+            log.error("Timeout sending email to {} after 10 seconds", to);
+            // In production, might want to retry or queue
+        } catch (Exception e) {
+            log.error("Error sending email to {}: {}", to, e.getMessage(), e);
+            // In production, might want to retry or queue for later delivery
+        }
     }
 
     public void sendHtmlEmail(String to, String subject, String templateName, Map<String, Object> variables) {
         log.info("Sending HTML email to: {} using template: {}", to, templateName);
 
-        Context context = new Context();
-        context.setVariables(variables);
-        String htmlBody = templateEngine.process(templateName, context);
+        try {
+            Context context = new Context();
+            context.setVariables(variables);
+            String htmlBody = templateEngine.process(templateName, context);
 
-        webClient.post()
-                .uri("https://api.mailgun.net/v3/" + mailgunDomain + "/messages")
-                .headers(headers -> headers.setBasicAuth("api", mailgunApiKey))
-                .body(BodyInserters.fromFormData("from", fromEmail)
-                        .with("to", to)
-                        .with("subject", subject)
-                        .with("html", htmlBody))
-                .retrieve()
-                .bodyToMono(String.class)
-                .doOnSuccess(response -> log.info("HTML Email sent successfully: {}", response))
-                .doOnError(error -> log.error("Error sending HTML email", error))
-                .subscribe();
+            // Block with timeout to ensure email sends within reasonable time
+            webClient.post()
+                    .uri("https://api.mailgun.net/v3/" + mailgunDomain + "/messages")
+                    .headers(headers -> headers.setBasicAuth("api", mailgunApiKey))
+                    .body(BodyInserters.fromFormData("from", fromEmail)
+                            .with("to", to)
+                            .with("subject", subject)
+                            .with("html", htmlBody))
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .timeout(Duration.ofSeconds(10))
+                    .block(Duration.ofSeconds(15));  // Blocking call with timeout
+
+            log.info("HTML email sent successfully to: {}", to);
+        } catch (java.util.concurrent.TimeoutException e) {
+            log.error("Timeout sending HTML email to {} after 10 seconds", to);
+            // In production, might want to retry or queue
+        } catch (Exception e) {
+            log.error("Error sending HTML email to {}: {}", to, e.getMessage(), e);
+            // In production, might want to retry or queue for later delivery
+        }
     }
 }
