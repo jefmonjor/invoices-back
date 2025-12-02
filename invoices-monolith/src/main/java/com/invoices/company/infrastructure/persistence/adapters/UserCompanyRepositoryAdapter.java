@@ -20,6 +20,8 @@ import java.util.Optional;
 public class UserCompanyRepositoryAdapter implements UserCompanyRepository {
 
     private final com.invoices.company.infrastructure.persistence.repositories.UserCompanyRepository jpaRepository;
+    private final com.invoices.user.infrastructure.persistence.repositories.JpaUserRepository jpaUserRepository;
+    private final com.invoices.invoice.infrastructure.persistence.repositories.JpaCompanyRepository jpaCompanyRepository;
 
     @Override
     public Optional<UserCompany> findById(UserCompanyId id) {
@@ -117,6 +119,16 @@ public class UserCompanyRepositoryAdapter implements UserCompanyRepository {
         com.invoices.company.infrastructure.persistence.entities.UserCompanyId jpaId = new com.invoices.company.infrastructure.persistence.entities.UserCompanyId(
                 domain.getId().getUserId(),
                 domain.getId().getCompanyId());
-        return new com.invoices.company.infrastructure.persistence.entities.UserCompany(jpaId, domain.getRole());
+
+        com.invoices.company.infrastructure.persistence.entities.UserCompany entity = new com.invoices.company.infrastructure.persistence.entities.UserCompany(
+                jpaId, domain.getRole());
+
+        // Set references to satisfy @MapsId
+        // We use getReferenceById to avoid extra DB queries - we just need the proxy to
+        // link
+        entity.setUser(jpaUserRepository.getReferenceById(domain.getId().getUserId()));
+        entity.setCompany(jpaCompanyRepository.getReferenceById(domain.getId().getCompanyId()));
+
+        return entity;
     }
 }
