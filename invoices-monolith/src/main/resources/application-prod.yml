@@ -8,6 +8,15 @@ spring:
   websocket:
     allowed-origins: ${ALLOWED_ORIGINS:https://yourdomain.com}
 
+  # Memory Optimization: DB Pool
+  datasource:
+    hikari:
+      maximum-pool-size: 5  # Default is 10. 5 is enough for this traffic and saves RAM.
+      minimum-idle: 2
+      idle-timeout: 300000
+      connection-timeout: 20000
+      max-lifetime: 1200000
+
 # Disable Swagger UI in production (security best practice)
 springdoc:
   swagger-ui:
@@ -42,12 +51,3 @@ server:
       min-spare: 5
     connection-timeout: 20000
     max-connections: 1000
-
-spring:
-  datasource:
-    hikari:
-      maximum-pool-size: 5  # Default is 10. 5 is enough for this traffic and saves RAM.
-      minimum-idle: 2
-      idle-timeout: 300000
-      connection-timeout: 20000
-      max-lifetime: 1200000
