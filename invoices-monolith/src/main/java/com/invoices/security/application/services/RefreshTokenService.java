@@ -1,7 +1,7 @@
 package com.invoices.security.application.services;
 
 import com.invoices.security.domain.entities.RefreshToken;
-import com.invoices.security.infrastructure.persistence.RefreshTokenRepository;
+import com.invoices.security.domain.ports.RefreshTokenRepository;
 
 import com.invoices.user.domain.ports.UserRepository;
 import lombok.RequiredArgsConstructor;

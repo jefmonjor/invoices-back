@@ -48,4 +48,15 @@ public interface InvoiceRepository {
      * Used for VeriFactu chaining to find the previous invoice.
      */
     Optional<Invoice> findLastInvoiceByCompanyIdAndIdNot(Long companyId, Long excludedInvoiceId);
+
+    /**
+     * Finds the last invoice number for a company and year with pessimistic write lock.
+     * Prevents race conditions when multiple threads generate invoice numbers simultaneously.
+     * Lock is held for the duration of the transaction.
+     *
+     * @param companyId the company ID
+     * @param year the year
+     * @return the last invoice number, or empty if no invoices exist
+     */
+    Optional<String> findLastInvoiceNumberByCompanyAndYearWithLock(Long companyId, int year);
 }

@@ -4,6 +4,7 @@ import com.invoices.document.domain.ports.DocumentRepository;
 import com.invoices.document.domain.ports.FileStorageService;
 import com.invoices.document.domain.usecases.*;
 import com.invoices.document.domain.validation.PdfValidator;
+import org.apache.tika.Tika;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -14,9 +15,21 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class DocumentUseCaseConfiguration {
 
+    /**
+     * Create a singleton Tika instance to avoid repeated instantiation.
+     * Tika is a heavyweight object that performs file type detection.
+     * Reusing a single instance improves performance and reduces memory consumption.
+     *
+     * @return singleton Tika instance
+     */
     @Bean
-    public PdfValidator pdfValidator() {
-        return new PdfValidator();
+    public Tika tika() {
+        return new Tika();
+    }
+
+    @Bean
+    public PdfValidator pdfValidator(Tika tika) {
+        return new PdfValidator(tika);
     }
 
     @Bean

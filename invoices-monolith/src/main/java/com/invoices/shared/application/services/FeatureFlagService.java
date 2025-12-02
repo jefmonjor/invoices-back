@@ -1,7 +1,7 @@
 package com.invoices.shared.application.services;
 
 import com.invoices.shared.domain.entities.FeatureFlag;
-import com.invoices.shared.infrastructure.persistence.FeatureFlagRepository;
+import com.invoices.shared.domain.ports.FeatureFlagRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;

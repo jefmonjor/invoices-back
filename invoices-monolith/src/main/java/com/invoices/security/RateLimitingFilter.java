@@ -15,7 +15,8 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.time.Duration;
-import java.util.Map;
+import java.time.Instant;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -32,12 +33,42 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public class RateLimitingFilter implements Filter {
 
-    private final Map<String, Bucket> generalCache = new ConcurrentHashMap<>();
-    private final Map<String, Bucket> authCache = new ConcurrentHashMap<>();
+    /**
+     * Wrapper to track bucket access time for TTL-based eviction.
+     */
+    private static class BucketEntry {
+        final Bucket bucket;
+        long lastAccessTime;
+
+        BucketEntry(Bucket bucket) {
+            this.bucket = bucket;
+            this.lastAccessTime = System.currentTimeMillis();
+        }
+
+        void updateAccessTime() {
+            this.lastAccessTime = System.currentTimeMillis();
+        }
+    }
+
+    private final Map<String, BucketEntry> generalCache;
+    private final Map<String, BucketEntry> authCache;
     private final RateLimitProperties properties;
 
     public RateLimitingFilter(RateLimitProperties properties) {
         this.properties = properties;
+        // Use LinkedHashMap with LRU eviction to prevent unbounded growth
+        this.generalCache = Collections.synchronizedMap(new LinkedHashMap<String, BucketEntry>(16, 0.75f, true) {
+            @Override
+            protected boolean removeEldestEntry(Map.Entry<String, BucketEntry> eldest) {
+                return size() > properties.getMaxCacheEntries();
+            }
+        });
+        this.authCache = Collections.synchronizedMap(new LinkedHashMap<String, BucketEntry>(16, 0.75f, true) {
+            @Override
+            protected boolean removeEldestEntry(Map.Entry<String, BucketEntry> eldest) {
+                return size() > properties.getMaxCacheEntries();
+            }
+        });
     }
 
     /**
@@ -52,6 +83,8 @@ public class RateLimitingFilter implements Filter {
         private long generalRefillMinutes = 1; // Default: 1 minute
         private long authCapacity = 10; // Default: 10 requests/minute
         private long authRefillMinutes = 1; // Default: 1 minute
+        private int maxCacheEntries = 1000; // Default: 1000 per cache (reduced from 10000)
+        private long cacheEntryTtlMinutes = 30; // Default: 30 minutes
     }
 
     @Override
@@ -73,12 +106,17 @@ public class RateLimitingFilter implements Filter {
         // Check if it's an auth endpoint
         boolean isAuthEndpoint = requestPath.startsWith("/api/auth/");
 
+        // Clean up expired entries periodically
+        cleanExpiredEntries(isAuthEndpoint);
+
         // Get appropriate bucket
-        Bucket bucket = resolveBucket(clientIp, isAuthEndpoint);
+        BucketEntry bucketEntry = resolveBucket(clientIp, isAuthEndpoint);
+        Bucket bucket = bucketEntry.bucket;
 
         // Try to consume 1 token
         if (bucket.tryConsume(1)) {
-            // Request allowed, add rate limit headers
+            // Request allowed, update access time and add rate limit headers
+            bucketEntry.updateAccessTime();
             long remainingTokens = bucket.getAvailableTokens();
             httpResponse.setHeader("X-Rate-Limit-Remaining", String.valueOf(remainingTokens));
             httpResponse.setHeader("X-Rate-Limit-Limit",
@@ -104,12 +142,30 @@ public class RateLimitingFilter implements Filter {
     }
 
     /**
+     * Cleans expired cache entries based on TTL.
+     * Runs periodically to remove entries for inactive IPs.
+     * Helps prevent memory buildup over time.
+     */
+    private void cleanExpiredEntries(boolean isAuthEndpoint) {
+        Map<String, BucketEntry> cache = isAuthEndpoint ? authCache : generalCache;
+        long currentTime = System.currentTimeMillis();
+        long ttlMillis = properties.getCacheEntryTtlMinutes() * 60 * 1000;
+
+        // Only clean periodically to avoid excessive overhead
+        // Clean every 100 requests (probabilistic)
+        if (System.nanoTime() % 100 == 0) {
+            cache.entrySet().removeIf(entry ->
+                    (currentTime - entry.getValue().lastAccessTime) > ttlMillis);
+        }
+    }
+
+    /**
      * Resolves or creates a bucket for the given client IP.
      * Uses different buckets for auth and general endpoints.
      * Configuration is loaded from application.yml (rate-limit.* properties).
      */
-    private Bucket resolveBucket(String clientIp, boolean isAuthEndpoint) {
-        Map<String, Bucket> cache = isAuthEndpoint ? authCache : generalCache;
+    private BucketEntry resolveBucket(String clientIp, boolean isAuthEndpoint) {
+        Map<String, BucketEntry> cache = isAuthEndpoint ? authCache : generalCache;
 
         return cache.computeIfAbsent(clientIp, key -> {
             long capacity = isAuthEndpoint ? properties.getAuthCapacity() : properties.getGeneralCapacity();
@@ -122,9 +178,11 @@ public class RateLimitingFilter implements Filter {
                     .refillIntervally(capacity, refillDuration)
                     .build();
 
-            return Bucket.builder()
+            Bucket bucket = Bucket.builder()
                     .addLimit(limit)
                     .build();
+
+            return new BucketEntry(bucket);
         });
     }
 

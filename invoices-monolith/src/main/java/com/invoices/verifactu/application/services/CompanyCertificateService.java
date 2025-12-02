@@ -3,7 +3,7 @@ package com.invoices.verifactu.application.services;
 import com.invoices.invoice.domain.entities.Company;
 import com.invoices.invoice.domain.ports.CompanyRepository;
 import com.invoices.shared.domain.exception.BusinessException;
-import com.invoices.shared.infrastructure.security.encryption.EncryptionService;
+import com.invoices.shared.domain.ports.EncryptionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

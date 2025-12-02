@@ -1,10 +1,10 @@
 package com.invoices.auth.application.services;
 
 import com.invoices.auth.domain.entities.PasswordResetToken;
-import com.invoices.auth.infrastructure.persistence.repositories.PasswordResetTokenRepository;
+import com.invoices.auth.domain.ports.PasswordResetTokenRepository;
 import com.invoices.shared.domain.ports.EmailService;
-import com.invoices.user.infrastructure.persistence.repositories.JpaUserRepository;
-import com.invoices.user.infrastructure.persistence.entities.UserJpaEntity;
+import com.invoices.user.domain.entities.User;
+import com.invoices.user.domain.ports.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -17,6 +17,9 @@ import java.util.UUID;
 
 /**
  * Service for password reset operations.
+ *
+ * REFACTORED: Now uses ports instead of infrastructure repositories.
+ * Imports only from domain layer, not infrastructure.
  */
 @Service
 @RequiredArgsConstructor
@@ -24,12 +27,15 @@ import java.util.UUID;
 public class PasswordResetService {
 
     private final PasswordResetTokenRepository tokenRepository;
-    private final JpaUserRepository jpaUserRepository;
+    private final UserRepository userRepository;
     private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
 
     @Value("${security.token.password-reset-expiration-hours:1}")
     private int tokenExpirationHours;
+
+    @Value("${app.frontend.url:http://localhost:3000}")
+    private String frontendUrl;
 
     /**
      * Initiates a password reset by generating a token and sending an email.
@@ -41,14 +47,14 @@ public class PasswordResetService {
         log.info("Password reset requested for email: {}", email);
 
         // Find user by email
-        var userOpt = jpaUserRepository.findByEmail(email);
+        var userOpt = userRepository.findByEmail(email);
         if (userOpt.isEmpty()) {
             // Don't reveal if email exists or not (security best practice)
             log.warn("Password reset requested for non-existent email: {}", email);
             return;
         }
 
-        UserJpaEntity user = userOpt.get();
+        User user = userOpt.get();
 
         // Invalidate any existing tokens for this user
         tokenRepository.deleteAllByUserId(user.getId());
@@ -96,12 +102,12 @@ public class PasswordResetService {
                 .orElseThrow(() -> new IllegalArgumentException("Invalid or expired reset token"));
 
         // Find user
-        UserJpaEntity user = jpaUserRepository.findById(resetToken.getUserId())
+        User user = userRepository.findById(resetToken.getUserId())
                 .orElseThrow(() -> new IllegalStateException("User not found for reset token"));
 
         // Update password
         user.setPassword(passwordEncoder.encode(newPassword));
-        jpaUserRepository.save(user);
+        userRepository.save(user);
 
         // Mark token as used
         resetToken.setUsed(true);
@@ -116,12 +122,14 @@ public class PasswordResetService {
      * @param user  the user
      * @param token the reset token
      */
-    private void sendPasswordResetEmail(UserJpaEntity user, String token) {
-        String resetUrl = "http://localhost:3000/reset-password?token=" + token; // TODO: Use configured frontend URL
+    private void sendPasswordResetEmail(User user, String token) {
+        String resetUrl = frontendUrl + "/reset-password?token=" + token;
 
         java.util.Map<String, Object> variables = new java.util.HashMap<>();
         variables.put("resetUrl", resetUrl);
+        variables.put("tokenExpirationHours", tokenExpirationHours);
 
+        log.debug("Sending password reset email to {} with URL: {}", user.getEmail(), resetUrl);
         emailService.sendHtmlEmail(user.getEmail(), "Restablece tu contraseña", "reset-password", variables);
     }
 

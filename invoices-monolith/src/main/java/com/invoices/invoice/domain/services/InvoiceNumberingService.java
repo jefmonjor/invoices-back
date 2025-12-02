@@ -35,9 +35,9 @@ public class InvoiceNumberingService {
     public String generateNextNumber(Long companyId) {
         int currentYear = Year.now().getValue();
 
-        // Find the last invoice number for this company and year
-        // This method should ideally use a lock in the repository implementation
-        Optional<String> lastNumberOpt = invoiceRepository.findLastInvoiceNumberByCompanyAndYear(companyId,
+        // Find the last invoice number for this company and year with pessimistic write lock
+        // Lock ensures only one thread can generate a number at a time
+        Optional<String> lastNumberOpt = invoiceRepository.findLastInvoiceNumberByCompanyAndYearWithLock(companyId,
                 currentYear);
 
         if (lastNumberOpt.isEmpty()) {

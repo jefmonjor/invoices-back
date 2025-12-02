@@ -10,7 +10,7 @@ import com.invoices.verifactu.domain.model.AeatResponse;
 import com.invoices.verifactu.domain.model.VerifactuMode;
 import com.invoices.verifactu.domain.model.VerifactuResponse;
 import com.invoices.verifactu.domain.ports.VerifactuPort;
-import com.invoices.verifactu.infrastructure.aeat.VerifactuIntegrationService;
+import com.invoices.verifactu.domain.ports.VerifactuIntegrationPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,7 +26,7 @@ public class VerifactuService implements VerifactuPort {
     private final ClientRepository clientRepository;
     private final InvoiceChainService chainService;
     private final CompanyCertificateService certificateService;
-    private final VerifactuIntegrationService integrationService;
+    private final VerifactuIntegrationPort integrationService;
 
     @Value("${verifactu.mode:SANDBOX}")
     private String verifactuModeConfig;

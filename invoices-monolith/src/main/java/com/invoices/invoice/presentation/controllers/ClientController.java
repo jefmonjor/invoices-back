@@ -1,15 +1,22 @@
 package com.invoices.invoice.presentation.controllers;
 
 import com.invoices.invoice.domain.entities.Client;
-import com.invoices.invoice.domain.ports.ClientRepository;
+import com.invoices.invoice.domain.usecases.CreateClientUseCase;
+import com.invoices.invoice.domain.usecases.DeleteClientUseCase;
+import com.invoices.invoice.domain.usecases.GetAllClientsUseCase;
+import com.invoices.invoice.domain.usecases.GetClientByIdUseCase;
+import com.invoices.invoice.domain.usecases.UpdateClientUseCase;
 import com.invoices.invoice.dto.ClientDTO;
 import com.invoices.invoice.presentation.mappers.ClientDtoMapper;
+import com.invoices.security.context.CompanyContext;
+import com.invoices.shared.domain.exception.ResourceNotFoundException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,6 +24,15 @@ import java.util.stream.Collectors;
 
 /**
  * REST controller for Client operations.
+ *
+ * Delegates all business logic to domain use cases.
+ * Responsible only for:
+ * - Extracting HTTP request parameters
+ * - Calling appropriate use case
+ * - Mapping domain entities to DTOs
+ * - Returning HTTP responses
+ *
+ * No business logic should be in this controller.
  */
 @RestController
 @RequestMapping("/api/clients")
@@ -25,7 +41,13 @@ import java.util.stream.Collectors;
 @Tag(name = "Clients", description = "Endpoints for client management")
 public class ClientController {
 
-    private final ClientRepository clientRepository;
+    // Inject use cases instead of repositories
+    private final GetAllClientsUseCase getAllClientsUseCase;
+    private final GetClientByIdUseCase getClientByIdUseCase;
+    private final CreateClientUseCase createClientUseCase;
+    private final UpdateClientUseCase updateClientUseCase;
+    private final DeleteClientUseCase deleteClientUseCase;
+
     private final ClientDtoMapper clientDtoMapper;
 
     @GetMapping
@@ -33,13 +55,23 @@ public class ClientController {
     public ResponseEntity<List<ClientDTO>> getAllClients() {
         log.info("GET /api/clients - Retrieving all clients");
 
-        Long companyId = com.invoices.security.context.CompanyContext.getCompanyId();
-        List<ClientDTO> clients = clientRepository.findByCompanyId(companyId).stream()
-                .map(clientDtoMapper::toDto)
-                .collect(Collectors.toList());
+        try {
+            Long companyId = CompanyContext.getCompanyId();
 
-        log.info("Found {} clients", clients.size());
-        return ResponseEntity.ok(clients);
+            // Execute use case
+            List<Client> clients = getAllClientsUseCase.execute(companyId);
+
+            // Map to DTOs
+            List<ClientDTO> dtos = clients.stream()
+                    .map(clientDtoMapper::toDto)
+                    .collect(Collectors.toList());
+
+            log.info("Found {} clients", dtos.size());
+            return ResponseEntity.ok(dtos);
+        } catch (Exception e) {
+            log.error("Error retrieving clients: {}", e.getMessage(), e);
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
     @GetMapping("/{id}")
@@ -47,15 +79,19 @@ public class ClientController {
     public ResponseEntity<ClientDTO> getClientById(@PathVariable Long id) {
         log.info("GET /api/clients/{} - Retrieving client", id);
 
-        return clientRepository.findById(id)
-                .map(client -> {
-                    log.info("Client found: {}", client.getBusinessName());
-                    return ResponseEntity.ok(clientDtoMapper.toDto(client));
-                })
-                .orElseGet(() -> {
-                    log.warn("Client not found with id: {}", id);
-                    return ResponseEntity.notFound().build();
-                });
+        try {
+            // Execute use case
+            Client client = getClientByIdUseCase.execute(id);
+
+            log.info("Client found: {}", client.getBusinessName());
+            return ResponseEntity.ok(clientDtoMapper.toDto(client));
+        } catch (ResourceNotFoundException e) {
+            log.warn("Client not found with id: {}", id);
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            log.error("Error retrieving client {}: {}", id, e.getMessage(), e);
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
     @PostMapping
@@ -64,58 +100,75 @@ public class ClientController {
         log.info("POST /api/clients - Creating client: {}", clientDTO.getBusinessName());
 
         try {
-            Client client = clientDtoMapper.toDomain(clientDTO);
-            Client savedClient = clientRepository.save(client);
-            ClientDTO response = clientDtoMapper.toDto(savedClient);
+            Long companyId = CompanyContext.getCompanyId();
 
-            log.info("Client created successfully with id: {}", savedClient.getId());
+            // Execute use case
+            Client client = createClientUseCase.execute(
+                    companyId,
+                    clientDTO.getBusinessName(),
+                    clientDTO.getTaxId(),
+                    clientDTO.getEmail());
+
+            ClientDTO response = clientDtoMapper.toDto(client);
+            log.info("Client created successfully with id: {}", client.getId());
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } catch (IllegalArgumentException e) {
+            log.error("Validation error creating client: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
         } catch (Exception e) {
             log.error("Error creating client: {}", e.getMessage(), e);
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.internalServerError().build();
         }
     }
 
     @PutMapping("/{id}")
-    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Update client", description = "Update an existing client (ADMIN only)")
     public ResponseEntity<ClientDTO> updateClient(
             @PathVariable Long id,
             @RequestBody ClientDTO clientDTO) {
         log.info("PUT /api/clients/{} - Updating client", id);
 
-        if (!clientRepository.existsById(id)) {
+        try {
+            // Execute use case
+            Client client = updateClientUseCase.execute(
+                    id,
+                    clientDTO.getBusinessName(),
+                    clientDTO.getEmail());
+
+            ClientDTO response = clientDtoMapper.toDto(client);
+            log.info("Client updated successfully: {}", client.getBusinessName());
+            return ResponseEntity.ok(response);
+        } catch (ResourceNotFoundException e) {
             log.warn("Client not found with id: {}", id);
             return ResponseEntity.notFound().build();
-        }
-
-        try {
-            clientDTO.setId(id);
-            Client client = clientDtoMapper.toDomain(clientDTO);
-            Client savedClient = clientRepository.save(client);
-            ClientDTO response = clientDtoMapper.toDto(savedClient);
-
-            log.info("Client updated successfully: {}", savedClient.getBusinessName());
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            log.error("Error updating client: {}", e.getMessage(), e);
+        } catch (IllegalArgumentException e) {
+            log.error("Validation error updating client: {}", e.getMessage());
             return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            log.error("Error updating client {}: {}", id, e.getMessage(), e);
+            return ResponseEntity.internalServerError().build();
         }
     }
 
     @DeleteMapping("/{id}")
-    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Delete client", description = "Delete a client by its ID (ADMIN only)")
     public ResponseEntity<Void> deleteClient(@PathVariable Long id) {
         log.info("DELETE /api/clients/{} - Deleting client", id);
 
-        if (!clientRepository.existsById(id)) {
+        try {
+            // Execute use case
+            deleteClientUseCase.execute(id);
+
+            log.info("Client deleted successfully with id: {}", id);
+            return ResponseEntity.noContent().build();
+        } catch (ResourceNotFoundException e) {
             log.warn("Client not found with id: {}", id);
             return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            log.error("Error deleting client {}: {}", id, e.getMessage(), e);
+            return ResponseEntity.internalServerError().build();
         }
-
-        clientRepository.deleteById(id);
-        log.info("Client deleted successfully with id: {}", id);
-        return ResponseEntity.noContent().build();
     }
 }

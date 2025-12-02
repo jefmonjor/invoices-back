@@ -29,6 +29,7 @@ import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
+import java.time.Duration;
 
 import xades4j.providers.KeyingDataProvider;
 import xades4j.production.XadesSigningProfile;
@@ -151,9 +152,8 @@ public class VerifactuIntegrationService {
         log.debug("Signing XML with XAdES-BES signature");
 
         try {
-            // 1. Parse XML string to Document
-            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-            dbf.setNamespaceAware(true);
+            // 1. Parse XML string to Document with XXE protections
+            DocumentBuilderFactory dbf = createSecureDocumentBuilderFactory();
             Document document = dbf.newDocumentBuilder().parse(new InputSource(new StringReader(xml)));
 
             // 2. Prepare KeyingDataProvider from KeyStore
@@ -238,22 +238,57 @@ public class VerifactuIntegrationService {
         log.debug("SOAP Request: {}", soapRequest);
 
         try {
+            // Block with timeout to prevent thread pool exhaustion
+            // AEAT timeout is typically 30 seconds
             String soapResponse = webClient.post()
                     .uri(endpoint)
                     .header("Content-Type", "text/xml; charset=utf-8")
                     .bodyValue(soapRequest)
                     .retrieve()
                     .bodyToMono(String.class)
-                    .block(); // Synchronous call
+                    .timeout(Duration.ofSeconds(30))  // Prevent indefinite blocking
+                    .block(Duration.ofSeconds(35));   // Block with explicit timeout
 
             log.debug("SOAP Response: {}", soapResponse);
             return parseSoapResponse(soapResponse);
 
+        } catch (java.util.concurrent.TimeoutException e) {
+            log.error("Timeout calling AEAT endpoint after 30 seconds", e);
+            throw new BusinessException("AEAT_TIMEOUT", "AEAT service timeout - please retry",
+                    org.springframework.http.HttpStatus.GATEWAY_TIMEOUT);
         } catch (Exception e) {
-            log.error("Error calling AEAT", e);
+            log.error("Error calling AEAT endpoint: {}", e.getMessage(), e);
             throw new BusinessException("AEAT_CONNECTION_ERROR", "Error connecting to AEAT: " + e.getMessage(),
                     org.springframework.http.HttpStatus.BAD_GATEWAY);
         }
+    }
+
+    /**
+     * Creates a DocumentBuilderFactory with XXE protections enabled.
+     * Prevents XML External Entity (XXE) injection attacks.
+     *
+     * @return secure DocumentBuilderFactory
+     * @throws Exception if security features cannot be configured
+     */
+    private DocumentBuilderFactory createSecureDocumentBuilderFactory() throws Exception {
+        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+        dbf.setNamespaceAware(true);
+
+        // Disable XXE and DTD processing
+        try {
+            // Prevent XXE attacks by disabling DTD processing
+            dbf.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+            dbf.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+            dbf.setFeature("http://xml.org/sax/features/external-general-entities", false);
+            dbf.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+            dbf.setXIncludeAware(false);
+            dbf.setExpandEntityReferences(false);
+        } catch (Exception e) {
+            log.warn("Could not disable XXE features completely, some features may not be supported: {}", e.getMessage());
+            // Still try to configure what we can
+        }
+
+        return dbf;
     }
 
     private String wrapInSoapEnvelope(String payload) {
@@ -272,8 +307,8 @@ public class VerifactuIntegrationService {
     private AeatResponse parseSoapResponse(String soapResponse) {
         AeatResponse response = new AeatResponse();
         try {
-            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-            dbf.setNamespaceAware(true);
+            // Use secure DocumentBuilderFactory with XXE protections
+            DocumentBuilderFactory dbf = createSecureDocumentBuilderFactory();
             Document doc = dbf.newDocumentBuilder().parse(new InputSource(new StringReader(soapResponse)));
 
             // Basic parsing logic - needs to be refined based on actual AEAT response

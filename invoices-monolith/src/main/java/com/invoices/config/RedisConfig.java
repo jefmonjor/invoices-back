@@ -37,9 +37,9 @@ public class RedisConfig {
     private boolean redisSsl;
 
     /**
-     * Configures the Redis connection.
+     * Configures the Redis connection with proper shutdown handling.
      */
-    @Bean
+    @Bean(destroyMethod = "destroy")
     public LettuceConnectionFactory redisConnectionFactory() {
         RedisStandaloneConfiguration redisConfig = new RedisStandaloneConfiguration();
         redisConfig.setHostName(redisHost);
