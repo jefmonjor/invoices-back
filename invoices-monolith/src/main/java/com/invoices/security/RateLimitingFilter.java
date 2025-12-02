@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.time.Duration;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -32,12 +32,27 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public class RateLimitingFilter implements Filter {
 
-    private final Map<String, Bucket> generalCache = new ConcurrentHashMap<>();
-    private final Map<String, Bucket> authCache = new ConcurrentHashMap<>();
+    private static final int MAX_CACHE_ENTRIES = 10000; // Limit memory usage
+
+    private final Map<String, Bucket> generalCache;
+    private final Map<String, Bucket> authCache;
     private final RateLimitProperties properties;
 
     public RateLimitingFilter(RateLimitProperties properties) {
         this.properties = properties;
+        // Use LinkedHashMap with LRU eviction to prevent unbounded growth
+        this.generalCache = Collections.synchronizedMap(new LinkedHashMap<String, Bucket>(16, 0.75f, true) {
+            @Override
+            protected boolean removeEldestEntry(Map.Entry<String, Bucket> eldest) {
+                return size() > MAX_CACHE_ENTRIES;
+            }
+        });
+        this.authCache = Collections.synchronizedMap(new LinkedHashMap<String, Bucket>(16, 0.75f, true) {
+            @Override
+            protected boolean removeEldestEntry(Map.Entry<String, Bucket> eldest) {
+                return size() > MAX_CACHE_ENTRIES;
+            }
+        });
     }
 
     /**

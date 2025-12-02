@@ -72,12 +72,8 @@ public class PdfValidator {
      * This prevents fake PDF files (e.g., renamed .txt files).
      */
     private void validateActualContentType(FileContent fileContent) {
-        try {
-            InputStream originalStream = fileContent.getInputStream();
-
-            // Wrap in BufferedInputStream to guarantee mark/reset support
-            // BufferedInputStream provides efficient mark/reset functionality
-            BufferedInputStream bufferedStream = new BufferedInputStream(originalStream);
+        try (InputStream originalStream = fileContent.getInputStream();
+             BufferedInputStream bufferedStream = new BufferedInputStream(originalStream)) {
 
             // Mark the stream with reasonable limit (enough for Tika detection)
             // Use file size or a reasonable default (5MB) for complex PDFs

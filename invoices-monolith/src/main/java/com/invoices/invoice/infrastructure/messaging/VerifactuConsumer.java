@@ -10,9 +10,13 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import jakarta.annotation.PreDestroy;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Consumer for VeriFactu verification queue.
@@ -31,10 +35,12 @@ public class VerifactuConsumer {
 
     private static final int MAX_RETRIES = 4;
     private static final long[] RETRY_DELAYS_MS = { 0, 5000, 30000, 120000 }; // 0s, 5s, 30s, 2min
+    private static final int EXECUTOR_POOL_SIZE = 5; // Managed thread pool for retries
 
     private final RedisTemplate<String, Object> redisTemplate;
     private final VerifactuPort verifactuService;
     private final InvoiceStatusNotificationService notificationService;
+    private final ScheduledExecutorService retryExecutor;
 
     @Value("${verifactu.stream.key:verifactu-queue}")
     private String streamKey;
@@ -52,6 +58,11 @@ public class VerifactuConsumer {
         this.redisTemplate = redisTemplate;
         this.verifactuService = verifactuService;
         this.notificationService = notificationService;
+        this.retryExecutor = Executors.newScheduledThreadPool(EXECUTOR_POOL_SIZE, r -> {
+            Thread t = new Thread(r, "verifactu-retry-" + Thread.currentThread().getId());
+            t.setDaemon(false);
+            return t;
+        });
     }
 
     @Scheduled(fixedDelay = 5000) // Check every 5 seconds
@@ -150,15 +161,9 @@ public class VerifactuConsumer {
 
     private void scheduleRetry(MapRecord<String, Object, Object> originalMessage,
             int retryCount, long delayMs) {
-        // Use Redis sorted set for delayed retry (simple approach)
-        // Or re-publish to stream after sleep (async worker pool could handle this
-        // better)
-
-        // For now, sleep in a separate thread to avoid blocking consumer
-        new Thread(() -> {
+        // Use managed thread pool instead of creating new threads
+        retryExecutor.schedule(() -> {
             try {
-                Thread.sleep(delayMs);
-
                 @SuppressWarnings("unchecked")
                 Map<String, Object> msgValues = (Map<String, Object>) (Map<?, ?>) originalMessage.getValue();
                 Map<String, Object> retryMessage = new HashMap<>(msgValues);
@@ -168,11 +173,10 @@ public class VerifactuConsumer {
                 redisTemplate.opsForStream().add(streamKey, retryMessage);
                 log.debug("[VeriFactu Consumer] Retry {} scheduled", retryCount);
 
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                log.error("[VeriFactu Consumer] Retry scheduling interrupted", e);
+            } catch (Exception e) {
+                log.error("[VeriFactu Consumer] Error scheduling retry", e);
             }
-        }).start();
+        }, delayMs, TimeUnit.MILLISECONDS);
     }
 
     private void moveToDLQ(MapRecord<String, Object, Object> message, Long invoiceId) {
@@ -252,5 +256,21 @@ public class VerifactuConsumer {
     private Long getLongMetric(String key) {
         String value = (String) redisTemplate.opsForValue().get(key);
         return value != null ? Long.parseLong(value) : 0L;
+    }
+
+    @PreDestroy
+    public void shutdown() {
+        log.info("[VeriFactu Consumer] Shutting down retry executor service");
+        retryExecutor.shutdown();
+        try {
+            if (!retryExecutor.awaitTermination(10, TimeUnit.SECONDS)) {
+                log.warn("[VeriFactu Consumer] Executor service did not terminate within timeout, forcing shutdown");
+                retryExecutor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            log.error("[VeriFactu Consumer] Interrupted while waiting for executor shutdown", e);
+            retryExecutor.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
     }
 }

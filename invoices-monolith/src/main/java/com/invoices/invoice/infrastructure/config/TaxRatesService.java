@@ -35,48 +35,49 @@ public class TaxRatesService {
     public void loadTaxRates() {
         try {
             ClassPathResource resource = new ClassPathResource("config/tax_rates_2025.json");
-            JsonNode root = objectMapper.readTree(resource.getInputStream());
+            try (var inputStream = resource.getInputStream()) {
+                JsonNode root = objectMapper.readTree(inputStream);
 
-            // Load IVA rates
-            JsonNode ivaNode = root.get("iva_rates");
-            if (ivaNode != null && ivaNode.isArray()) {
-                for (JsonNode node : ivaNode) {
-                    String code = node.get("code").asText();
-                    BigDecimal rate = BigDecimal.valueOf(node.get("rate").asDouble());
-                    String name = node.get("name").asText();
+                // Load IVA rates
+                JsonNode ivaNode = root.get("iva_rates");
+                if (ivaNode != null && ivaNode.isArray()) {
+                    for (JsonNode node : ivaNode) {
+                        String code = node.get("code").asText();
+                        BigDecimal rate = BigDecimal.valueOf(node.get("rate").asDouble());
+                        String name = node.get("name").asText();
 
-                    ivaRates.put(code, new TaxRate(code, rate, name));
-                    log.info("Loaded IVA rate: {} - {}%", name, rate);
+                        ivaRates.put(code, new TaxRate(code, rate, name));
+                        log.info("Loaded IVA rate: {} - {}%", name, rate);
+                    }
                 }
-            }
 
-            // Load Recargo de Equivalencia
-            JsonNode reNode = root.get("recargo_equivalencia");
-            if (reNode != null && reNode.isArray()) {
-                for (JsonNode node : reNode) {
-                    BigDecimal ivaRate = BigDecimal.valueOf(node.get("for_iva_rate").asDouble());
-                    BigDecimal reRate = BigDecimal.valueOf(node.get("re_rate").asDouble());
+                // Load Recargo de Equivalencia
+                JsonNode reNode = root.get("recargo_equivalencia");
+                if (reNode != null && reNode.isArray()) {
+                    for (JsonNode node : reNode) {
+                        BigDecimal ivaRate = BigDecimal.valueOf(node.get("for_iva_rate").asDouble());
+                        BigDecimal reRate = BigDecimal.valueOf(node.get("re_rate").asDouble());
 
-                    recargoEquivalencia.put(ivaRate, reRate);
-                    log.info("Loaded RE: IVA {}% -> RE {}%", ivaRate, reRate);
+                        recargoEquivalencia.put(ivaRate, reRate);
+                        log.info("Loaded RE: IVA {}% -> RE {}%", ivaRate, reRate);
+                    }
                 }
-            }
 
-            // Load IRPF rates
-            JsonNode irpfNode = root.get("irpf_withholding_common");
-            if (irpfNode != null && irpfNode.isArray()) {
-                for (JsonNode node : irpfNode) {
-                    String code = node.get("code").asText();
-                    BigDecimal rate = BigDecimal.valueOf(node.get("rate").asDouble());
-                    String name = node.get("name").asText();
+                // Load IRPF rates
+                JsonNode irpfNode = root.get("irpf_withholding_common");
+                if (irpfNode != null && irpfNode.isArray()) {
+                    for (JsonNode node : irpfNode) {
+                        String code = node.get("code").asText();
+                        BigDecimal rate = BigDecimal.valueOf(node.get("rate").asDouble());
+                        String name = node.get("name").asText();
 
-                    irpfRates.put(code, new TaxRate(code, rate, name));
-                    log.info("Loaded IRPF rate: {} - {}%", name, rate);
+                        irpfRates.put(code, new TaxRate(code, rate, name));
+                        log.info("Loaded IRPF rate: {} - {}%", name, rate);
+                    }
                 }
+
+                log.info("Tax rates loaded successfully from tax_rates_2025.json");
             }
-
-            log.info("Tax rates loaded successfully from tax_rates_2025.json");
-
         } catch (IOException e) {
             log.error("Error loading tax rates configuration", e);
             // Load default values as fallback
