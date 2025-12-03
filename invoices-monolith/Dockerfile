@@ -39,17 +39,4 @@ COPY --from=build /app/target/*.jar app.jar
 RUN chown -R spring:spring /app
 
 # Switch to non-root user
-USER spring:spring
-
-# Expose port (Railway injects PORT dynamically)
-EXPOSE 8080
-
-# Environment for JVM optimization
-ENV JAVA_OPTS="-Xmx300m -Xms200m -XX:MaxMetaspaceSize=400m -Xss256k -XX:+UseContainerSupport -XX:+ExitOnOutOfMemoryError -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp/heapdump.hprof -Djava.security.egd=file:/dev/./urandom"
-
-# Health check (Railway manages health checks, but good to have)
-HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
-    CMD curl -f http://localhost:${PORT:-8080}/actuator/health || exit 1
-
-# Run the application - Read PORT from Railway environment
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar --server.port=${PORT:-8080}"]

@@ -23,17 +23,17 @@ import static org.junit.jupiter.api.Assertions.*;
 class VerifactuIntegrationServiceTest {
 
     @Mock
-    private org.springframework.web.reactive.function.client.WebClient.Builder webClientBuilder;
+    private org.springframework.web.client.RestClient.Builder restClientBuilder;
 
     @Mock
-    private org.springframework.web.reactive.function.client.WebClient webClient;
+    private org.springframework.web.client.RestClient restClient;
 
     private VerifactuIntegrationService service;
 
     @BeforeEach
     void setUp() {
-        org.mockito.Mockito.lenient().when(webClientBuilder.build()).thenReturn(webClient);
-        service = new VerifactuIntegrationService(webClientBuilder);
+        org.mockito.Mockito.lenient().when(restClientBuilder.build()).thenReturn(restClient);
+        service = new VerifactuIntegrationService(restClientBuilder);
         ReflectionTestUtils.setField(service, "sandboxEndpoint", "https://sandbox.aeat.es");
         ReflectionTestUtils.setField(service, "productionEndpoint", "https://aeat.es");
     }

@@ -6,12 +6,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.BodyInserters;
-import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.client.RestClient;
+import org.springframework.util.LinkedMultiValueMap;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;
 
-import java.time.Duration;
 import java.util.Map;
 
 @Service
@@ -20,7 +19,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class MailgunEmailService implements EmailService {
 
-    private final WebClient webClient;
+    private final RestClient restClient;
     private final SpringTemplateEngine templateEngine;
 
     @Value("${mailgun.domain}")
@@ -41,24 +40,23 @@ public class MailgunEmailService implements EmailService {
         log.info("Sending simple email to: {}", to);
 
         try {
-            // Block with timeout to ensure email sends within reasonable time
-            // Password reset and verification emails are critical
-            webClient.post()
+            restClient.post()
                     .uri("https://api.mailgun.net/v3/" + mailgunDomain + "/messages")
                     .headers(headers -> headers.setBasicAuth("api", mailgunApiKey))
-                    .body(BodyInserters.fromFormData("from", fromEmail)
-                            .with("to", to)
-                            .with("subject", subject)
-                            .with("text", body))
+                    .body(new LinkedMultiValueMap<String, String>() {
+                        {
+                            add("from", fromEmail);
+                            add("to", to);
+                            add("subject", subject);
+                            add("text", body);
+                        }
+                    })
                     .retrieve()
-                    .bodyToMono(String.class)
-                    .timeout(Duration.ofSeconds(10))
-                    .block(Duration.ofSeconds(15)); // Blocking call with timeout
+                    .body(String.class);
 
             log.info("Email sent successfully to: {}", to);
         } catch (Exception e) {
             log.error("Error sending email to {}: {}", to, e.getMessage(), e);
-            // In production, might want to retry or queue for later delivery
         }
     }
 
@@ -70,23 +68,23 @@ public class MailgunEmailService implements EmailService {
             context.setVariables(variables);
             String htmlBody = templateEngine.process(templateName, context);
 
-            // Block with timeout to ensure email sends within reasonable time
-            webClient.post()
+            restClient.post()
                     .uri("https://api.mailgun.net/v3/" + mailgunDomain + "/messages")
                     .headers(headers -> headers.setBasicAuth("api", mailgunApiKey))
-                    .body(BodyInserters.fromFormData("from", fromEmail)
-                            .with("to", to)
-                            .with("subject", subject)
-                            .with("html", htmlBody))
+                    .body(new LinkedMultiValueMap<String, String>() {
+                        {
+                            add("from", fromEmail);
+                            add("to", to);
+                            add("subject", subject);
+                            add("html", htmlBody);
+                        }
+                    })
                     .retrieve()
-                    .bodyToMono(String.class)
-                    .timeout(Duration.ofSeconds(10))
-                    .block(Duration.ofSeconds(15)); // Blocking call with timeout
+                    .body(String.class);
 
             log.info("HTML email sent successfully to: {}", to);
         } catch (Exception e) {
             log.error("Error sending HTML email to {}: {}", to, e.getMessage(), e);
-            // In production, might want to retry or queue for later delivery
         }
     }
 }

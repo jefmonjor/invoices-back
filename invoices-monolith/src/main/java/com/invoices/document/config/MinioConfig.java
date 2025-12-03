@@ -48,10 +48,7 @@ public class MinioConfig {
     @Slf4j
     public static class MinioClientLifecycleManager {
 
-        private final MinioClient minioClient;
-
         public MinioClientLifecycleManager(MinioClient minioClient) {
-            this.minioClient = minioClient;
             log.info("MinioClient lifecycle manager initialized");
         }
 

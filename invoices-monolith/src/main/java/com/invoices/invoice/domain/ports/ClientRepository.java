@@ -24,4 +24,6 @@ public interface ClientRepository {
     boolean existsById(Long id);
 
     List<Client> findByCompanyId(Long companyId);
+
+    boolean existsByTaxIdAndCompanyId(String taxId, Long companyId);
 }

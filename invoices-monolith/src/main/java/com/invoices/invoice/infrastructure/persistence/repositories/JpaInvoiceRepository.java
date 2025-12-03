@@ -17,7 +17,8 @@ import java.util.Optional;
  * Infrastructure layer - persistence mechanism.
  * No @Repository needed - Spring Data JPA auto-detects this interface.
  */
-public interface JpaInvoiceRepository extends JpaRepository<InvoiceJpaEntity, Long> {
+public interface JpaInvoiceRepository extends JpaRepository<InvoiceJpaEntity, Long>,
+                org.springframework.data.jpa.repository.JpaSpecificationExecutor<InvoiceJpaEntity> {
 
         List<InvoiceJpaEntity> findByUserId(Long userId);
 
@@ -40,12 +41,14 @@ public interface JpaInvoiceRepository extends JpaRepository<InvoiceJpaEntity, Lo
                         @org.springframework.data.repository.query.Param("year") int year);
 
         /**
-         * Finds the last invoice number for a company and year with pessimistic write lock.
-         * Prevents race conditions when multiple threads generate invoice numbers simultaneously.
+         * Finds the last invoice number for a company and year with pessimistic write
+         * lock.
+         * Prevents race conditions when multiple threads generate invoice numbers
+         * simultaneously.
          * Lock is held for the duration of the transaction.
          *
          * @param companyId the company ID
-         * @param year the year
+         * @param year      the year
          * @return the last invoice number, or empty if no invoices exist
          */
         @Lock(LockModeType.PESSIMISTIC_WRITE)

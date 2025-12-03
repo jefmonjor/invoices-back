@@ -66,4 +66,9 @@ public class ClientRepositoryImpl implements ClientRepository {
                 .map(mapper::toDomain)
                 .collect(Collectors.toList());
     }
+
+    @Override
+    public boolean existsByTaxIdAndCompanyId(String taxId, Long companyId) {
+        return jpaRepository.existsByTaxIdAndCompanyId(taxId, companyId);
+    }
 }

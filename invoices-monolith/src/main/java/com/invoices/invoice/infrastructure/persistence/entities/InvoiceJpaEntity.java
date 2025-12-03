@@ -31,6 +31,10 @@ public class InvoiceJpaEntity {
     @Column(name = "client_id", nullable = false)
     private Long clientId;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "client_id", insertable = false, updatable = false)
+    private ClientJpaEntity client;
+
     @Column(name = "invoice_number", nullable = false, length = 50)
     private String invoiceNumber;
 
@@ -178,6 +182,10 @@ public class InvoiceJpaEntity {
 
     public void setClientId(Long clientId) {
         this.clientId = clientId;
+    }
+
+    public ClientJpaEntity getClient() {
+        return client;
     }
 
     public String getInvoiceNumber() {

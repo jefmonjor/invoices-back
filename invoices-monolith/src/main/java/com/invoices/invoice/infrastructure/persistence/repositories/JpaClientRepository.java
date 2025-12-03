@@ -17,4 +17,6 @@ public interface JpaClientRepository extends JpaRepository<ClientJpaEntity, Long
     boolean existsByTaxId(String taxId);
 
     java.util.List<ClientJpaEntity> findByCompanyId(Long companyId);
+
+    boolean existsByTaxIdAndCompanyId(String taxId, Long companyId);
 }

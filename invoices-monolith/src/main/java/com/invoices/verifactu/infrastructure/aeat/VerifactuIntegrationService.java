@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import org.springframework.web.client.RestClient;
 import java.security.KeyStore;
 import java.time.format.DateTimeFormatter;
 
@@ -29,7 +30,6 @@ import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
-import java.time.Duration;
 
 import xades4j.providers.KeyingDataProvider;
 import xades4j.production.XadesSigningProfile;
@@ -62,11 +62,10 @@ public class VerifactuIntegrationService implements VerifactuIntegrationPort {
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd-MM-yyyy");
     private static final String AEAT_VERIFICATION_URL = "https://www2.agenciatributaria.gob.es/wlpl/TIKE-CONT/verificar?csv=";
 
-    private final org.springframework.web.reactive.function.client.WebClient webClient;
+    private final RestClient restClient;
 
-    public VerifactuIntegrationService(
-            org.springframework.web.reactive.function.client.WebClient.Builder webClientBuilder) {
-        this.webClient = webClientBuilder.build();
+    public VerifactuIntegrationService(RestClient.Builder restClientBuilder) {
+        this.restClient = restClientBuilder.build();
     }
 
     /**
@@ -155,7 +154,10 @@ public class VerifactuIntegrationService implements VerifactuIntegrationPort {
         try {
             // 1. Parse XML string to Document with XXE protections
             DocumentBuilderFactory dbf = createSecureDocumentBuilderFactory();
-            Document document = dbf.newDocumentBuilder().parse(new InputSource(new StringReader(xml)));
+            Document document;
+            try (StringReader reader = new StringReader(xml)) {
+                document = dbf.newDocumentBuilder().parse(new InputSource(reader));
+            }
 
             // 2. Prepare KeyingDataProvider from KeyStore
             String alias = certificate.aliases().nextElement();
@@ -240,14 +242,12 @@ public class VerifactuIntegrationService implements VerifactuIntegrationPort {
         try {
             // Block with timeout to prevent thread pool exhaustion
             // AEAT timeout is typically 30 seconds
-            String soapResponse = webClient.post()
+            String soapResponse = restClient.post()
                     .uri(endpoint)
                     .header("Content-Type", "text/xml; charset=utf-8")
-                    .bodyValue(soapRequest)
+                    .body(soapRequest)
                     .retrieve()
-                    .bodyToMono(String.class)
-                    .timeout(Duration.ofSeconds(30)) // Prevent indefinite blocking
-                    .block(Duration.ofSeconds(35)); // Block with explicit timeout
+                    .body(String.class);
 
             log.debug("SOAP Response: {}", soapResponse);
             return parseSoapResponse(soapResponse);
@@ -306,7 +306,10 @@ public class VerifactuIntegrationService implements VerifactuIntegrationPort {
         try {
             // Use secure DocumentBuilderFactory with XXE protections
             DocumentBuilderFactory dbf = createSecureDocumentBuilderFactory();
-            Document doc = dbf.newDocumentBuilder().parse(new InputSource(new StringReader(soapResponse)));
+            Document doc;
+            try (StringReader reader = new StringReader(soapResponse)) {
+                doc = dbf.newDocumentBuilder().parse(new InputSource(reader));
+            }
 
             // Basic parsing logic - needs to be refined based on actual AEAT response
             // structure

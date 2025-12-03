@@ -85,14 +85,16 @@ public class InvoiceController {
     @GetMapping
     public ResponseEntity<List<InvoiceDTO>> getAllInvoices(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String status) {
         // checkPlatformAdminAccess(); // Handled by @PreAuthorize
         Long companyId = com.invoices.security.context.CompanyContext.getCompanyId();
 
         // Get total count for X-Total-Count header
-        long totalCount = invoiceRepository.countByCompanyId(companyId);
+        long totalCount = invoiceRepository.countByCompanyId(companyId, search, status);
 
-        List<InvoiceSummary> invoices = getAllInvoicesUseCase.execute(companyId, page, size);
+        List<InvoiceSummary> invoices = getAllInvoicesUseCase.execute(companyId, page, size, search, status);
         List<InvoiceDTO> dtos = invoices.stream()
                 .map(dtoMapper::toSummaryDto)
                 .collect(Collectors.toList());

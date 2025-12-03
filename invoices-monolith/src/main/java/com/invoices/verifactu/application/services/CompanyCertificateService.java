@@ -147,7 +147,9 @@ public class CompanyCertificateService {
      */
     private KeyStore loadKeyStore(byte[] certificateBytes, String password) throws Exception {
         KeyStore keyStore = KeyStore.getInstance("PKCS12");
-        keyStore.load(new ByteArrayInputStream(certificateBytes), password.toCharArray());
+        try (ByteArrayInputStream bis = new ByteArrayInputStream(certificateBytes)) {
+            keyStore.load(bis, password.toCharArray());
+        }
         return keyStore;
     }
 

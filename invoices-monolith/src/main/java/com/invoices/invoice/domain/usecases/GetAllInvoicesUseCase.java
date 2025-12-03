@@ -26,4 +26,8 @@ public class GetAllInvoicesUseCase {
     public List<InvoiceSummary> execute(Long companyId, int page, int size) {
         return invoiceRepository.findSummariesByCompanyId(companyId, page, size);
     }
+
+    public List<InvoiceSummary> execute(Long companyId, int page, int size, String search, String status) {
+        return invoiceRepository.findSummariesByCompanyId(companyId, page, size, search, status);
+    }
 }

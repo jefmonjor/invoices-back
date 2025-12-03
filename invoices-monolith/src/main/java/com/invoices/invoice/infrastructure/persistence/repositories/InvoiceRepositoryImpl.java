@@ -125,16 +125,67 @@ public class InvoiceRepositoryImpl implements InvoiceRepository {
 
     @Override
     public List<InvoiceSummary> findSummariesByCompanyId(Long companyId, int page, int size) {
-        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size);
-        return jpaRepository.findProjectedByCompanyId(companyId, pageable).stream()
-                .map(view -> new InvoiceSummary(
-                        view.getId(),
-                        view.getInvoiceNumber(),
-                        view.getIssueDate(),
-                        view.getTotalAmount(),
-                        view.getStatus(),
-                        view.getClientId(),
-                        view.getCompanyId()))
+        return findSummariesByCompanyId(companyId, page, size, null, null);
+    }
+
+    @Override
+    public List<InvoiceSummary> findSummariesByCompanyId(Long companyId, int page, int size, String search,
+            String status) {
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size,
+                org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC,
+                        "issueDate", "id"));
+
+        org.springframework.data.jpa.domain.Specification<InvoiceJpaEntity> spec = buildSpecification(companyId, search,
+                status);
+
+        return jpaRepository.findAll(spec, pageable).stream()
+                .map(entity -> new InvoiceSummary(
+                        entity.getId(),
+                        entity.getInvoiceNumber(),
+                        entity.getIssueDate(),
+                        entity.getTotalAmount(),
+                        entity.getVerifactuStatus(), // Map verifactuStatus to status in summary
+                        entity.getClient().getId(),
+                        entity.getCompanyId()))
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public long countByCompanyId(Long companyId, String search, String status) {
+        org.springframework.data.jpa.domain.Specification<InvoiceJpaEntity> spec = buildSpecification(companyId, search,
+                status);
+        return jpaRepository.count(spec);
+    }
+
+    private org.springframework.data.jpa.domain.Specification<InvoiceJpaEntity> buildSpecification(Long companyId,
+            String search, String status) {
+        return (root, query, cb) -> {
+            java.util.List<jakarta.persistence.criteria.Predicate> predicates = new java.util.ArrayList<>();
+
+            // Company Filter (Always applied)
+            predicates.add(cb.equal(root.get("companyId"), companyId));
+
+            // Search Filter (Invoice Number or Client Name)
+            if (search != null && !search.trim().isEmpty()) {
+                String searchLike = "%" + search.trim().toLowerCase() + "%";
+                jakarta.persistence.criteria.Predicate invoiceNumberPredicate = cb
+                        .like(cb.lower(root.get("invoiceNumber")), searchLike);
+
+                // Join with Client to search by name
+                jakarta.persistence.criteria.Join<InvoiceJpaEntity, com.invoices.invoice.infrastructure.persistence.entities.ClientJpaEntity> clientJoin = root
+                        .join("client", jakarta.persistence.criteria.JoinType.LEFT);
+                jakarta.persistence.criteria.Predicate clientNamePredicate = cb.like(cb.lower(clientJoin.get("name")),
+                        searchLike);
+
+                predicates.add(cb.or(invoiceNumberPredicate, clientNamePredicate));
+            }
+
+            // Status Filter
+            if (status != null && !status.trim().isEmpty()) {
+                predicates.add(cb.equal(root.get("verifactuStatus"), status));
+            }
+
+            return cb.and(predicates.toArray(new jakarta.persistence.criteria.Predicate[0]));
+        };
     }
 }
