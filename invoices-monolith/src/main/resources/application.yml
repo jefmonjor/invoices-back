@@ -3,6 +3,11 @@ server:
   servlet:
     context-path: /
   forward-headers-strategy: framework
+  tomcat:
+    threads:
+      max: 20 # Drastically reduced from 200 default
+      min-spare: 2
+    connection-timeout: 20000
 
 
 
@@ -41,12 +46,7 @@ spring:
       initialization-fail-timeout: 10000
       connection-test-query: SELECT 1
 
-server:
-  tomcat:
-    threads:
-      max: 20 # Drastically reduced from 200 default
-      min-spare: 2
-    connection-timeout: 20000
+
 
   # JPA Configuration
   jpa:
