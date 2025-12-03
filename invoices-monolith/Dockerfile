@@ -45,7 +45,7 @@ USER spring:spring
 EXPOSE 8080
 
 # Environment for JVM optimization
-ENV JAVA_OPTS="-Xmx450m -Xms256m -XX:MaxMetaspaceSize=512m -Xss512k -XX:+UseContainerSupport -XX:+ExitOnOutOfMemoryError -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp/heapdump.hprof -Djava.security.egd=file:/dev/./urandom"
+ENV JAVA_OPTS="-Xmx300m -Xms200m -XX:MaxMetaspaceSize=400m -Xss256k -XX:+UseContainerSupport -XX:+ExitOnOutOfMemoryError -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp/heapdump.hprof -Djava.security.egd=file:/dev/./urandom"
 
 # Health check (Railway manages health checks, but good to have)
 HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
