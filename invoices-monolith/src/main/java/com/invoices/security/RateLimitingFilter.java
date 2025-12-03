@@ -81,8 +81,8 @@ public class RateLimitingFilter implements Filter {
         private long generalRefillMinutes = 1; // Default: 1 minute
         private long authCapacity = 10; // Default: 10 requests/minute
         private long authRefillMinutes = 1; // Default: 1 minute
-        private int maxCacheEntries = 1000; // Default: 1000 per cache (reduced from 10000)
-        private long cacheEntryTtlMinutes = 30; // Default: 30 minutes
+        private int maxCacheEntries = 50; // Default: 50 per cache (optimized for 5 companies)
+        private long cacheEntryTtlMinutes = 5; // Default: 5 minutes
     }
 
     @Override

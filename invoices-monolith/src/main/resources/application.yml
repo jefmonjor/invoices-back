@@ -32,14 +32,21 @@ spring:
     password: ${DB_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
     hikari:
-      maximum-pool-size: 10
-      minimum-idle: 2
+      maximum-pool-size: 5 # Reduced for 5 companies/1GB RAM
+      minimum-idle: 1
       connection-timeout: 20000
       idle-timeout: 300000 # 5 minutes
       max-lifetime: 600000 # 10 minutes (must be less than DB server timeout)
       keepalive-time: 30000 # 30 seconds
       initialization-fail-timeout: 10000
       connection-test-query: SELECT 1
+
+server:
+  tomcat:
+    threads:
+      max: 20 # Drastically reduced from 200 default
+      min-spare: 2
+    connection-timeout: 20000
 
   # JPA Configuration
   jpa:
