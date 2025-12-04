@@ -274,3 +274,8 @@ verifactu:
   email:
     from: ${VERIFACTU_EMAIL_FROM:noreply@invoices.com}
     to: ${VERIFACTU_EMAIL_TO:admin@invoices.com}
+
+# Application URLs
+app:
+  frontend:
+    url: ${APP_FRONTEND_URL:https://www.transolido.com}

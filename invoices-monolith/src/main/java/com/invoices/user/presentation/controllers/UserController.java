@@ -97,6 +97,37 @@ public class UserController {
                 return ResponseEntity.ok(userDTO);
         }
 
+        /**
+         * Alias endpoint for frontend compatibility.
+         * GET /api/users/me - same as GET /api/users/profile
+         */
+        @GetMapping("/me")
+        @PreAuthorize("isAuthenticated()")
+        @Operation(summary = "Get current user profile (alias)", description = "Alias for GET /api/users/profile. Retrieves the profile of the currently authenticated user.")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Profile retrieved successfully", content = @Content(schema = @Schema(implementation = UserDTO.class))),
+                        @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content)
+        })
+        public ResponseEntity<UserDTO> getMe() {
+                return getCurrentUserProfile();
+        }
+
+        /**
+         * Alias endpoint for frontend compatibility.
+         * PUT /api/users/me - same as PUT /api/users/profile
+         */
+        @PutMapping("/me")
+        @PreAuthorize("isAuthenticated()")
+        @Operation(summary = "Update current user profile (alias)", description = "Alias for PUT /api/users/profile. Updates the profile of the currently authenticated user.")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Profile updated successfully", content = @Content(schema = @Schema(implementation = UserDTO.class))),
+                        @ApiResponse(responseCode = "400", description = "Invalid request data", content = @Content),
+                        @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content)
+        })
+        public ResponseEntity<UserDTO> updateMe(@Valid @RequestBody UpdateUserRequest request) {
+                return updateCurrentUserProfile(request);
+        }
+
         @GetMapping
         @Operation(summary = "Get all users", description = "Retrieves a paginated list of all users. Available to all authenticated users.")
         @ApiResponses(value = {

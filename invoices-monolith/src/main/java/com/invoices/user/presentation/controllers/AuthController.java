@@ -12,6 +12,7 @@ import com.invoices.user.presentation.dto.AuthResponse;
 import com.invoices.user.presentation.dto.CreateUserRequest;
 import com.invoices.user.presentation.dto.LoginRequest;
 
+import com.invoices.shared.domain.ports.EmailService;
 import com.invoices.user.presentation.mappers.UserDtoMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -52,6 +53,10 @@ public class AuthController {
 
         private final JwtUtil jwtUtil;
         private final UserDtoMapper userDtoMapper;
+        private final EmailService emailService;
+
+        @org.springframework.beans.factory.annotation.Value("${app.frontend.url:https://www.transolido.com}")
+        private String frontendUrl;
 
         /**
          * Registers a new user and returns authentication token.
@@ -113,6 +118,17 @@ public class AuthController {
                                 .expiresIn(jwtUtil.getExpirationTime())
                                 .user(userDtoMapper.toDTO(createdUser))
                                 .build();
+
+                // Send welcome email asynchronously (don't block registration)
+                try {
+                        java.util.Map<String, Object> emailVars = new java.util.HashMap<>();
+                        emailVars.put("name", createdUser.getFirstName());
+                        emailVars.put("loginUrl", frontendUrl + "/login");
+                        emailService.sendHtmlEmail(createdUser.getEmail(), "¡Bienvenido a Invoices!", "welcome-email",
+                                        emailVars);
+                } catch (Exception e) {
+                        log.warn("Failed to send welcome email to {}: {}", createdUser.getEmail(), e.getMessage());
+                }
 
                 log.info("User registered successfully: {}", request.getEmail());
                 return ResponseEntity.status(HttpStatus.CREATED).body(response);
