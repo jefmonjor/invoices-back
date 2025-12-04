@@ -40,12 +40,13 @@ public class UpdateClientUseCase {
      *
      * @param clientId     ID of the client to update
      * @param businessName New business name (optional)
+     * @param taxId        New tax ID / CIF (optional)
      * @param email        New email (optional)
      * @return Updated Client entity
      * @throws ResourceNotFoundException if client doesn't exist
      * @throws IllegalArgumentException  if validation fails
      */
-    public Client execute(Long clientId, String businessName, String email) {
+    public Client execute(Long clientId, String businessName, String taxId, String email) {
         log.debug("Updating client {}", clientId);
 
         // Load current client
@@ -62,6 +63,17 @@ public class UpdateClientUseCase {
                 log.debug("Updating business name for client {}: {} -> {}",
                         clientId, client.getBusinessName(), businessName);
                 client = client.withBusinessName(businessName.trim());
+                changed = true;
+            }
+        }
+
+        // Update taxId if provided
+        if (taxId != null && !taxId.trim().isEmpty()) {
+            String newTaxId = taxId.trim();
+            if (!client.getTaxId().equals(newTaxId)) {
+                log.debug("Updating taxId for client {}: {} -> {}",
+                        clientId, client.getTaxId(), taxId);
+                client = client.withTaxId(newTaxId);
                 changed = true;
             }
         }
