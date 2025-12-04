@@ -11,6 +11,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -136,7 +137,7 @@ public class VerifactuBatchScheduler {
                     "Total: {}, Accepted: {}, Rejected: {}, Failed: {}, Pending: {}, Success Rate: {:.2f}%",
                     totalVerifications, accepted, rejected, failed, pending, successRate);
 
-            // Store metrics in Redis
+            // Store metrics in Redis with TTL to prevent unbounded memory growth
             String metricsKey = "verifactu:weekly-report:" + LocalDateTime.now().toLocalDate();
             Map<String, String> metrics = new HashMap<>();
             metrics.put("total", String.valueOf(totalVerifications));
@@ -147,6 +148,8 @@ public class VerifactuBatchScheduler {
             metrics.put("successRate", String.format("%.2f", successRate));
 
             redisTemplate.opsForHash().putAll(metricsKey, metrics);
+            // Set TTL of 90 days for weekly reports to prevent Redis memory growth
+            redisTemplate.expire(metricsKey, Duration.ofDays(90));
 
         } catch (Exception e) {
             log.error("[VeriFactu Batch] Error generating weekly report", e);
@@ -159,6 +162,8 @@ public class VerifactuBatchScheduler {
             redisTemplate.opsForHash().increment(key, "total_batch_runs", 1);
             redisTemplate.opsForHash().increment(key, "total_found", found);
             redisTemplate.opsForHash().increment(key, "total_requeued", requeued);
+            // Set/refresh TTL of 30 days for batch metrics
+            redisTemplate.expire(key, Duration.ofDays(30));
         } catch (Exception e) {
             log.error("[VeriFactu Batch] Error updating metrics", e);
         }

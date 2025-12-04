@@ -7,13 +7,18 @@ import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.beans.factory.annotation.Value;
+import jakarta.annotation.PreDestroy;
+import lombok.extern.slf4j.Slf4j;
 import java.util.concurrent.Executor;
 
 @Configuration
 @EnableJpaAuditing
 @EnableAsync
 @EnableScheduling
+@Slf4j
 public class AppConfig {
+
+    private ThreadPoolTaskExecutor executor;
 
     @Value("${async.executor.core-pool-size:10}")
     private int corePoolSize;
@@ -32,12 +37,26 @@ public class AppConfig {
      */
     @Bean(name = "taskExecutor")
     public Executor taskExecutor() {
-        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(corePoolSize);
         executor.setMaxPoolSize(maxPoolSize);
         executor.setQueueCapacity(queueCapacity);
         executor.setThreadNamePrefix("async-");
+        executor.setWaitForTasksToCompleteOnShutdown(true);
+        executor.setAwaitTerminationSeconds(30);
         executor.initialize();
         return executor;
+    }
+
+    /**
+     * Proper shutdown of the task executor to prevent thread leaks.
+     */
+    @PreDestroy
+    public void shutdown() {
+        if (executor != null) {
+            log.info("Shutting down TaskExecutor...");
+            executor.shutdown();
+            log.info("TaskExecutor shutdown complete");
+        }
     }
 }

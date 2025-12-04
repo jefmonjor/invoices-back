@@ -67,6 +67,22 @@ public class MinioFileStorageService implements FileStorageService {
         throw new FileUploadException("Storage service temporarily unavailable. Please try again later.", e);
     }
 
+    /**
+     * Retrieves a file from MinIO storage.
+     * <p>
+     * <strong>IMPORTANT:</strong> The caller MUST close the returned InputStream
+     * to prevent memory leaks and connection pool exhaustion.
+     * Use try-with-resources:
+     * <pre>
+     * try (InputStream is = storageService.retrieveFile(name)) {
+     *     // process stream
+     * }
+     * </pre>
+     *
+     * @param objectName the name of the object to retrieve
+     * @return InputStream of the file content (must be closed by caller)
+     * @throws FileUploadException if retrieval fails
+     */
     @Override
     @CircuitBreaker(name = "minio")
     public InputStream retrieveFile(String objectName) {

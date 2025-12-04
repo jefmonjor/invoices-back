@@ -10,6 +10,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import java.util.HashMap;
 import java.util.List;
@@ -17,6 +18,7 @@ import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Consumer for VeriFactu verification queue.
@@ -39,7 +41,7 @@ public class VerifactuConsumer {
     private final RedisTemplate<String, Object> redisTemplate;
     private final VerifactuPort verifactuService;
     private final InvoiceStatusNotificationService notificationService;
-    private final ScheduledExecutorService retryExecutor;
+    private volatile ScheduledExecutorService retryExecutor;
 
     @Value("${verifactu.stream.key:verifactu-queue}")
     private String streamKey;
@@ -53,6 +55,8 @@ public class VerifactuConsumer {
     @Value("${verifactu.consumer.executor-pool-size:5}")
     private int executorPoolSize;
 
+    private final AtomicInteger threadCounter = new AtomicInteger(0);
+
     public VerifactuConsumer(
             RedisTemplate<String, Object> redisTemplate,
             VerifactuPort verifactuService,
@@ -60,10 +64,18 @@ public class VerifactuConsumer {
         this.redisTemplate = redisTemplate;
         this.verifactuService = verifactuService;
         this.notificationService = notificationService;
-        // Initialize with default, will be replaced after @Value injection
-        this.retryExecutor = Executors.newScheduledThreadPool(5, r -> {
-            Thread t = new Thread(r, "verifactu-retry-" + Thread.currentThread().threadId());
-            t.setDaemon(false);
+    }
+
+    /**
+     * Initialize executor after @Value properties are injected.
+     * Uses daemon threads to allow graceful JVM shutdown.
+     */
+    @PostConstruct
+    public void init() {
+        log.info("[VeriFactu Consumer] Initializing retry executor with pool size: {}", executorPoolSize);
+        this.retryExecutor = Executors.newScheduledThreadPool(executorPoolSize, r -> {
+            Thread t = new Thread(r, "verifactu-retry-" + threadCounter.incrementAndGet());
+            t.setDaemon(true); // Daemon threads allow JVM to exit gracefully
             return t;
         });
     }
