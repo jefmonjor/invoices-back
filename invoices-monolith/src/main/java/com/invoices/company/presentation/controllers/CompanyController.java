@@ -10,13 +10,18 @@ import com.invoices.company.presentation.dto.InvitationResponse;
 import com.invoices.company.presentation.dto.UpdateCompanyRequest;
 import com.invoices.company.presentation.dto.UpdateRoleRequest;
 import com.invoices.company.presentation.dto.CompanyMetricsDto;
+import com.invoices.security.JwtUtil;
 import com.invoices.security.context.CompanyContext;
+import com.invoices.user.domain.entities.User;
+import com.invoices.user.presentation.dto.AuthResponse;
+import com.invoices.user.presentation.mappers.UserDtoMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -26,11 +31,14 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/companies")
 @RequiredArgsConstructor
+@Slf4j
 @Tag(name = "Company Management", description = "Endpoints for managing companies and invitations")
 public class CompanyController {
 
     private final CompanyManagementService companyManagementService;
     private final CompanyInvitationService companyInvitationService;
+    private final JwtUtil jwtUtil;
+    private final UserDtoMapper userDtoMapper;
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
@@ -42,6 +50,59 @@ public class CompanyController {
             @AuthenticationPrincipal UserDetails userDetails) {
         var companies = companyManagementService.getUserCompanies(userDetails.getUsername());
         return ResponseEntity.ok(companies);
+    }
+
+    /**
+     * Alias endpoint for frontend compatibility.
+     * GET /api/companies/my - same as GET /api/companies
+     */
+    @GetMapping("/my")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Get my companies (alias)", description = "Alias for GET /api/companies. Retrieves the list of companies the authenticated user belongs to.", responses = {
+            @ApiResponse(responseCode = "200", description = "Companies retrieved successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    public ResponseEntity<java.util.List<CompanyDto>> getMyCompanies(
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return getUserCompanies(userDetails);
+    }
+
+    /**
+     * Switch company endpoint for frontend compatibility.
+     * POST /api/companies/switch/{companyId}
+     */
+    @PostMapping("/switch/{companyId}")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Switch company", description = "Switches the current company context and returns a new JWT token", responses = {
+            @ApiResponse(responseCode = "200", description = "Company switched successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid company ID"),
+            @ApiResponse(responseCode = "403", description = "User does not belong to the company")
+    })
+    public ResponseEntity<AuthResponse> switchCompany(
+            @PathVariable Long companyId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        String email = userDetails.getUsername();
+        log.info("POST /api/companies/switch/{} - User: {}", companyId, email);
+
+        // Update user's current company in DB
+        companyManagementService.switchCompany(email, companyId);
+
+        // Fetch updated user to generate new token
+        User updatedUser = companyManagementService.getUserByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found after switch"));
+
+        // Generate new JWT token with updated companyId
+        String token = jwtUtil.generateToken(updatedUser.getEmail(), updatedUser.getRoles(),
+                updatedUser.getCurrentCompanyId());
+
+        AuthResponse response = AuthResponse.builder()
+                .token(token)
+                .expiresIn(jwtUtil.getExpirationTime())
+                .user(userDtoMapper.toDTO(updatedUser))
+                .build();
+
+        log.info("Company switched successfully for user: {}", email);
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping
