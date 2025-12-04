@@ -155,4 +155,9 @@ public class Client {
         return new Client(this.id, this.businessName, this.taxId, this.address, this.city, this.postalCode,
                 this.province, this.country, this.phone, email, this.companyId);
     }
+
+    public Client withTaxId(String taxId) {
+        return new Client(this.id, this.businessName, taxId, this.address, this.city, this.postalCode,
+                this.province, this.country, this.phone, this.email, this.companyId);
+    }
 }
