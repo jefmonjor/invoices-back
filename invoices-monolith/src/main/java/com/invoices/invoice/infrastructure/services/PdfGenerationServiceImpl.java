@@ -125,12 +125,13 @@ public class PdfGenerationServiceImpl implements PdfGenerator {
     public byte[] generateInvoicePdfWithQr(Invoice invoice, Company company, Client client, String qrPayload) {
         log.info("Starting PDF generation with QR for invoice: {}", invoice.getInvoiceNumber());
 
+        BufferedImage qrImage = null;
         try {
             // Phase 1: Generate base PDF
             byte[] basePdf = generateInvoicePdf(invoice, company, client);
 
             // Phase 2: Generate QR code
-            BufferedImage qrImage = generateQRCode(qrPayload, 200, 200); // 200x200 px
+            qrImage = generateQRCode(qrPayload, 200, 200); // 200x200 px
 
             // Phase 3: Add QR code to PDF
             return addQrCodeToPdf(basePdf, qrImage, invoice);
@@ -138,6 +139,11 @@ public class PdfGenerationServiceImpl implements PdfGenerator {
         } catch (Exception e) {
             log.error("Error generating PDF with QR for invoice: {}", invoice.getInvoiceNumber(), e);
             throw new RuntimeException("Failed to generate PDF with QR", e);
+        } finally {
+            // Explicitly dispose BufferedImage to release native memory
+            if (qrImage != null) {
+                qrImage.flush();
+            }
         }
     }
 

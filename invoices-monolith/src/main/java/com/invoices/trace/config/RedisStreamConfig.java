@@ -16,6 +16,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.stream.StreamMessageListenerContainer;
 import org.springframework.data.redis.stream.Subscription;
 
+import jakarta.annotation.PreDestroy;
 import java.time.Duration;
 
 /**
@@ -29,6 +30,8 @@ public class RedisStreamConfig {
 
     private final RedisInvoiceEventConsumer invoiceEventConsumer;
     private final StringRedisTemplate redisTemplate;
+
+    private StreamMessageListenerContainer<String, MapRecord<String, String, String>> listenerContainer;
 
     @Value("${spring.redis.stream.invoice-events:invoice-events}")
     private String invoiceEventsStream;
@@ -51,12 +54,24 @@ public class RedisStreamConfig {
                 .pollTimeout(Duration.ofSeconds(2))
                 .build();
 
-        var container = StreamMessageListenerContainer.create(connectionFactory, options);
+        listenerContainer = StreamMessageListenerContainer.create(connectionFactory, options);
 
         log.info("Redis Stream Listener Container configurado para stream: {} con consumer group: {}",
                 invoiceEventsStream, consumerGroup);
 
-        return container;
+        return listenerContainer;
+    }
+
+    /**
+     * Cleanup del container para evitar fugas de memoria y conexiones
+     */
+    @PreDestroy
+    public void cleanup() {
+        if (listenerContainer != null && listenerContainer.isRunning()) {
+            log.info("Stopping Redis Stream Listener Container...");
+            listenerContainer.stop();
+            log.info("Redis Stream Listener Container stopped");
+        }
     }
 
     /**
