@@ -59,6 +59,13 @@ public class ClientController {
         try {
             Long companyId = CompanyContext.getCompanyId();
 
+            // If no company context, return empty list (user needs to select/create company
+            // first)
+            if (companyId == null) {
+                log.warn("No company context found - returning empty client list");
+                return ResponseEntity.ok(java.util.Collections.emptyList());
+            }
+
             // Execute use case
             List<Client> clients = getAllClientsUseCase.execute(companyId);
 

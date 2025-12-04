@@ -88,8 +88,15 @@ public class InvoiceController {
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String status) {
-        // checkPlatformAdminAccess(); // Handled by @PreAuthorize
         Long companyId = com.invoices.security.context.CompanyContext.getCompanyId();
+
+        // If no company context, return empty list
+        if (companyId == null) {
+            log.warn("No company context found - returning empty invoice list");
+            return ResponseEntity.ok()
+                    .header("X-Total-Count", "0")
+                    .body(java.util.Collections.emptyList());
+        }
 
         // Get total count for X-Total-Count header
         long totalCount = invoiceRepository.countByCompanyId(companyId, search, status);

@@ -170,7 +170,7 @@ springdoc:
 logging:
   level:
     root: ${LOG_LEVEL_ROOT:INFO}
-    com.invoices: ${LOG_LEVEL_APP:DEBUG}
+    com.invoices: ${LOG_LEVEL_APP:INFO}
     org.springframework.security: INFO
     org.hibernate.SQL: ${LOG_LEVEL_ROOT:INFO}
     io.lettuce: INFO
