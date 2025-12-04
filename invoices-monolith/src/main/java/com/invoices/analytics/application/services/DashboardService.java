@@ -2,7 +2,6 @@ package com.invoices.analytics.application.services;
 
 import com.invoices.analytics.presentation.dto.*;
 import com.invoices.invoice.domain.ports.CompanyRepository;
-
 import com.invoices.security.utils.SecurityUtils;
 import com.invoices.user.domain.entities.User;
 import com.invoices.user.domain.ports.UserRepository;
@@ -13,9 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
-
 import java.util.HashMap;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -40,34 +37,32 @@ public class DashboardService {
     }
 
     private PlatformAdminDashboardDTO getPlatformAdminDashboard() {
-        // Mock data for now, replace with real repository calls when available
         return PlatformAdminDashboardDTO.builder()
                 .role("PLATFORM_ADMIN")
                 .activeCompaniesCount(companyRepository.count())
-                .dailyInvoicesCount(150) // Mock
-                .verifactuAdoptionRate(0.45) // Mock
-                .inactiveCompaniesAlerts(List.of("Empresa A", "Empresa B")) // Mock
-                .monthlyGrowthData(new HashMap<>()) // Mock
+                .dailyInvoicesCount(0)
+                .verifactuAdoptionRate(0.0)
+                .inactiveCompaniesAlerts(new ArrayList<>())
+                .monthlyGrowthData(new HashMap<>())
                 .build();
     }
 
     private CompanyAdminDashboardDTO getCompanyAdminDashboard(Long companyId) {
-        // Mock data
+        // Return zeros - real analytics to be implemented later
         return CompanyAdminDashboardDTO.builder()
                 .role("COMPANY_ADMIN")
-                .pendingInvoicesTotal(new BigDecimal("12500.00")) // Mock
-                .verifactuRejectedCount(3) // Mock
-                .top5Clients(List.of(new ClientRevenueDTO("Cliente X", new BigDecimal("5000")))) // Mock
-                .last30DaysRevenue(new HashMap<>()) // Mock
+                .pendingInvoicesTotal(BigDecimal.ZERO)
+                .verifactuRejectedCount(0)
+                .top5Clients(new ArrayList<>())
+                .last30DaysRevenue(new HashMap<>())
                 .build();
     }
 
     private CompanyUserDashboardDTO getCompanyUserDashboard(Long userId, Long companyId) {
-        // Mock data
         return CompanyUserDashboardDTO.builder()
                 .role("COMPANY_USER")
-                .myInvoicesThisMonth(12) // Mock
-                .myLastInvoices(new ArrayList<>()) // Mock
+                .myInvoicesThisMonth(0)
+                .myLastInvoices(new ArrayList<>())
                 .build();
     }
 }
