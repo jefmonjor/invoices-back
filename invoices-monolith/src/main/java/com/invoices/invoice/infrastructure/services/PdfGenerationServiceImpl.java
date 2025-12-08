@@ -149,7 +149,7 @@ public class PdfGenerationServiceImpl implements PdfGenerator {
 
     private byte[] addQrCodeToPdf(byte[] basePdf, BufferedImage qrImage, Invoice invoice) throws IOException {
         try (PDDocument document = PDDocument.load(new ByteArrayInputStream(basePdf));
-             ByteArrayOutputStream os = new ByteArrayOutputStream()) {
+                ByteArrayOutputStream os = new ByteArrayOutputStream()) {
 
             PDPage firstPage = document.getPage(0);
 
@@ -159,17 +159,29 @@ public class PdfGenerationServiceImpl implements PdfGenerator {
             try (PDPageContentStream contentStream = new PDPageContentStream(
                     document, firstPage, PDPageContentStream.AppendMode.APPEND, true, true)) {
 
-                // Position QR in top-right corner (2x2 cm = ~57x57 points)
-                float xPos = firstPage.getMediaBox().getWidth() - 70; // 10pt margin
-                float yPos = firstPage.getMediaBox().getHeight() - 70;
-                contentStream.drawImage(pdImage, xPos, yPos, 57, 57);
+                // VeriFactu QR size: 30-40mm. Using 30mm = 85pt (1mm ≈ 2.83pt)
+                float qrSize = 85;
+                float margin = 25;
+                float xPos = firstPage.getMediaBox().getWidth() - qrSize - margin;
+                float yPos = firstPage.getMediaBox().getHeight() - qrSize - margin - 10;
 
-                // Add "VERI*FACTU: ACEPTADA" text
-                contentStream.setFont(PDType1Font.HELVETICA_BOLD, 8);
-                contentStream.setNonStrokingColor(0, 128 / 255f, 0); // Green
+                // Add "QR tributario" label above QR (VeriFactu requirement)
+                contentStream.setFont(PDType1Font.HELVETICA, 6);
+                contentStream.setNonStrokingColor(0.4f, 0.4f, 0.4f);
                 contentStream.beginText();
-                contentStream.newLineAtOffset(xPos - 40, yPos - 10);
-                contentStream.showText("VERI*FACTU: ACEPTADA");
+                contentStream.newLineAtOffset(xPos + 20, yPos + qrSize + 3);
+                contentStream.showText("QR tributario");
+                contentStream.endText();
+
+                // Draw QR code
+                contentStream.drawImage(pdImage, xPos, yPos, qrSize, qrSize);
+
+                // Add "VERI*FACTU" text below QR
+                contentStream.setFont(PDType1Font.HELVETICA_BOLD, 7);
+                contentStream.setNonStrokingColor(0, 0.5f, 0); // Green
+                contentStream.beginText();
+                contentStream.newLineAtOffset(xPos + 15, yPos - 10);
+                contentStream.showText("VERI*FACTU");
                 contentStream.endText();
             }
 

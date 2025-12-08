@@ -22,23 +22,22 @@ public class InvoiceItem {
     private final BigDecimal vatPercentage;
     private final BigDecimal discountPercentage;
     // Extended fields for detailed invoices
-    private LocalDate itemDate;           // Fecha específica del item (FECHA)
-    private String vehiclePlate;          // Matrícula del vehículo (MATRÍCULA)
-    private String orderNumber;           // Número de pedido (PEDIDO)
-    private String zone;                  // Zona de trabajo (ZONA)
-    private BigDecimal gasPercentage;     // Porcentaje de gas (% GAS)
+    private LocalDate itemDate; // Fecha específica del item (FECHA)
+    private String vehiclePlate; // Matrícula del vehículo (MATRÍCULA)
+    private String orderNumber; // Número de pedido (PEDIDO)
+    private String zone; // Zona de trabajo (ZONA)
+    private BigDecimal gasPercentage; // Porcentaje de gas (% GAS)
     private final LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
     public InvoiceItem(
-        Long id,
-        Long invoiceId,
-        String description,
-        int units,
-        BigDecimal price,
-        BigDecimal vatPercentage,
-        BigDecimal discountPercentage
-    ) {
+            Long id,
+            Long invoiceId,
+            String description,
+            int units,
+            BigDecimal price,
+            BigDecimal vatPercentage,
+            BigDecimal discountPercentage) {
         validateInputs(description, units, price, vatPercentage, discountPercentage);
 
         this.id = id;
@@ -56,33 +55,32 @@ public class InvoiceItem {
         BigDecimal subtotalBeforeDiscount = price.multiply(BigDecimal.valueOf(units));
         BigDecimal discountAmount = calculateDiscountAmount(subtotalBeforeDiscount);
         return subtotalBeforeDiscount.subtract(discountAmount)
-            .setScale(DECIMAL_SCALE, RoundingMode.HALF_UP);
+                .setScale(DECIMAL_SCALE, RoundingMode.HALF_UP);
     }
 
     public BigDecimal calculateTotal() {
         BigDecimal subtotal = calculateSubtotal();
         BigDecimal vatAmount = calculateVatAmount(subtotal);
         return subtotal.add(vatAmount)
-            .setScale(DECIMAL_SCALE, RoundingMode.HALF_UP);
+                .setScale(DECIMAL_SCALE, RoundingMode.HALF_UP);
     }
 
     private BigDecimal calculateDiscountAmount(BigDecimal amount) {
         return amount.multiply(discountPercentage)
-            .divide(ONE_HUNDRED, DECIMAL_SCALE, RoundingMode.HALF_UP);
+                .divide(ONE_HUNDRED, DECIMAL_SCALE, RoundingMode.HALF_UP);
     }
 
     private BigDecimal calculateVatAmount(BigDecimal subtotal) {
         return subtotal.multiply(vatPercentage)
-            .divide(ONE_HUNDRED, DECIMAL_SCALE, RoundingMode.HALF_UP);
+                .divide(ONE_HUNDRED, DECIMAL_SCALE, RoundingMode.HALF_UP);
     }
 
     private void validateInputs(
-        String description,
-        int units,
-        BigDecimal price,
-        BigDecimal vatPercentage,
-        BigDecimal discountPercentage
-    ) {
+            String description,
+            int units,
+            BigDecimal price,
+            BigDecimal vatPercentage,
+            BigDecimal discountPercentage) {
         if (description == null || description.trim().isEmpty()) {
             throw new IllegalArgumentException("Description cannot be null or empty");
         }
@@ -202,5 +200,14 @@ public class InvoiceItem {
 
     public BigDecimal getGasPercentage() {
         return gasPercentage;
+    }
+
+    // Getters for calculated values (for Thymeleaf template compatibility)
+    public BigDecimal getSubtotal() {
+        return calculateSubtotal();
+    }
+
+    public BigDecimal getTotal() {
+        return calculateTotal();
     }
 }
