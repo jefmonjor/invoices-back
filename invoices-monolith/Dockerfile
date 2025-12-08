@@ -39,4 +39,9 @@ COPY --from=build /app/target/*.jar app.jar
 RUN chown -R spring:spring /app
 
 # Switch to non-root user
+USER spring
+
+# Default JVM options (can be overridden by Railway env vars)
+ENV JAVA_OPTS="-Xmx400m -Xms256m -XX:MaxMetaspaceSize=180m -XX:+UseContainerSupport -XX:+ExitOnOutOfMemoryError"
+
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar --server.port=${PORT:-8080}"]
