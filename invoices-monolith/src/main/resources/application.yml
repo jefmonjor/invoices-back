@@ -57,7 +57,7 @@ spring:
     properties:
       hibernate:
         format_sql: false
-        dialect: org.hibernate.dialect.PostgreSQLDialect
+        # dialect removed - Hibernate 6.x auto-detects PostgreSQLDialect
         jdbc:
           batch_size: 20
         order_inserts: true
