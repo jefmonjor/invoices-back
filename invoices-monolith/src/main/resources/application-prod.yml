@@ -11,11 +11,17 @@ spring:
   # Memory Optimization: DB Pool
   datasource:
     hikari:
-      maximum-pool-size: 5  # Default is 10. 5 is enough for this traffic and saves RAM.
+      maximum-pool-size: 5  # Neon pooler handles connection multiplexing
       minimum-idle: 2
-      idle-timeout: 300000
-      connection-timeout: 20000
-      max-lifetime: 1200000
+      idle-timeout: 300000        # 5 min
+      connection-timeout: 20000   # 20 sec
+      max-lifetime: 600000        # 10 min - less than Neon's timeout
+      validation-timeout: 5000
+      leak-detection-threshold: 60000  # 1 min - detect connection leaks
+
+  # Disable lazy initialization for predictable performance
+  main:
+    lazy-initialization: false
 
 # Disable Swagger UI in production (security best practice)
 springdoc:
@@ -35,19 +41,26 @@ verifactu:
     endpoint-production: https://www2.agenciatributaria.gob.es/wlpl/TIKE-CONT/ws/SuministroInformacion
     timeout: 30000
 
-# Logging
+# Production Logging - reduced verbosity for performance
 logging:
   level:
-    root: INFO
+    root: WARN
     com.invoices: INFO
+    org.springframework: WARN
     org.springframework.web: WARN
     org.hibernate: WARN
+    org.hibernate.SQL: WARN
+    org.hibernate.stat: OFF
+    com.zaxxer.hikari: WARN
+    io.lettuce: WARN
+    io.minio: WARN
 
-# Memory Optimization: Limit Thread & Connection Pools
+# Server tuning for production
 server:
   tomcat:
     threads:
-      max: 50        # Default is 200. Reducing to 50 saves ~75MB stack memory.
+      max: 50        # Reduced from 200, saves ~75MB stack memory
       min-spare: 5
     connection-timeout: 20000
     max-connections: 1000
+    accept-count: 100

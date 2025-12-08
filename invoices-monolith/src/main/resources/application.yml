@@ -3,6 +3,13 @@ server:
   servlet:
     context-path: /
   forward-headers-strategy: framework
+  
+  # HTTP Compression - reduce bandwidth for JSON responses
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/plain,text/css,application/javascript
+    min-response-size: 1024
+    
   tomcat:
     threads:
       max: 20 # Drastically reduced from 200 default
@@ -59,9 +66,20 @@ spring:
         format_sql: false
         # dialect removed - Hibernate 6.x auto-detects PostgreSQLDialect
         jdbc:
-          batch_size: 20
+          batch_size: 25
+          batch_versioned_data: true
+          fetch_size: 50
         order_inserts: true
         order_updates: true
+        # Disable second-level cache (not needed for this app)
+        cache:
+          use_second_level_cache: false
+          use_query_cache: false
+        # Disable statistics in production
+        generate_statistics: false
+        # Query plan cache optimization
+        query:
+          plan_cache_max_size: 1024
         # JTA Configuration - Use NoJtaPlatform for Spring-managed transactions
         transaction:
           jta:

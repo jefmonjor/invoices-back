@@ -41,7 +41,19 @@ RUN chown -R spring:spring /app
 # Switch to non-root user
 USER spring
 
-# Default JVM options (can be overridden by Railway env vars)
-ENV JAVA_OPTS="-Xmx400m -Xms256m -XX:MaxMetaspaceSize=180m -XX:+UseContainerSupport -XX:+ExitOnOutOfMemoryError"
+# JVM options optimized for containers and production
+# - G1GC: Better for heap sizes > 256MB, lower pause times
+# - UseStringDeduplication: Reduces memory for duplicate strings (common in JSON)
+# - MaxRAMPercentage: Uses 75% of container memory for heap
+# - UseContainerSupport: Respects container memory limits
+# - ExitOnOutOfMemoryError: Fail fast on OOM instead of hanging
+# - Faster entropy source for security operations
+ENV JAVA_OPTS="-XX:+UseG1GC \
+    -XX:MaxRAMPercentage=75.0 \
+    -XX:+UseStringDeduplication \
+    -XX:+UseContainerSupport \
+    -XX:+ExitOnOutOfMemoryError \
+    -Xss512k \
+    -Djava.security.egd=file:/dev/./urandom"
 
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar --server.port=${PORT:-8080}"]
