@@ -50,6 +50,7 @@ spring:
 
   # JPA Configuration
   jpa:
+    open-in-view: false  # Best practice: disable to prevent lazy loading issues and release DB connections earlier
     hibernate:
       ddl-auto: validate
     show-sql: false
@@ -65,6 +66,12 @@ spring:
         transaction:
           jta:
             platform: org.hibernate.engine.transaction.jta.platform.internal.NoJtaPlatform
+
+  # Spring Data Configuration
+  data:
+    redis:
+      repositories:
+        enabled: false  # Disable Redis repository scanning - using RedisTemplate directly
 
   # Flyway Configuration
   flyway:

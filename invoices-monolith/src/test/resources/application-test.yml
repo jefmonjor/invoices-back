@@ -19,6 +19,7 @@ spring:
 
   # JPA Configuration for tests
   jpa:
+    open-in-view: false  # Ensure tests run with OSIV disabled like production
     hibernate:
       ddl-auto: create-drop
     show-sql: false
@@ -26,6 +27,7 @@ spring:
       hibernate:
         format_sql: false
         dialect: org.hibernate.dialect.H2Dialect
+        generate_statistics: true  # Enable statistics for N+1 detection tests
 
   # Disable Flyway for tests
   flyway:
@@ -63,6 +65,7 @@ logging:
     com.invoices: INFO
     org.springframework.security: WARN
     org.hibernate.SQL: WARN
+    org.hibernate.stat: DEBUG  # Enable statistics logging for N+1 detection
     org.springframework.test: INFO
 
 # Actuator Configuration for tests

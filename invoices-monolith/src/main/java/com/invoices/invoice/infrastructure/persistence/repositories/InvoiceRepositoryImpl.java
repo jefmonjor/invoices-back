@@ -145,7 +145,7 @@ public class InvoiceRepositoryImpl implements InvoiceRepository {
                         entity.getIssueDate(),
                         entity.getTotalAmount(),
                         entity.getVerifactuStatus(), // Map verifactuStatus to status in summary
-                        entity.getClient().getId(),
+                        entity.getClientId(), // Use direct column instead of lazy relation
                         entity.getCompanyId()))
                 .collect(Collectors.toList());
     }
