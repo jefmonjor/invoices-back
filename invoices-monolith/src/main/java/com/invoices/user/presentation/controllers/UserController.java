@@ -71,7 +71,7 @@ public class UserController {
 
         @PutMapping("/profile")
         @PreAuthorize("isAuthenticated()")
-        @Operation(summary = "Update current user profile", description = "Updates the profile of the currently authenticated user")
+        @Operation(summary = "Update current user profile", description = "Updates the profile of the currently authenticated user. Cannot modify roles or enabled status.")
         @ApiResponses(value = {
                         @ApiResponse(responseCode = "200", description = "Profile updated successfully", content = @Content(schema = @Schema(implementation = UserDTO.class))),
                         @ApiResponse(responseCode = "400", description = "Invalid request data", content = @Content),
@@ -84,13 +84,16 @@ public class UserController {
 
                 User user = getUserByEmailUseCase.execute(email);
 
+                // SECURITY: Users cannot modify their own roles or enabled status via profile
+                // update
+                // Roles can only be changed by admins via PUT /api/users/{id}
                 User updatedUser = updateUserUseCase.execute(
                                 user.getId(),
                                 request.getFirstName(),
                                 request.getLastName(),
                                 request.getPassword(),
-                                request.getRoles(), // Allow roles to be updated via profile
-                                request.getEnabled());
+                                null, // Preserve existing roles - users cannot change their own roles
+                                null); // Preserve existing enabled status
                 UserDTO userDTO = mapper.toDTO(updatedUser);
 
                 log.info("Profile updated successfully for user: {}", email);
