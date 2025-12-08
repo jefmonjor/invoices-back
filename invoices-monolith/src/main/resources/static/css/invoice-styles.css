@@ -1,6 +1,24 @@
 @page {
     size: A4;
-    margin: 25pt;
+    margin: 25pt 25pt 60pt 25pt;
+    /* Extra bottom margin for VeriFactu */
+
+    @bottom-center {
+        content: "Factura verificable en la sede electrónica de la AEAT - VERI*FACTU";
+        font-size: 10pt;
+        color: #333;
+    }
+
+    @bottom-right {
+        content: "Página " counter(page) " / " counter(pages);
+        font-size: 7pt;
+        color: #999;
+    }
+}
+
+/* First page has extra space for footer */
+@page :first {
+    margin-bottom: 180pt;
 }
 
 body {
@@ -127,6 +145,11 @@ thead tr {
     background-color: #f5f5f5;
 }
 
+/* Repeat thead on every page */
+thead {
+    display: table-header-group;
+}
+
 th {
     text-align: center;
     font-size: 7pt;
@@ -141,6 +164,11 @@ td {
     border: 1pt solid #999;
     border-top: none;
     vertical-align: top;
+}
+
+/* Prevent row breaks */
+tr {
+    page-break-inside: avoid;
 }
 
 /* Standard Invoice Columns */
@@ -214,11 +242,15 @@ td {
     padding-right: 3pt;
 }
 
-/* Footer Section */
+/* Footer Section - Only on first page */
 .footer-section {
     display: table;
     width: 100%;
     margin-top: 10pt;
+    position: fixed;
+    bottom: 70pt;
+    left: 25pt;
+    right: 25pt;
 }
 
 .observaciones {
@@ -290,12 +322,8 @@ td {
     width: 40%;
 }
 
-/* VeriFactu Footer - Min 10pt per AEAT */
+/* VeriFactu Footer - handled by @page now */
 .verifactu-footer {
-    margin-top: 15pt;
-    padding-top: 5pt;
-    border-top: 1pt solid #ddd;
-    text-align: center;
-    font-size: 10pt;
-    color: #333;
+    display: none;
+    /* Handled by @page bottom-center */
 }
