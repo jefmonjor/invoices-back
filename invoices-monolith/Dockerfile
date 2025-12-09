@@ -50,6 +50,7 @@ USER spring
 # - Faster entropy source for security operations
 ENV JAVA_OPTS="-XX:+UseG1GC \
     -XX:MaxRAMPercentage=75.0 \
+    -XX:MaxMetaspaceSize=512m \
     -XX:+UseStringDeduplication \
     -XX:+UseContainerSupport \
     -XX:+ExitOnOutOfMemoryError \
