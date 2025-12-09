@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Certificado Digital - Aviso de Caducidad</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header.warning {
+            background: linear-gradient(135deg, #f39c12, #d68910);
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+
+        .header p {
+            margin: 10px 0 0 0;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .alert-box {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+
+        .alert-box.danger {
+            background-color: #f8d7da;
+            border-left-color: #dc3545;
+        }
+
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        .info-table td {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .info-table td:first-child {
+            font-weight: 600;
+            color: #555;
+            width: 40%;
+        }
+
+        .btn {
+            display: inline-block;
+            background-color: #2563eb;
+            color: white;
+            padding: 14px 28px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            margin-top: 20px;
+        }
+
+        .btn:hover {
+            background-color: #1d4ed8;
+        }
+
+        .footer {
+            background-color: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            color: #6c757d;
+            font-size: 14px;
+        }
+
+        .days-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .days-badge.warning {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+
+        .days-badge.danger {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header" th:classappend="${daysUntilExpiration <= 7} ? '' : 'warning'">
+            <h1>⚠️ Aviso de Certificado Digital</h1>
+            <p>Tu certificado VeriFactu está próximo a caducar</p>
+        </div>
+
+        <div class="content">
+            <div th:if="${daysUntilExpiration <= 7}" class="alert-box danger">
+                <strong>¡Acción urgente requerida!</strong><br>
+                Tu certificado caduca en menos de una semana. Sin él, no podrás firmar facturas con VeriFactu.
+            </div>
+            <div th:unless="${daysUntilExpiration <= 7}" class="alert-box">
+                <strong>Recordatorio</strong><br>
+                Tu certificado digital caducará pronto. Te recomendamos renovarlo con antelación.
+            </div>
+
+            <p style="text-align: center; margin: 25px 0;">
+                <span class="days-badge" th:classappend="${daysUntilExpiration <= 7} ? 'danger' : 'warning'">
+                    <span th:text="${daysUntilExpiration}">30</span> días restantes
+                </span>
+            </p>
+
+            <table class="info-table">
+                <tr>
+                    <td>Empresa</td>
+                    <td th:text="${companyName}">Empresa S.L.</td>
+                </tr>
+                <tr>
+                    <td>Titular</td>
+                    <td th:text="${certificateSubject}">CN=EMPRESA...</td>
+                </tr>
+                <tr>
+                    <td>Fecha de caducidad</td>
+                    <td th:text="${expirationDate}">15/01/2026</td>
+                </tr>
+                <tr>
+                    <td>Emisor</td>
+                    <td th:text="${certificateIssuer}">FNMT</td>
+                </tr>
+            </table>
+
+            <div style="text-align: center;">
+                <a th:href="${renewUrl}" class="btn">Actualizar Certificado</a>
+            </div>
+
+            <p style="margin-top: 30px; color: #6c757d; font-size: 14px;">
+                <strong>¿Cómo renovar?</strong><br>
+                1. Accede a tu panel de control<br>
+                2. Ve a Configuración → Certificado VeriFactu<br>
+                3. Sube tu nuevo certificado P12/PFX
+            </p>
+        </div>
+
+        <div class="footer">
+            <p>Este email fue enviado automáticamente por el sistema VeriFactu.</p>
+            <p>Si tienes dudas, contacta con soporte.</p>
+        </div>
+    </div>
+</body>
+
+</html>

@@ -32,21 +32,26 @@ public class InvoiceUseCaseConfiguration {
             CompanyRepository companyRepository,
             ClientRepository clientRepository,
             InvoiceEventPublisher eventPublisher,
-            com.invoices.invoice.domain.services.InvoiceNumberingService invoiceNumberingService) {
+            com.invoices.invoice.domain.services.InvoiceNumberingService invoiceNumberingService,
+            com.invoices.verifactu.application.services.InvoiceChainService invoiceChainService) {
         return new CreateInvoiceUseCase(
                 invoiceRepository,
                 companyRepository,
                 clientRepository,
                 eventPublisher,
-                invoiceNumberingService);
+                invoiceNumberingService,
+                invoiceChainService);
     }
 
     @Bean
     public UpdateInvoiceUseCase updateInvoiceUseCase(
             InvoiceRepository repository,
             ClientRepository clientRepository,
-            InvoiceEventPublisher eventPublisher) {
-        return new UpdateInvoiceUseCase(repository, clientRepository, eventPublisher);
+            InvoiceEventPublisher eventPublisher,
+            CompanyRepository companyRepository,
+            com.invoices.verifactu.application.services.InvoiceChainService invoiceChainService) {
+        return new UpdateInvoiceUseCase(repository, clientRepository, eventPublisher, companyRepository,
+                invoiceChainService);
     }
 
     @Bean

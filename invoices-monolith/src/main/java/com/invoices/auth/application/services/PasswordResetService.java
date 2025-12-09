@@ -95,7 +95,7 @@ public class PasswordResetService {
      */
     @Transactional
     public void resetPassword(UUID token, String newPassword) {
-        log.info("Attempting to reset password with token: {}", token);
+        log.info("Attempting to reset password with token");
 
         // Find and validate token
         PasswordResetToken resetToken = tokenRepository.findValidToken(token)
@@ -129,7 +129,7 @@ public class PasswordResetService {
         variables.put("resetUrl", resetUrl);
         variables.put("tokenExpirationHours", tokenExpirationHours);
 
-        log.debug("Sending password reset email to {} with URL: {}", user.getEmail(), resetUrl);
+        log.debug("Sending password reset email to {}", user.getEmail());
         emailService.sendHtmlEmail(user.getEmail(), "Restablece tu contraseña", "reset-password", variables);
     }
 

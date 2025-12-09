@@ -38,7 +38,6 @@ public class AuthenticateUserUseCase {
      */
     public User execute(String email, String plainPassword) {
         log.debug("Authenticating user with email: {}", email);
-        log.debug("Plain password length: {}", plainPassword != null ? plainPassword.length() : 0);
 
         // Find user by email
         User user = userRepository.findByEmail(email)
@@ -48,7 +47,6 @@ public class AuthenticateUserUseCase {
                 });
 
         log.debug("User found: id={}, email={}, enabled={}", user.getId(), user.getEmail(), user.isEnabled());
-        log.debug("Stored password hash: {}", user.getPassword());
 
         // Business rule: User must be enabled
         if (!user.isEnabled()) {

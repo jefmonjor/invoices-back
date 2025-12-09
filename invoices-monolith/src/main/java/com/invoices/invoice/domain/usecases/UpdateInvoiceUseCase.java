@@ -1,13 +1,16 @@
 package com.invoices.invoice.domain.usecases;
 
 import com.invoices.invoice.domain.entities.Client;
+import com.invoices.invoice.domain.entities.Company;
 import com.invoices.invoice.domain.entities.Invoice;
 import com.invoices.invoice.domain.entities.InvoiceItem;
 import com.invoices.invoice.domain.exceptions.InvoiceNotFoundException;
 import com.invoices.invoice.domain.ports.ClientRepository;
+import com.invoices.invoice.domain.ports.CompanyRepository;
 import com.invoices.invoice.domain.ports.InvoiceEventPublisher;
 import com.invoices.invoice.domain.ports.InvoiceRepository;
 import com.invoices.invoice.domain.exceptions.ClientNotFoundException;
+import com.invoices.verifactu.application.services.InvoiceChainService;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -33,14 +36,20 @@ public class UpdateInvoiceUseCase {
     private final InvoiceRepository invoiceRepository;
     private final ClientRepository clientRepository;
     private final InvoiceEventPublisher eventPublisher;
+    private final CompanyRepository companyRepository;
+    private final InvoiceChainService invoiceChainService;
 
     public UpdateInvoiceUseCase(
             InvoiceRepository invoiceRepository,
             ClientRepository clientRepository,
-            InvoiceEventPublisher eventPublisher) {
+            InvoiceEventPublisher eventPublisher,
+            CompanyRepository companyRepository,
+            InvoiceChainService invoiceChainService) {
         this.invoiceRepository = invoiceRepository;
         this.clientRepository = clientRepository;
         this.eventPublisher = eventPublisher;
+        this.companyRepository = companyRepository;
+        this.invoiceChainService = invoiceChainService;
     }
 
     public Invoice execute(
@@ -103,6 +112,19 @@ public class UpdateInvoiceUseCase {
         // Update notes if provided
         if (notes != null) {
             invoice.setNotes(notes);
+        }
+
+        // Recalculate VeriFactu hash if invoice data changed
+        // Hash depends on: invoice number, total (items), IRPF, RE
+        boolean dataAffectingHashChanged = updatedItems != null ||
+                irpfPercentage != null ||
+                rePercentage != null ||
+                (invoiceNumber != null && !invoiceNumber.equals(invoice.getInvoiceNumber()));
+
+        if (dataAffectingHashChanged) {
+            Company company = companyRepository.findById(invoice.getCompanyId())
+                    .orElseThrow(() -> new IllegalArgumentException("Company not found"));
+            invoiceChainService.prepareInvoiceForChaining(invoice, company);
         }
 
         // Save updated invoice

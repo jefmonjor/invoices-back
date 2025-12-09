@@ -258,6 +258,17 @@ resilience4j:
         waitDurationInOpenState: 60s
         failureRateThreshold: 50
         eventConsumerBufferSize: 10
+      aeat:
+        registerHealthIndicator: true
+        slidingWindowSize: 5
+        minimumNumberOfCalls: 3
+        permittedNumberOfCallsInHalfOpenState: 2
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 120s  # 2 min - AEAT puede tardar más en recuperarse
+        failureRateThreshold: 60  # Más tolerante con AEAT
+        slowCallDurationThreshold: 30s  # AEAT puede ser lento
+        slowCallRateThreshold: 80  # Toleramos lentitud
+        eventConsumerBufferSize: 10
 
 # Rate Limiting Configuration
 bucket4j:

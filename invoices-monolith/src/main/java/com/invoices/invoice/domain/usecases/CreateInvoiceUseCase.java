@@ -1,6 +1,7 @@
 package com.invoices.invoice.domain.usecases;
 
 import com.invoices.invoice.domain.entities.Client;
+import com.invoices.invoice.domain.entities.Company;
 import com.invoices.invoice.domain.entities.Invoice;
 import com.invoices.invoice.domain.entities.InvoiceItem;
 import com.invoices.invoice.domain.ports.ClientRepository;
@@ -8,6 +9,7 @@ import com.invoices.invoice.domain.ports.CompanyRepository;
 import com.invoices.invoice.domain.ports.InvoiceEventPublisher;
 import com.invoices.invoice.domain.ports.InvoiceRepository;
 import com.invoices.invoice.domain.exceptions.ClientNotFoundException;
+import com.invoices.verifactu.application.services.InvoiceChainService;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -24,18 +26,21 @@ public class CreateInvoiceUseCase {
     private final ClientRepository clientRepository;
     private final InvoiceEventPublisher eventPublisher;
     private final com.invoices.invoice.domain.services.InvoiceNumberingService invoiceNumberingService;
+    private final InvoiceChainService invoiceChainService;
 
     public CreateInvoiceUseCase(
             InvoiceRepository invoiceRepository,
             CompanyRepository companyRepository,
             ClientRepository clientRepository,
             InvoiceEventPublisher eventPublisher,
-            com.invoices.invoice.domain.services.InvoiceNumberingService invoiceNumberingService) {
+            com.invoices.invoice.domain.services.InvoiceNumberingService invoiceNumberingService,
+            InvoiceChainService invoiceChainService) {
         this.invoiceRepository = invoiceRepository;
         this.companyRepository = companyRepository;
         this.clientRepository = clientRepository;
         this.eventPublisher = eventPublisher;
         this.invoiceNumberingService = invoiceNumberingService;
+        this.invoiceChainService = invoiceChainService;
     }
 
     public Invoice execute(
@@ -47,10 +52,9 @@ public class CreateInvoiceUseCase {
             BigDecimal rePercentage,
             List<InvoiceItem> items,
             String notes) {
-        // Validate company and client exist
-        if (!companyRepository.existsById(companyId)) {
-            throw new IllegalArgumentException("Company not found with id: " + companyId);
-        }
+        // Validate company exists and get it for hash chaining
+        Company company = companyRepository.findById(companyId)
+                .orElseThrow(() -> new IllegalArgumentException("Company not found with id: " + companyId));
 
         if (!clientRepository.existsById(clientId)) {
             throw new ClientNotFoundException(clientId);
@@ -84,8 +88,17 @@ public class CreateInvoiceUseCase {
             invoice.setNotes(notes);
         }
 
+        // Calculate VeriFactu hash (chaining with previous invoice)
+        invoiceChainService.prepareInvoiceForChaining(invoice, company);
+
         // Save invoice
         Invoice savedInvoice = invoiceRepository.save(invoice);
+
+        // Update company's lastHash for next invoice in chain
+        if (savedInvoice.getHash() != null) {
+            Company updatedCompany = company.withLastHash(savedInvoice.getHash());
+            companyRepository.save(updatedCompany);
+        }
 
         // Get client email for event
         Client client = clientRepository.findById(clientId)

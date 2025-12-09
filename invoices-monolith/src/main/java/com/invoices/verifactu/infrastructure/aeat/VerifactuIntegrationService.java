@@ -6,6 +6,7 @@ import com.invoices.invoice.domain.entities.Invoice;
 import com.invoices.verifactu.domain.model.AeatResponse;
 import com.invoices.verifactu.domain.model.VerifactuMode;
 import com.invoices.verifactu.domain.model.VerifactuResponse;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -16,6 +17,7 @@ import java.time.format.DateTimeFormatter;
 
 import com.invoices.shared.domain.exception.BusinessException;
 import org.w3c.dom.Document;
+import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.transform.Transformer;
@@ -227,11 +229,13 @@ public class VerifactuIntegrationService implements VerifactuIntegrationPort {
 
     /**
      * Calls AEAT endpoint (sandbox or production) with signed XML.
+     * Protected by circuit breaker to prevent cascading failures.
      * 
      * @param signedXml Signed XML document
      * @param mode      Operating mode (sandbox/production)
      * @return AEAT response
      */
+    @CircuitBreaker(name = "aeat", fallbackMethod = "callAEATEndpointFallback")
     public AeatResponse callAEATEndpoint(String signedXml, VerifactuMode mode) {
         String endpoint = mode == VerifactuMode.PRODUCTION ? productionEndpoint : sandboxEndpoint;
         log.info("Calling AEAT endpoint: {} (mode: {})", endpoint, mode);
@@ -257,6 +261,19 @@ public class VerifactuIntegrationService implements VerifactuIntegrationPort {
             throw new BusinessException("AEAT_CONNECTION_ERROR", "Error connecting to AEAT: " + e.getMessage(),
                     org.springframework.http.HttpStatus.BAD_GATEWAY);
         }
+    }
+
+    /**
+     * Fallback method when AEAT circuit is open or call fails.
+     */
+    @SuppressWarnings("unused") // Called by CircuitBreaker via reflection
+    private AeatResponse callAEATEndpointFallback(String signedXml, VerifactuMode mode, Exception e) {
+        log.error("Circuit breaker activated for AEAT. Service is unavailable. Mode: {}", mode, e);
+        AeatResponse response = new AeatResponse();
+        response.setSuccess(false);
+        response.setCode("CIRCUIT_OPEN");
+        response.setMessage("AEAT service temporarily unavailable. Invoice queued for retry.");
+        return response;
     }
 
     /**
@@ -311,31 +328,67 @@ public class VerifactuIntegrationService implements VerifactuIntegrationPort {
                 doc = dbf.newDocumentBuilder().parse(new InputSource(reader));
             }
 
-            // Basic parsing logic - needs to be refined based on actual AEAT response
-            // structure
-            // Assuming <EstadoRegistro>Correcto</EstadoRegistro> or similar
-            // This is a simplified parser for the "Unblocker" phase
-
-            // Check for Fault
-            if (doc.getElementsByTagName("soapenv:Fault").getLength() > 0) {
+            // Check for SOAP Fault first
+            NodeList faultNodes = doc.getElementsByTagName("soapenv:Fault");
+            if (faultNodes.getLength() == 0) {
+                faultNodes = doc.getElementsByTagName("soap:Fault");
+            }
+            if (faultNodes.getLength() > 0) {
                 response.setSuccess(false);
                 response.setCode("SOAP_FAULT");
-                response.setMessage(doc.getElementsByTagName("faultstring").item(0).getTextContent());
+                NodeList faultStrings = doc.getElementsByTagName("faultstring");
+                if (faultStrings.getLength() > 0) {
+                    response.setMessage(faultStrings.item(0).getTextContent());
+                }
                 return response;
             }
 
-            // Look for specific Veri*Factu response tags
-            // Note: tag names depend on the specific AEAT service version
-            // For now, we'll look for generic success indicators or return raw content for
-            // debugging
+            // Parse VeriFactu response - look for standard response elements
+            // Namespace:
+            // https://www2.agenciatributaria.gob.es/static_files/common/internet/dep/aplicaciones/es/aeat/tike/cont/ws/SusministroLR.xsd
 
-            // Placeholder logic:
-            response.setSuccess(true);
-            response.setCode("200");
-            response.setMessage("Response received (Parsing to be implemented fully)");
-            // response.setCsv(...)
+            // Try to find CSV (Código Seguro de Verificación)
+            String csv = extractElementText(doc, "CSV");
+            if (csv == null) {
+                csv = extractElementText(doc, "CodigoCSV");
+            }
 
+            // Try to find the status (EstadoEnvio or EstadoRegistro)
+            String estado = extractElementText(doc, "EstadoEnvio");
+            if (estado == null) {
+                estado = extractElementText(doc, "EstadoRegistro");
+            }
+
+            // Try to find error information
+            String codigoError = extractElementText(doc, "CodigoErrorRegistro");
+            String descError = extractElementText(doc, "DescripcionErrorRegistro");
+
+            // Alternative error fields
+            if (codigoError == null) {
+                codigoError = extractElementText(doc, "CodigoError");
+            }
+            if (descError == null) {
+                descError = extractElementText(doc, "MensajeAdicional");
+            }
+
+            // Determine success based on estado
+            boolean isSuccess = "Correcto".equalsIgnoreCase(estado) ||
+                    "Aceptado".equalsIgnoreCase(estado) ||
+                    "AceptadoConErrores".equalsIgnoreCase(estado);
+
+            response.setSuccess(isSuccess);
+            response.setCode(isSuccess ? "OK" : (codigoError != null ? codigoError : "ERROR"));
+            response.setCsv(csv);
+
+            if (isSuccess) {
+                response.setMessage("Factura registrada correctamente en AEAT");
+            } else {
+                response.setMessage(descError != null ? descError : "Error en registro AEAT");
+            }
+
+            log.info("Parsed AEAT response: success={}, csv={}, estado={}", isSuccess, csv, estado);
             return response;
+
         } catch (Exception e) {
             log.error("Error parsing SOAP response", e);
             response.setSuccess(false);
@@ -343,6 +396,30 @@ public class VerifactuIntegrationService implements VerifactuIntegrationPort {
             response.setMessage("Error parsing AEAT response: " + e.getMessage());
             return response;
         }
+    }
+
+    /**
+     * Extracts text content from first element with given tag name.
+     */
+    private String extractElementText(Document doc, String tagName) {
+        // Try without namespace
+        NodeList nodes = doc.getElementsByTagName(tagName);
+        if (nodes.getLength() > 0 && nodes.item(0).getTextContent() != null) {
+            String text = nodes.item(0).getTextContent().trim();
+            return text.isEmpty() ? null : text;
+        }
+
+        // Try with common namespace prefixes
+        String[] prefixes = { "sii:", "vf:", "ns2:", "ns3:" };
+        for (String prefix : prefixes) {
+            nodes = doc.getElementsByTagName(prefix + tagName);
+            if (nodes.getLength() > 0 && nodes.item(0).getTextContent() != null) {
+                String text = nodes.item(0).getTextContent().trim();
+                return text.isEmpty() ? null : text;
+            }
+        }
+
+        return null;
     }
 
     /**
