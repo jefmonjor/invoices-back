@@ -4,6 +4,7 @@ import com.invoices.security.exceptions.PlatformAdminAccessDeniedException;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
+import org.aspectj.lang.annotation.Pointcut;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -12,17 +13,18 @@ import org.springframework.stereotype.Component;
 
 /**
  * Security Aspect to prevent Platform Administrators from accessing invoice
- * data.
+ * and client data.
  * 
  * This is a CRITICAL security control that enforces separation of duties:
  * - Platform Admins can manage companies (create, delete, view stats)
- * - Platform Admins CANNOT access individual invoice data (privacy/security)
+ * - Platform Admins CANNOT access individual invoice/client data
+ * (privacy/security)
  * 
  * Executes BEFORE any invoice-related method to block access at infrastructure
  * level.
  * 
- * Coverage: All methods in com.invoices.invoice package (controllers, services,
- * repositories)
+ * Note: CompanyRepository is EXCLUDED because Platform Admin needs access to
+ * company statistics (count, list, etc.)
  */
 @Aspect
 @Component
@@ -30,10 +32,43 @@ import org.springframework.stereotype.Component;
 public class InvoiceSecurityAspect {
 
     /**
-     * Intercept all method calls within the invoice package.
+     * Pointcut for invoice-specific operations.
+     * Matches InvoiceRepository, InvoiceService, InvoiceController, etc.
+     */
+    @Pointcut("execution(* com.invoices.invoice..*Invoice*.*(..))")
+    public void invoiceOperations() {
+    }
+
+    /**
+     * Pointcut for client-specific operations.
+     * Matches ClientRepository, ClientService, ClientController, etc.
+     */
+    @Pointcut("execution(* com.invoices.invoice..*Client*.*(..))")
+    public void clientOperations() {
+    }
+
+    /**
+     * Pointcut for VeriFactu metrics (invoice-related).
+     */
+    @Pointcut("execution(* com.invoices.invoice..*VerifactuMetrics*.*(..))")
+    public void verifactuMetricsOperations() {
+    }
+
+    /**
+     * Combined pointcut for all invoice-related data that Platform Admin cannot
+     * access.
+     * Note: CompanyRepository is NOT included here - Platform Admin can access
+     * company data.
+     */
+    @Pointcut("invoiceOperations() || clientOperations() || verifactuMetricsOperations()")
+    public void restrictedInvoiceOperations() {
+    }
+
+    /**
+     * Intercept invoice and client method calls.
      * Throws exception if caller has PLATFORM_ADMIN role.
      */
-    @Before("execution(* com.invoices.invoice..*(..))")
+    @Before("restrictedInvoiceOperations()")
     public void blockPlatformAdminAccess(JoinPoint joinPoint) {
         if (isPlatformAdmin()) {
             String methodName = joinPoint.getSignature().toShortString();
