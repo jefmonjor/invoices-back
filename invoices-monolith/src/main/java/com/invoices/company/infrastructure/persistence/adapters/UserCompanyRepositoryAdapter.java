@@ -3,6 +3,7 @@ package com.invoices.company.infrastructure.persistence.adapters;
 import com.invoices.company.domain.entities.UserCompany;
 import com.invoices.company.domain.entities.UserCompanyId;
 import com.invoices.company.domain.ports.UserCompanyRepository;
+import org.hibernate.Hibernate;
 import org.springframework.stereotype.Repository;
 import lombok.RequiredArgsConstructor;
 
@@ -106,8 +107,9 @@ public class UserCompanyRepositoryAdapter implements UserCompanyRepository {
                 jpaEntity.getId().getCompanyId());
         UserCompany domain = new UserCompany(id, jpaEntity.getRole());
 
-        // Map Company if loaded (e.g., via JOIN FETCH)
-        if (jpaEntity.getCompany() != null) {
+        // Map Company if loaded (e.g., via JOIN FETCH) - check both not null AND
+        // initialized
+        if (jpaEntity.getCompany() != null && Hibernate.isInitialized(jpaEntity.getCompany())) {
             com.invoices.invoice.infrastructure.persistence.entities.CompanyJpaEntity jpaCompany = jpaEntity
                     .getCompany();
             com.invoices.invoice.domain.entities.Company company = new com.invoices.invoice.domain.entities.Company(
@@ -124,8 +126,9 @@ public class UserCompanyRepositoryAdapter implements UserCompanyRepository {
             domain.setCompany(company);
         }
 
-        // Map User if loaded (e.g., via JOIN FETCH)
-        if (jpaEntity.getUser() != null) {
+        // Map User if loaded (e.g., via JOIN FETCH) - check both not null AND
+        // initialized
+        if (jpaEntity.getUser() != null && Hibernate.isInitialized(jpaEntity.getUser())) {
             com.invoices.user.infrastructure.persistence.entities.UserJpaEntity jpaUser = jpaEntity.getUser();
             com.invoices.user.domain.entities.User user = new com.invoices.user.domain.entities.User(
                     jpaUser.getId(),
