@@ -105,13 +105,47 @@ public class UserCompanyRepositoryAdapter implements UserCompanyRepository {
                 jpaEntity.getId().getUserId(),
                 jpaEntity.getId().getCompanyId());
         UserCompany domain = new UserCompany(id, jpaEntity.getRole());
-        // Note: Company and User relationships are loaded separately when needed
+
+        // Map Company if loaded (e.g., via JOIN FETCH)
         if (jpaEntity.getCompany() != null) {
-            // Could map company here if needed
+            com.invoices.invoice.infrastructure.persistence.entities.CompanyJpaEntity jpaCompany = jpaEntity
+                    .getCompany();
+            com.invoices.invoice.domain.entities.Company company = new com.invoices.invoice.domain.entities.Company(
+                    jpaCompany.getId(),
+                    jpaCompany.getBusinessName(),
+                    jpaCompany.getTaxId(),
+                    jpaCompany.getAddress(),
+                    jpaCompany.getCity(),
+                    jpaCompany.getPostalCode(),
+                    jpaCompany.getProvince(),
+                    jpaCompany.getPhone(),
+                    jpaCompany.getEmail(),
+                    jpaCompany.getIban());
+            domain.setCompany(company);
         }
+
+        // Map User if loaded (e.g., via JOIN FETCH)
         if (jpaEntity.getUser() != null) {
-            // Could map user here if needed
+            com.invoices.user.infrastructure.persistence.entities.UserJpaEntity jpaUser = jpaEntity.getUser();
+            com.invoices.user.domain.entities.User user = new com.invoices.user.domain.entities.User(
+                    jpaUser.getId(),
+                    jpaUser.getEmail(),
+                    jpaUser.getPassword(), // Already hashed
+                    jpaUser.getFirstName(),
+                    jpaUser.getLastName(),
+                    jpaUser.getRoles(),
+                    jpaUser.isEnabled(),
+                    jpaUser.isAccountNonExpired(),
+                    jpaUser.isAccountNonLocked(),
+                    jpaUser.isCredentialsNonExpired(),
+                    jpaUser.getCreatedAt(),
+                    jpaUser.getUpdatedAt(),
+                    jpaUser.getLastLogin(),
+                    jpaUser.getCurrentCompanyId(),
+                    jpaUser.getPlatformRole());
+            domain.setUser(user);
         }
+
         return domain;
     }
 
