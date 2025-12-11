@@ -74,9 +74,17 @@ public class AuthController {
         public ResponseEntity<AuthResponse> register(@Valid @RequestBody CreateUserRequest request) {
                 log.info("POST /api/auth/register - Registering new user: {}", request.getEmail());
 
-                // Default role for new users
+                // Determine role based on registration type:
+                // - NEW_COMPANY: User is creating their own company, they become ADMIN
+                // - JOIN_COMPANY: User is joining via invitation code, they become USER
                 java.util.Set<String> roles = new java.util.HashSet<>();
-                roles.add("ROLE_USER");
+                if ("NEW_COMPANY".equals(request.getRegistrationType())) {
+                        roles.add("ROLE_ADMIN");
+                        log.info("User {} registering as ADMIN (creating new company)", request.getEmail());
+                } else {
+                        roles.add("ROLE_USER");
+                        log.info("User {} registering as USER (joining via invitation)", request.getEmail());
+                }
 
                 // Create user using domain use case
                 User createdUser = createUserUseCase.execute(
