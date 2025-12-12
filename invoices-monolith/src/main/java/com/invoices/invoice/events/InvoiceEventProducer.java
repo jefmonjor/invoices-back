@@ -71,28 +71,30 @@ public class InvoiceEventProducer {
      */
     private void sendEvent(InvoiceEvent event) {
         try {
-            // Convertir el evento a un Map para Redis Streams
+            // Convertir el evento a un Map<String, String> para Redis Streams
             Map<String, String> eventData = new HashMap<>();
             eventData.put("eventType", event.getEventType());
             eventData.put("invoiceId", String.valueOf(event.getInvoiceId()));
             eventData.put("invoiceNumber", event.getInvoiceNumber());
             eventData.put("clientId", String.valueOf(event.getClientId()));
             eventData.put("clientEmail", event.getClientEmail());
-            eventData.put("total", event.getTotal().toString());
+            eventData.put("total", event.getTotal().toPlainString());
             eventData.put("status", event.getStatus());
             eventData.put("timestamp", event.getTimestamp().toString());
+            eventData.put("companyId", String.valueOf(event.getCompanyId()));
 
-            // Serializar el evento completo como JSON para tenerlo completo
+            // Serializar el evento completo como JSON para el consumer
             eventData.put("payload", objectMapper.writeValueAsString(event));
 
-            // Enviar al stream de Redis
+            // Enviar al stream de Redis usando StreamRecords.string() - esto envía strings
+            // planos
+            // sin doble serialización porque usa StringRedisSerializer implícitamente
             RecordId recordId = redisTemplate.opsForStream()
-                    .add(StreamRecords.newRecord()
-                            .in(invoiceEventsStream)
-                            .ofStrings(eventData));
+                    .add(StreamRecords.string(eventData)
+                            .withStreamKey(invoiceEventsStream));
 
-            log.debug("Evento enviado exitosamente para factura: {} con ID: {}",
-                    event.getInvoiceNumber(), recordId);
+            log.info("Published {} event for invoice: {} (recordId: {})",
+                    event.getEventType(), event.getInvoiceNumber(), recordId);
 
         } catch (JsonProcessingException e) {
             log.error("Error al serializar evento de factura {} a JSON", event.getInvoiceNumber(), e);
