@@ -53,10 +53,10 @@ USER spring:spring
 # Expose port (Railway injects PORT dynamically)
 EXPOSE 8080
 
-# Environment for JVM optimization (Railway ~1GB container)
-# Total memory budget: ~900MB (heap 350m + metaspace 512m + native ~50m)
-# Increased Metaspace for Spring Boot + Hibernate class loading
-ENV JAVA_OPTS="-Xmx350m -Xms256m -XX:MaxMetaspaceSize=512m -Xss256k -XX:+UseG1GC -XX:+UseStringDeduplication -XX:+UseContainerSupport -XX:+ExitOnOutOfMemoryError -Djava.security.egd=file:/dev/./urandom"
+# Environment for JVM optimization (Railway ~512MB container)
+# Memory budget: heap 256m + metaspace 192m + native ~50m = ~500m total
+# Reduced for stability - may need to upgrade Railway plan for larger apps
+ENV JAVA_OPTS="-Xmx256m -Xms128m -XX:MaxMetaspaceSize=192m -Xss256k -XX:+UseSerialGC -XX:+UseContainerSupport -XX:+ExitOnOutOfMemoryError -XX:CompressedClassSpaceSize=64m -Djava.security.egd=file:/dev/./urandom"
 
 # Health check (Railway manages health checks, but good to have)
 HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
