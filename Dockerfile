@@ -54,8 +54,9 @@ USER spring:spring
 EXPOSE 8080
 
 # Environment for JVM optimization (Railway ~1GB container)
-# Total memory budget: ~850MB (heap 450m + metaspace 384m + native)
-ENV JAVA_OPTS="-Xmx450m -Xms256m -XX:MaxMetaspaceSize=384m -Xss256k -XX:+UseG1GC -XX:+UseStringDeduplication -XX:+UseContainerSupport -XX:+ExitOnOutOfMemoryError -Djava.security.egd=file:/dev/./urandom"
+# Total memory budget: ~900MB (heap 350m + metaspace 512m + native ~50m)
+# Increased Metaspace for Spring Boot + Hibernate class loading
+ENV JAVA_OPTS="-Xmx350m -Xms256m -XX:MaxMetaspaceSize=512m -Xss256k -XX:+UseG1GC -XX:+UseStringDeduplication -XX:+UseContainerSupport -XX:+ExitOnOutOfMemoryError -Djava.security.egd=file:/dev/./urandom"
 
 # Health check (Railway manages health checks, but good to have)
 HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
