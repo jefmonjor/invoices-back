@@ -1,41 +1,31 @@
 package com.invoices.invoice.infrastructure.messaging;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.Map;
 
+/**
+ * No-op implementation of invoice status notification service.
+ * Replaces WebSocket-based notifications with simple logging.
+ * 
+ * The frontend uses polling instead of WebSockets for MVP simplicity.
+ * Status updates are visible when frontend polls the invoice API.
+ */
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class InvoiceStatusNotificationService {
 
-    private final SimpMessagingTemplate messagingTemplate;
-
     public void notifyStatus(Long invoiceId, String status) {
-        String destination = "/topic/invoice/" + invoiceId + "/status";
-        Map<String, Object> payload = Map.of(
-                "invoiceId", invoiceId,
-                "status", status,
-                "timestamp", LocalDateTime.now().toString());
-
-        log.info("Sending WebSocket notification to {}: {}", destination, payload);
-        messagingTemplate.convertAndSend(destination, payload);
+        log.info("[Status Update] Invoice {} -> {} (timestamp: {})",
+                invoiceId, status, LocalDateTime.now());
     }
 
     public void notifyStatusWithTx(Long invoiceId, String status, String txId, String message) {
-        String destination = "/topic/invoice/" + invoiceId + "/status";
-        Map<String, Object> payload = Map.of(
-                "invoiceId", invoiceId,
-                "status", status,
-                "txId", txId != null ? txId : "",
-                "message", message != null ? message : "",
-                "timestamp", LocalDateTime.now().toString());
-
-        log.info("Sending WebSocket notification to {}: {}", destination, payload);
-        messagingTemplate.convertAndSend(destination, payload);
+        log.info("[Status Update] Invoice {} -> {} (txId: {}, message: {}, timestamp: {})",
+                invoiceId, status,
+                txId != null ? txId : "N/A",
+                message != null ? message : "N/A",
+                LocalDateTime.now());
     }
 }
