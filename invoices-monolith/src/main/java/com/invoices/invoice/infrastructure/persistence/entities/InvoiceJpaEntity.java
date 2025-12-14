@@ -126,6 +126,9 @@ public class InvoiceJpaEntity {
     @Column(name = "verifactu_error", columnDefinition = "TEXT")
     private String verifactuError;
 
+    @Column(name = "verifactu_retry_count")
+    private Integer verifactuRetryCount;
+
     @Column(name = "pdf_server_path", length = 500)
     private String pdfServerPath;
 
@@ -453,5 +456,13 @@ public class InvoiceJpaEntity {
 
     public void setVerifactuError(String verifactuError) {
         this.verifactuError = verifactuError;
+    }
+
+    public Integer getVerifactuRetryCount() {
+        return verifactuRetryCount;
+    }
+
+    public void setVerifactuRetryCount(Integer verifactuRetryCount) {
+        this.verifactuRetryCount = verifactuRetryCount;
     }
 }

@@ -188,4 +188,11 @@ public class InvoiceRepositoryImpl implements InvoiceRepository {
             return cb.and(predicates.toArray(new jakarta.persistence.criteria.Predicate[0]));
         };
     }
+
+    @Override
+    public List<Invoice> findByVerifactuStatusIn(List<String> statuses) {
+        return jpaRepository.findByVerifactuStatusIn(statuses).stream()
+                .map(mapper::toDomainEntity)
+                .collect(Collectors.toList());
+    }
 }

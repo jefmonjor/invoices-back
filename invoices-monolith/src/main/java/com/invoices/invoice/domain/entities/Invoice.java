@@ -60,6 +60,7 @@ public class Invoice {
     private boolean isRectificativa;
     private Long rectifiesInvoiceId;
     private String verifactuError; // Error message from VeriFactu if rejected
+    private Integer verifactuRetryCount; // Number of retry attempts for VeriFactu submission
 
     public Invoice(
             Long id,
@@ -656,6 +657,20 @@ public class Invoice {
 
     public void setVerifactuError(String verifactuError) {
         this.verifactuError = verifactuError;
+        updateTimestamp();
+    }
+
+    public Integer getVerifactuRetryCount() {
+        return verifactuRetryCount != null ? verifactuRetryCount : 0;
+    }
+
+    public void setVerifactuRetryCount(Integer verifactuRetryCount) {
+        this.verifactuRetryCount = verifactuRetryCount;
+        updateTimestamp();
+    }
+
+    public void incrementRetryCount() {
+        this.verifactuRetryCount = getVerifactuRetryCount() + 1;
         updateTimestamp();
     }
 }

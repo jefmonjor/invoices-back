@@ -364,6 +364,48 @@ public class InvoiceController {
     }
 
     /**
+     * POST /invoices/{id}/retry-verifactu - Manually retry VeriFactu submission
+     * Allows users to retry failed or rejected VeriFactu submissions
+     */
+    @PostMapping("/{id}/retry-verifactu")
+    public ResponseEntity<java.util.Map<String, Object>> retryVerifactu(@PathVariable Long id) {
+        log.info("Manual VeriFactu retry requested for invoice ID: {}", id);
+
+        try {
+            Invoice invoice = getInvoiceByIdUseCase.execute(id);
+
+            // Check if invoice can be retried
+            String currentStatus = invoice.getVerifactuStatus();
+            if ("ACCEPTED".equalsIgnoreCase(currentStatus)) {
+                return ResponseEntity.badRequest().body(java.util.Map.of(
+                        "error", "Esta factura ya ha sido verificada correctamente",
+                        "invoiceId", id));
+            }
+
+            // Reset status to PENDING for retry
+            invoice.setVerifactuStatus("PENDING");
+            invoice.setVerifactuError(null);
+            // Note: We keep the retryCount to track total attempts
+            invoiceRepository.save(invoice);
+
+            log.info("Invoice {} status reset to PENDING for manual retry", id);
+
+            return ResponseEntity.ok(java.util.Map.of(
+                    "message", "Factura añadida a la cola de verificación",
+                    "invoiceId", id,
+                    "verifactuStatus", "PENDING"));
+
+        } catch (InvoiceNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            log.error("Error retrying VeriFactu for invoice {}: {}", id, e.getMessage());
+            return ResponseEntity.internalServerError().body(java.util.Map.of(
+                    "error", "Error al reintentar verificación: " + e.getMessage(),
+                    "invoiceId", id));
+        }
+    }
+
+    /**
      * Extract QR payload from invoice raw response or return null if not available
      */
     private String extractQrPayload(Invoice invoice) {

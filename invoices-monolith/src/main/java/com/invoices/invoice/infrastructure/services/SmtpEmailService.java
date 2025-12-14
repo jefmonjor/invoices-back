@@ -179,4 +179,107 @@ public class SmtpEmailService {
                         "<div class=\"alert\"><strong>⚠️ ATENCIÓN:</strong> Hay %d facturas pendientes críticas (>48h)</div>",
                         summary.getCriticalPending()) : "");
     }
+
+    /**
+     * Sends a notification email when a VeriFactu submission permanently fails.
+     *
+     * @param invoiceId     The failed invoice ID
+     * @param invoiceNumber The invoice number
+     * @param companyId     The company ID
+     * @param retryCount    Number of retry attempts made
+     * @param errorMessage  The last error message
+     */
+    public void sendVerifactuFailureEmail(Long invoiceId, String invoiceNumber, Long companyId,
+            int retryCount, String errorMessage) {
+        if (!emailEnabled) {
+            log.info("Email disabled - would notify about failed invoice {} ({})", invoiceId, invoiceNumber);
+            return;
+        }
+
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+            helper.setFrom(fromEmail);
+            helper.setTo(toEmail);
+            helper.setSubject(String.format("⚠️ VeriFactu FALLÓ - Factura %s", invoiceNumber));
+
+            String htmlContent = buildFailureEmailHtml(invoiceId, invoiceNumber, companyId, retryCount, errorMessage);
+            helper.setText(htmlContent, true);
+
+            mailSender.send(message);
+            log.info("VeriFactu failure email sent for invoice {}", invoiceNumber);
+
+        } catch (Exception e) {
+            log.error("Failed to send VeriFactu failure email for invoice {}: {}", invoiceId, e.getMessage());
+        }
+    }
+
+    private String buildFailureEmailHtml(Long invoiceId, String invoiceNumber, Long companyId,
+            int retryCount, String errorMessage) {
+        return String.format(
+                """
+                        <!DOCTYPE html>
+                        <html>
+                        <head>
+                            <meta charset="UTF-8">
+                            <style>
+                                body { font-family: Arial, sans-serif; background-color: #f5f5f5; padding: 20px; }
+                                .container { max-width: 600px; margin: 0 auto; background-color: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); overflow: hidden; }
+                                .header { background-color: #e74c3c; color: white; padding: 20px; text-align: center; }
+                                .content { padding: 20px; }
+                                .info { margin: 15px 0; padding: 12px; background-color: #f8f9fa; border-left: 4px solid #e74c3c; border-radius: 4px; }
+                                .label { font-weight: bold; color: #333; display: inline-block; min-width: 150px; }
+                                .error-box { padding: 15px; margin: 15px 0; border-radius: 4px; background-color: #fff3cd; border-left: 4px solid #ffc107; }
+                                .actions { padding: 15px; background-color: #ecf0f1; text-align: center; }
+                                .footer { padding: 15px 20px; text-align: center; color: #7f8c8d; font-size: 0.9em; }
+                            </style>
+                        </head>
+                        <body>
+                            <div class="container">
+                                <div class="header">
+                                    <h2>❌ VeriFactu Verificación Fallida</h2>
+                                    <p>Factura %s</p>
+                                </div>
+
+                                <div class="content">
+                                    <div class="info">
+                                        <span class="label">ID Factura:</span>
+                                        <span>%d</span>
+                                    </div>
+                                    <div class="info">
+                                        <span class="label">ID Empresa:</span>
+                                        <span>%d</span>
+                                    </div>
+                                    <div class="info">
+                                        <span class="label">Intentos:</span>
+                                        <span>%d</span>
+                                    </div>
+
+                                    <div class="error-box">
+                                        <strong>⚠️ Error:</strong><br>
+                                        %s
+                                    </div>
+
+                                    <div class="actions">
+                                        <p><strong>Acciones recomendadas:</strong></p>
+                                        <p>1. Revisar datos de la factura</p>
+                                        <p>2. Reintentar manualmente desde el panel</p>
+                                        <p>3. Emitir factura rectificativa si es necesario</p>
+                                    </div>
+                                </div>
+
+                                <div class="footer">
+                                    <p>Este email fue generado automáticamente. La factura ha superado el máximo de reintentos.</p>
+                                </div>
+                            </div>
+                        </body>
+                        </html>
+                        """,
+                invoiceNumber,
+                invoiceId,
+                companyId,
+                retryCount,
+                errorMessage != null ? errorMessage : "Error desconocido");
+    }
 }

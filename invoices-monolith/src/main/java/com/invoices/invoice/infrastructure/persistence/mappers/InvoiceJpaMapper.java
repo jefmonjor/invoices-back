@@ -98,6 +98,7 @@ public class InvoiceJpaMapper {
         jpaEntity.setXmlContent(invoice.getXmlContent());
         jpaEntity.setRectificativa(invoice.isRectificativa());
         jpaEntity.setRectifiesInvoiceId(invoice.getRectifiesInvoiceId());
+        jpaEntity.setVerifactuRetryCount(invoice.getVerifactuRetryCount());
 
         List<InvoiceItemJpaEntity> itemEntities = invoice.getItems().stream()
                 .map(item -> toJpaItemEntity(item, jpaEntity))
@@ -201,6 +202,9 @@ public class InvoiceJpaMapper {
         invoice.setRectificativa(jpaEntity.isRectificativa());
         if (jpaEntity.getRectifiesInvoiceId() != null) {
             invoice.setRectifiesInvoiceId(jpaEntity.getRectifiesInvoiceId());
+        }
+        if (jpaEntity.getVerifactuRetryCount() != null) {
+            invoice.setVerifactuRetryCount(jpaEntity.getVerifactuRetryCount());
         }
 
         return invoice;

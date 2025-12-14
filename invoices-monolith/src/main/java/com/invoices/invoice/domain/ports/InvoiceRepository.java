@@ -65,4 +65,13 @@ public interface InvoiceRepository {
      * @return the last invoice number, or empty if no invoices exist
      */
     Optional<String> findLastInvoiceNumberByCompanyAndYearWithLock(Long companyId, int year);
+
+    /**
+     * Finds all invoices with verifactuStatus in the given list.
+     * Used by VerifactuRetryJob to find pending submissions.
+     *
+     * @param statuses list of VeriFactu statuses to match
+     * @return list of invoices with matching statuses
+     */
+    List<Invoice> findByVerifactuStatusIn(List<String> statuses);
 }

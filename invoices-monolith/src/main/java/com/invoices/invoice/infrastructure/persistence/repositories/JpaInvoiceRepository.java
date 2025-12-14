@@ -68,6 +68,9 @@ public interface JpaInvoiceRepository extends JpaRepository<InvoiceJpaEntity, Lo
 
         Long countByVerifactuStatusIn(List<String> statuses);
 
+        // Query for retry job - find invoices with pending/processing statuses
+        List<InvoiceJpaEntity> findByVerifactuStatusIn(List<String> statuses);
+
         Long countByCreatedAtBetween(
                         LocalDateTime start, LocalDateTime end);
 
