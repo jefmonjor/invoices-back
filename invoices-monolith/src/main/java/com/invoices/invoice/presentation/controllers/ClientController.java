@@ -110,11 +110,17 @@ public class ClientController {
         try {
             Long companyId = CompanyContext.getCompanyId();
 
-            // Execute use case
+            // Execute use case with all client fields
             Client client = createClientUseCase.execute(
                     companyId,
                     clientDTO.getBusinessName(),
                     clientDTO.getTaxId(),
+                    clientDTO.getAddress(),
+                    clientDTO.getCity(),
+                    clientDTO.getPostalCode(),
+                    clientDTO.getProvince(),
+                    clientDTO.getCountry(),
+                    clientDTO.getPhone(),
                     clientDTO.getEmail());
 
             ClientDTO response = clientDtoMapper.toDto(client);
@@ -140,11 +146,17 @@ public class ClientController {
         log.info("PUT /api/clients/{} - Updating client", id);
 
         try {
-            // Execute use case
+            // Execute use case with all client fields
             Client client = updateClientUseCase.execute(
                     id,
                     clientDTO.getBusinessName(),
                     clientDTO.getTaxId(),
+                    clientDTO.getAddress(),
+                    clientDTO.getCity(),
+                    clientDTO.getPostalCode(),
+                    clientDTO.getProvince(),
+                    clientDTO.getCountry(),
+                    clientDTO.getPhone(),
                     clientDTO.getEmail());
 
             ClientDTO response = clientDtoMapper.toDto(client);

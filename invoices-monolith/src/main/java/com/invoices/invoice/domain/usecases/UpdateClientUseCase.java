@@ -41,73 +41,89 @@ public class UpdateClientUseCase {
      * @param clientId     ID of the client to update
      * @param businessName New business name (optional)
      * @param taxId        New tax ID / CIF (optional)
+     * @param address      New address (optional)
+     * @param city         New city (optional)
+     * @param postalCode   New postal code (optional)
+     * @param province     New province (optional)
+     * @param country      New country (optional)
+     * @param phone        New phone (optional)
      * @param email        New email (optional)
      * @return Updated Client entity
      * @throws ResourceNotFoundException if client doesn't exist
      * @throws IllegalArgumentException  if validation fails
      */
-    public Client execute(Long clientId, String businessName, String taxId, String email) {
+    public Client execute(
+            Long clientId,
+            String businessName,
+            String taxId,
+            String address,
+            String city,
+            String postalCode,
+            String province,
+            String country,
+            String phone,
+            String email) {
         log.debug("Updating client {}", clientId);
 
         // Load current client
-        Client client = clientRepository.findById(clientId)
+        Client currentClient = clientRepository.findById(clientId)
                 .orElseThrow(() -> new ResourceNotFoundException("Client not found with id: " + clientId));
 
-        // Track if anything changes
-        boolean changed = false;
-
-        // Update business name if provided
+        // Validate business name if provided
         if (businessName != null && !businessName.trim().isEmpty()) {
             validateBusinessName(businessName);
-            if (!client.getBusinessName().equals(businessName.trim())) {
-                log.debug("Updating business name for client {}: {} -> {}",
-                        clientId, client.getBusinessName(), businessName);
-                client = client.withBusinessName(businessName.trim());
-                changed = true;
-            }
         }
 
-        // Update taxId if provided
-        if (taxId != null && !taxId.trim().isEmpty()) {
-            String newTaxId = taxId.trim();
-            if (!client.getTaxId().equals(newTaxId)) {
-                log.debug("Updating taxId for client {}: {} -> {}",
-                        clientId, client.getTaxId(), taxId);
-                client = client.withTaxId(newTaxId);
-                changed = true;
-            }
-        }
+        // Create updated client with all fields (use current value if new value is
+        // null)
+        Client updatedClient = new Client(
+                currentClient.getId(),
+                businessName != null && !businessName.trim().isEmpty() ? businessName.trim()
+                        : currentClient.getBusinessName(),
+                taxId != null && !taxId.trim().isEmpty() ? taxId.trim() : currentClient.getTaxId(),
+                address != null ? address.trim() : currentClient.getAddress(),
+                city != null ? city.trim() : currentClient.getCity(),
+                postalCode != null ? postalCode.trim() : currentClient.getPostalCode(),
+                province != null ? province.trim() : currentClient.getProvince(),
+                country != null ? country.trim() : currentClient.getCountry(),
+                phone != null ? phone.trim() : currentClient.getPhone(),
+                email != null ? email.trim() : currentClient.getEmail(),
+                currentClient.getCompanyId());
 
-        // Update email if provided
-        if (email != null && !email.trim().isEmpty()) {
-            String newEmail = email.trim();
-            if (client.getEmail() == null || !client.getEmail().equals(newEmail)) {
-                log.debug("Updating email for client {}: {} -> {}",
-                        clientId, client.getEmail(), email);
-                client = client.withEmail(newEmail);
-                changed = true;
-            }
-        }
+        // Check if anything changed
+        boolean changed = !isSameClient(currentClient, updatedClient);
 
         // If nothing changed, return current state
         if (!changed) {
             log.debug("No changes detected for client {}", clientId);
-            return client;
+            return currentClient;
         }
 
         // Save changes
-        Client updatedClient = clientRepository.save(client);
+        Client savedClient = clientRepository.save(updatedClient);
         log.info("Client {} updated successfully", clientId);
 
         // Publish event only if changed
         try {
-            eventPublisher.publishClientUpdated(updatedClient);
+            eventPublisher.publishClientUpdated(savedClient);
         } catch (Exception e) {
             // Log but don't fail the transaction
             log.warn("Failed to publish ClientUpdated event for client {}", clientId, e);
         }
 
-        return updatedClient;
+        return savedClient;
+    }
+
+    private boolean isSameClient(Client a, Client b) {
+        return java.util.Objects.equals(a.getBusinessName(), b.getBusinessName())
+                && java.util.Objects.equals(a.getTaxId(), b.getTaxId())
+                && java.util.Objects.equals(a.getAddress(), b.getAddress())
+                && java.util.Objects.equals(a.getCity(), b.getCity())
+                && java.util.Objects.equals(a.getPostalCode(), b.getPostalCode())
+                && java.util.Objects.equals(a.getProvince(), b.getProvince())
+                && java.util.Objects.equals(a.getCountry(), b.getCountry())
+                && java.util.Objects.equals(a.getPhone(), b.getPhone())
+                && java.util.Objects.equals(a.getEmail(), b.getEmail());
     }
 
     /**
