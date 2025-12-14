@@ -29,18 +29,20 @@ public class RedisHealthIndicator implements HealthIndicator {
                         .build();
             }
 
-            // Try to ping Redis
-            String pong = connectionFactory.getConnection().ping();
+            // Try to ping Redis - use try-with-resources to ensure connection is closed
+            try (var connection = connectionFactory.getConnection()) {
+                String pong = connection.ping();
 
-            if ("PONG".equals(pong)) {
-                return Health.up()
-                        .withDetail("response", pong)
-                        .withDetail("streams", getStreamInfo())
-                        .build();
-            } else {
-                return Health.down()
-                        .withDetail("error", "Unexpected response: " + pong)
-                        .build();
+                if ("PONG".equals(pong)) {
+                    return Health.up()
+                            .withDetail("response", pong)
+                            .withDetail("streams", getStreamInfo())
+                            .build();
+                } else {
+                    return Health.down()
+                            .withDetail("error", "Unexpected response: " + pong)
+                            .build();
+                }
             }
 
         } catch (Exception e) {
