@@ -63,7 +63,7 @@ public class Company {
             String certPassword,
             java.time.LocalDateTime createdAt,
             java.time.LocalDateTime updatedAt) {
-        validateMandatoryFields(businessName, taxId, address);
+        validateMandatoryFields(businessName, taxId);
 
         this.id = id;
         this.businessName = businessName;
@@ -102,15 +102,14 @@ public class Company {
                 null, createdAt, updatedAt);
     }
 
-    private void validateMandatoryFields(String businessName, String taxId, String address) {
+    // NOTE: Address validation is in CreateCompanyUseCase, not here
+    // This allows loading legacy DB data that may not have address
+    private void validateMandatoryFields(String businessName, String taxId) {
         if (businessName == null || businessName.trim().isEmpty()) {
             throw new IllegalArgumentException("Business name cannot be null or empty");
         }
         if (taxId == null || taxId.trim().isEmpty()) {
             throw new IllegalArgumentException("Tax ID cannot be null or empty");
-        }
-        if (address == null || address.trim().isEmpty()) {
-            throw new IllegalArgumentException("Address cannot be null or empty");
         }
     }
 

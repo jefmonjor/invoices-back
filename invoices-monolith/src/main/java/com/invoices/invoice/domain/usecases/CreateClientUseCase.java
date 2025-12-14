@@ -75,8 +75,8 @@ public class CreateClientUseCase {
             throw new ResourceNotFoundException("Company not found with id: " + companyId);
         }
 
-        // Validate client data
-        validateClientData(businessName, taxId);
+        // Validate client data (including address as mandatory for new clients)
+        validateClientData(businessName, taxId, address);
 
         // Validate duplicate tax ID for this company
         if (clientRepository.existsByTaxIdAndCompanyId(taxId, companyId)) {
@@ -117,9 +117,10 @@ public class CreateClientUseCase {
      *
      * @param businessName Business name
      * @param taxId        Tax ID
+     * @param address      Address (mandatory for new clients)
      * @throws IllegalArgumentException if validation fails
      */
-    private void validateClientData(String businessName, String taxId) {
+    private void validateClientData(String businessName, String taxId, String address) {
         if (businessName == null || businessName.trim().isEmpty()) {
             throw new IllegalArgumentException("Business name cannot be empty");
         }
@@ -134,6 +135,11 @@ public class CreateClientUseCase {
 
         if (taxId.trim().length() > 50) {
             throw new IllegalArgumentException("Tax ID cannot exceed 50 characters");
+        }
+
+        // Address is mandatory for new clients
+        if (address == null || address.trim().isEmpty()) {
+            throw new IllegalArgumentException("Address cannot be empty");
         }
     }
 }
