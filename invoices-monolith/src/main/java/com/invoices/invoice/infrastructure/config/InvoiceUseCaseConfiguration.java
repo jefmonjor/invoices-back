@@ -17,8 +17,11 @@ import org.springframework.context.annotation.Configuration;
 public class InvoiceUseCaseConfiguration {
 
     @Bean
-    public GetInvoiceByIdUseCase getInvoiceByIdUseCase(InvoiceRepository repository) {
-        return new GetInvoiceByIdUseCase(repository);
+    public GetInvoiceByIdUseCase getInvoiceByIdUseCase(
+            InvoiceRepository invoiceRepository,
+            ClientRepository clientRepository,
+            CompanyRepository companyRepository) {
+        return new GetInvoiceByIdUseCase(invoiceRepository, clientRepository, companyRepository);
     }
 
     @Bean
