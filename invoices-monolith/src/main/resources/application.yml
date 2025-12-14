@@ -171,7 +171,7 @@ cors:
   allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173,https://*.vercel.app,https://*.transolido.com,https://www.transolido.com,https://*.up.railway.app,https://*.railway.app}
   allowed-methods: ${CORS_ALLOWED_METHODS:GET,POST,PUT,DELETE,OPTIONS,PATCH}
   allowed-headers: ${CORS_ALLOWED_HEADERS:*}
-  exposed-headers: ${CORS_EXPOSED_HEADERS:Authorization,X-Rate-Limit-Remaining}
+  exposed-headers: ${CORS_EXPOSED_HEADERS:Authorization,X-Rate-Limit-Remaining,X-Total-Count}
   allow-credentials: ${CORS_ALLOW_CREDENTIALS:true}
   max-age: ${CORS_MAX_AGE:3600}
 
