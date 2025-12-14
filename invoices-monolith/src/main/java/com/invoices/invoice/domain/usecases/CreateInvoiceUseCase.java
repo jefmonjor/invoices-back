@@ -89,7 +89,16 @@ public class CreateInvoiceUseCase {
         }
 
         // Calculate VeriFactu hash (chaining with previous invoice)
-        invoiceChainService.prepareInvoiceForChaining(invoice, company);
+        // If this is the first invoice of the year (001/YYYY), we start a new chain
+        if (invoiceNumber.startsWith("001/")) {
+            // New series/year -> New chain
+            // Use empty previous hash (or handle inside service, but passing null here is
+            // explicit)
+            invoiceChainService.prepareInvoiceForChaining(invoice, company.withLastHash(null));
+        } else {
+            // Continuing chain
+            invoiceChainService.prepareInvoiceForChaining(invoice, company);
+        }
 
         // Save invoice
         Invoice savedInvoice = invoiceRepository.save(invoice);
