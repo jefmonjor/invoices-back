@@ -44,4 +44,5 @@ public class InvoiceDTO {
     private LocalDateTime updatedAt;
     private List<InvoiceItemDTO> items;
     private String verifactuError; // Error message from VeriFactu if rejected
+    private Integer verifactuRetryCount; // Number of retry attempts
 }

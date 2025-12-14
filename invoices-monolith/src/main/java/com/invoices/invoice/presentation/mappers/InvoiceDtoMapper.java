@@ -57,6 +57,7 @@ public class InvoiceDtoMapper {
                 .verifactuStatus(invoice.getVerifactuStatus())
                 .verifactuTxId(invoice.getVerifactuTxId())
                 .verifactuError(invoice.getVerifactuError())
+                .verifactuRetryCount(invoice.getVerifactuRetryCount())
                 .pdfIsFinal(invoice.getPdfIsFinal())
                 .build();
     }
