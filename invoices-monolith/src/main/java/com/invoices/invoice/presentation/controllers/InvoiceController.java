@@ -90,6 +90,9 @@ public class InvoiceController {
             @RequestParam(required = false) String status) {
         Long companyId = com.invoices.security.context.CompanyContext.getCompanyId();
 
+        log.info("GET /api/invoices - companyId from context: {}, page: {}, size: {}, search: {}, status: {}",
+                companyId, page, size, search, status);
+
         // If no company context, return empty list
         if (companyId == null) {
             log.warn("No company context found - returning empty invoice list");
@@ -100,8 +103,11 @@ public class InvoiceController {
 
         // Get total count for X-Total-Count header
         long totalCount = invoiceRepository.countByCompanyId(companyId, search, status);
+        log.info("Total invoices count for company {}: {}", companyId, totalCount);
 
         List<InvoiceSummary> invoices = getAllInvoicesUseCase.execute(companyId, page, size, search, status);
+        log.info("Retrieved {} invoices for company {}", invoices.size(), companyId);
+
         List<InvoiceDTO> dtos = invoices.stream()
                 .map(dtoMapper::toSummaryDto)
                 .collect(Collectors.toList());
