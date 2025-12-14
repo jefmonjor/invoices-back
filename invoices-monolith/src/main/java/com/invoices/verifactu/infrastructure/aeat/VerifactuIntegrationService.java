@@ -6,7 +6,6 @@ import com.invoices.invoice.domain.entities.Invoice;
 import com.invoices.verifactu.domain.model.AeatResponse;
 import com.invoices.verifactu.domain.model.VerifactuMode;
 import com.invoices.verifactu.domain.model.VerifactuResponse;
-import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -229,13 +228,11 @@ public class VerifactuIntegrationService implements VerifactuIntegrationPort {
 
     /**
      * Calls AEAT endpoint (sandbox or production) with signed XML.
-     * Protected by circuit breaker to prevent cascading failures.
      * 
      * @param signedXml Signed XML document
      * @param mode      Operating mode (sandbox/production)
      * @return AEAT response
      */
-    @CircuitBreaker(name = "aeat", fallbackMethod = "callAEATEndpointFallback")
     public AeatResponse callAEATEndpoint(String signedXml, VerifactuMode mode) {
         String endpoint = mode == VerifactuMode.PRODUCTION ? productionEndpoint : sandboxEndpoint;
         log.info("Calling AEAT endpoint: {} (mode: {})", endpoint, mode);
@@ -244,8 +241,6 @@ public class VerifactuIntegrationService implements VerifactuIntegrationPort {
         log.debug("SOAP Request: {}", soapRequest);
 
         try {
-            // Block with timeout to prevent thread pool exhaustion
-            // AEAT timeout is typically 30 seconds
             String soapResponse = restClient.post()
                     .uri(endpoint)
                     .header("Content-Type", "text/xml; charset=utf-8")
@@ -261,19 +256,6 @@ public class VerifactuIntegrationService implements VerifactuIntegrationPort {
             throw new BusinessException("AEAT_CONNECTION_ERROR", "Error connecting to AEAT: " + e.getMessage(),
                     org.springframework.http.HttpStatus.BAD_GATEWAY);
         }
-    }
-
-    /**
-     * Fallback method when AEAT circuit is open or call fails.
-     */
-    @SuppressWarnings("unused") // Called by CircuitBreaker via reflection
-    private AeatResponse callAEATEndpointFallback(String signedXml, VerifactuMode mode, Exception e) {
-        log.error("Circuit breaker activated for AEAT. Service is unavailable. Mode: {}", mode, e);
-        AeatResponse response = new AeatResponse();
-        response.setSuccess(false);
-        response.setCode("CIRCUIT_OPEN");
-        response.setMessage("AEAT service temporarily unavailable. Invoice queued for retry.");
-        return response;
     }
 
     /**

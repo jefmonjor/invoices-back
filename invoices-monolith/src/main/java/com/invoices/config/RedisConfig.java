@@ -104,24 +104,4 @@ public class RedisConfig {
         log.info("ObjectMapper configured with JavaTimeModule for Redis message processing");
         return mapper;
     }
-
-    /**
-     * Redis Message Listener Container for processing Redis Pub/Sub messages.
-     */
-    @Bean
-    public org.springframework.data.redis.listener.RedisMessageListenerContainer redisMessageListenerContainer(
-            RedisConnectionFactory connectionFactory,
-            com.invoices.invoice.infrastructure.messaging.RedisEventListener redisEventListener) {
-
-        org.springframework.data.redis.listener.RedisMessageListenerContainer container = new org.springframework.data.redis.listener.RedisMessageListenerContainer();
-        container.setConnectionFactory(connectionFactory);
-
-        // Subscribe to tenant events
-        container.addMessageListener(redisEventListener,
-                new org.springframework.data.redis.listener.PatternTopic("tenant:*:events"));
-
-        log.info("RedisMessageListenerContainer configured with listener for 'tenant:*:events'");
-
-        return container;
-    }
 }

@@ -4,7 +4,6 @@ import com.invoices.document.config.MinioConfig;
 import com.invoices.document.domain.entities.FileContent;
 import com.invoices.document.domain.ports.FileStorageService;
 import com.invoices.document.exception.FileUploadException;
-import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.minio.GetObjectArgs;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
@@ -18,9 +17,6 @@ import java.io.InputStream;
 /**
  * Implementation of FileStorageService port using MinIO.
  * This adapter connects the domain layer with MinIO storage infrastructure.
- *
- * Circuit breaker is configured to protect against MinIO service failures.
- * When the circuit is open, fallback methods will be called.
  */
 @Service
 @Slf4j
@@ -37,7 +33,6 @@ public class MinioFileStorageService implements FileStorageService {
     }
 
     @Override
-    @CircuitBreaker(name = "minio", fallbackMethod = "storeFileFallback")
     public void storeFile(String objectName, FileContent fileContent) {
         try {
             log.info("Storing file in MinIO: {}", objectName);
@@ -59,20 +54,12 @@ public class MinioFileStorageService implements FileStorageService {
     }
 
     /**
-     * Fallback method for storeFile when MinIO circuit is open.
-     */
-    @SuppressWarnings("unused") // Called by CircuitBreaker via reflection
-    private void storeFileFallback(String objectName, FileContent fileContent, Exception e) {
-        log.error("Circuit breaker activated for file storage. MinIO service is unavailable", e);
-        throw new FileUploadException("Storage service temporarily unavailable. Please try again later.", e);
-    }
-
-    /**
      * Retrieves a file from MinIO storage.
      * <p>
      * <strong>IMPORTANT:</strong> The caller MUST close the returned InputStream
      * to prevent memory leaks and connection pool exhaustion.
      * Use try-with-resources:
+     * 
      * <pre>
      * try (InputStream is = storageService.retrieveFile(name)) {
      *     // process stream
@@ -84,7 +71,6 @@ public class MinioFileStorageService implements FileStorageService {
      * @throws FileUploadException if retrieval fails
      */
     @Override
-    @CircuitBreaker(name = "minio")
     public InputStream retrieveFile(String objectName) {
         try {
             log.info("Retrieving file from MinIO: {}", objectName);
@@ -105,7 +91,6 @@ public class MinioFileStorageService implements FileStorageService {
     }
 
     @Override
-    @CircuitBreaker(name = "minio")
     public void deleteFile(String objectName) {
         try {
             log.info("Deleting file from MinIO: {}", objectName);
