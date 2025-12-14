@@ -148,10 +148,22 @@ public class InvoiceController {
      */
     @GetMapping("/{id}")
     public ResponseEntity<InvoiceDTO> getInvoiceById(@PathVariable Long id) {
-        // checkPlatformAdminAccess(); // Handled by @PreAuthorize
-        Invoice invoice = getInvoiceByIdUseCase.execute(id);
-        InvoiceDTO dto = dtoMapper.toDto(invoice);
-        return ResponseEntity.ok(dto);
+        log.info("GET /api/invoices/{} - Fetching invoice details", id);
+        try {
+            Invoice invoice = getInvoiceByIdUseCase.execute(id);
+            log.debug("Invoice {} found, mapping to DTO", id);
+
+            InvoiceDTO dto = dtoMapper.toDto(invoice);
+            log.debug("Invoice {} mapped successfully", id);
+
+            return ResponseEntity.ok(dto);
+        } catch (InvoiceNotFoundException e) {
+            log.warn("Invoice {} not found", id);
+            throw e;
+        } catch (Exception e) {
+            log.error("Error fetching invoice {}: {} - {}", id, e.getClass().getSimpleName(), e.getMessage(), e);
+            throw e;
+        }
     }
 
     /**
