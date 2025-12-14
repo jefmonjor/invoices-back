@@ -61,7 +61,8 @@ public class InvoiceUseCaseConfiguration {
     public DeleteInvoiceUseCase deleteInvoiceUseCase(
             InvoiceRepository repository,
             ClientRepository clientRepository,
+            CompanyRepository companyRepository,
             InvoiceEventPublisher eventPublisher) {
-        return new DeleteInvoiceUseCase(repository, clientRepository, eventPublisher);
+        return new DeleteInvoiceUseCase(repository, clientRepository, companyRepository, eventPublisher);
     }
 }

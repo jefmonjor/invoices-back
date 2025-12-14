@@ -431,16 +431,16 @@
                     <span class="total-label" th:text="'IVA (' + ${invoice.items[0].vatPercentage} + '%):'">IVA
                         (21%):</span>
                     <span class="total-value"
-                        th:text="${#numbers.formatCurrency(invoice.totalAmount - invoice.baseAmount + invoice.irpfAmount - invoice.reAmount)}">0,00€</span>
+                        th:text="${#numbers.formatCurrency(invoice.totalAmount - invoice.baseAmount + (invoice.irpfAmount ?: 0) - (invoice.reAmount ?: 0))}">0,00€</span>
                 </div>
                 <div class="total-row" th:if="${invoice.rePercentage > 0}">
                     <span class="total-label" th:text="'RE (' + ${invoice.rePercentage} + '%):'">RE</span>
-                    <span class="total-value" th:text="${#numbers.formatCurrency(invoice.reAmount)}">0,00 €</span>
+                    <span class="total-value" th:text="${#numbers.formatCurrency(invoice.reAmount ?: 0)}">0,00 €</span>
                 </div>
                 <div class="total-row" th:if="${invoice.irpfPercentage > 0}">
                     <span class="total-label" th:text="'IRPF (' + ${invoice.irpfPercentage} + '%):'">IRPF</span>
                     <span class="total-value"
-                        th:text="'-' + ${#numbers.formatCurrency(invoice.irpfAmount)}">0,00€</span>
+                        th:text="'-' + ${#numbers.formatCurrency(invoice.irpfAmount ?: 0)}">0,00€</span>
                 </div>
                 <div class="grand-total">
                     <span class="grand-total-label">TOTAL:</span>
