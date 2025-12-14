@@ -20,6 +20,13 @@ import java.util.Optional;
 public interface JpaInvoiceRepository extends JpaRepository<InvoiceJpaEntity, Long>,
                 org.springframework.data.jpa.repository.JpaSpecificationExecutor<InvoiceJpaEntity> {
 
+        /**
+         * Finds invoice by ID with items eagerly loaded.
+         * Uses JOIN FETCH to avoid LazyInitializationException.
+         */
+        @Query("SELECT i FROM InvoiceJpaEntity i LEFT JOIN FETCH i.items WHERE i.id = :id")
+        Optional<InvoiceJpaEntity> findByIdWithItems(@Param("id") Long id);
+
         List<InvoiceJpaEntity> findByUserId(Long userId);
 
         List<InvoiceJpaEntity> findByCompanyId(Long companyId);

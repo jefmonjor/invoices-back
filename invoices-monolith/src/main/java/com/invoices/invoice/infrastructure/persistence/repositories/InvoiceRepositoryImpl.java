@@ -30,7 +30,7 @@ public class InvoiceRepositoryImpl implements InvoiceRepository {
 
     @Override
     public Optional<Invoice> findById(Long id) {
-        return jpaRepository.findById(id)
+        return jpaRepository.findByIdWithItems(id)
                 .map(mapper::toDomainEntity);
     }
 

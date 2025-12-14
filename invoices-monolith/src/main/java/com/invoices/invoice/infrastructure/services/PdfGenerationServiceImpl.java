@@ -58,9 +58,13 @@ public class PdfGenerationServiceImpl implements PdfGenerator {
         context.setVariable("client", client);
 
         // Determine if it's a transport invoice based on items
+        // Transport fields: vehiclePlate, zone, orderNumber, itemDate, gasPercentage
         boolean isTransportInvoice = invoice.getItems().stream()
-                .anyMatch(item -> item.getVehiclePlate() != null || item.getZone() != null
-                        || item.getOrderNumber() != null);
+                .anyMatch(item -> item.getVehiclePlate() != null
+                        || item.getZone() != null
+                        || item.getOrderNumber() != null
+                        || item.getItemDate() != null
+                        || item.getGasPercentage() != null);
         context.setVariable("isTransportInvoice", isTransportInvoice);
 
         String html = templateEngine.process("invoice/invoice-template", context);

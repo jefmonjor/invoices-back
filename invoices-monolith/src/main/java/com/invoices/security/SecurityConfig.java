@@ -207,7 +207,7 @@ public class SecurityConfig {
                 configuration.setAllowCredentials(allowCredentials);
                 configuration.setExposedHeaders(
                                 Arrays.asList("Authorization", "X-Rate-Limit-Remaining", "X-Rate-Limit-Reset",
-                                                "X-Total-Count"));
+                                                "X-Total-Count", "Content-Disposition"));
                 configuration.setMaxAge(3600L); // 1 hour
 
                 UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
