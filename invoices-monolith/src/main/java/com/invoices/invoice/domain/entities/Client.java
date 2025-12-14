@@ -33,7 +33,7 @@ public class Client {
             String phone,
             String email,
             Long companyId) {
-        validateMandatoryFields(businessName, taxId);
+        validateMandatoryFields(businessName, taxId, address);
 
         this.id = id;
         this.businessName = businessName;
@@ -63,16 +63,17 @@ public class Client {
         this(id, businessName, taxId, address, city, postalCode, province, "España", phone, email, companyId);
     }
 
-    public Client(Long id, Long companyId, String businessName, String taxId, String email) {
-        this(id, businessName, taxId, null, null, null, null, "España", null, email, companyId);
-    }
+    // Note: Removed short constructor - address is now mandatory
 
-    private void validateMandatoryFields(String businessName, String taxId) {
+    private void validateMandatoryFields(String businessName, String taxId, String address) {
         if (businessName == null || businessName.trim().isEmpty()) {
             throw new IllegalArgumentException("Business name cannot be null or empty");
         }
         if (taxId == null || taxId.trim().isEmpty()) {
             throw new IllegalArgumentException("Tax ID cannot be null or empty");
+        }
+        if (address == null || address.trim().isEmpty()) {
+            throw new IllegalArgumentException("Address cannot be null or empty");
         }
     }
 
