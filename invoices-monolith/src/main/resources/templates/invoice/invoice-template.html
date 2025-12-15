@@ -326,8 +326,11 @@
                 <span class="company-name" th:text="${company.businessName}">EMPRESA S.L.</span>
                 <span class="company-nif" th:text="${company.taxId}">B12345678</span>
                 <span class="company-address"
-                    th:text="${company.address + ', ' + company.postalCode + ' ' + company.city + ' (' + company.province + ')'}">Dirección</span>
-                <span class="company-address" th:if="${company.phone}" th:text="${company.phone}">Teléfono</span>
+                    th:text="${company.address + (company.postalCode != null ? ', ' + company.postalCode : '') + (company.city != null ? ' ' + company.city : '') + (company.province != null and company.province != '' ? ' (' + company.province + ')' : '')}">Dirección</span>
+                <span class="company-address" th:if="${company.phone != null and company.phone != ''}"
+                    th:text="${company.phone}">Teléfono</span>
+                <span class="company-address" th:if="${company.email != null and company.email != ''}"
+                    th:text="${company.email}">Email</span>
             </div>
             <div class="qr-space">
                 <!-- Future: QR Code -->
