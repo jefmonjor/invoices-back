@@ -283,4 +283,55 @@ public class CompanyController {
                 companyManagementService.deleteCompany(id);
                 return ResponseEntity.noContent().build();
         }
+
+        @PostMapping("/{id}/logo")
+        @PreAuthorize("hasRole('ADMIN')")
+        @Operation(summary = "Upload company logo", description = "**ADMIN only.** Uploads a company logo. Accepts PNG only, max 500KB, recommended 180x60 pixels.", responses = {
+                        @ApiResponse(responseCode = "200", description = "Logo uploaded successfully"),
+                        @ApiResponse(responseCode = "400", description = "Invalid file format or size"),
+                        @ApiResponse(responseCode = "403", description = "User is not ADMIN")
+        })
+        public ResponseEntity<CompanyDto> uploadLogo(
+                        @PathVariable Long id,
+                        @RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
+
+                // Validate file
+                if (file.isEmpty()) {
+                        throw new IllegalArgumentException("File is required");
+                }
+
+                String contentType = file.getContentType();
+                if (contentType == null || !contentType.equals("image/png")) {
+                        throw new IllegalArgumentException("Only PNG files are allowed");
+                }
+
+                // Max 500KB
+                if (file.getSize() > 500 * 1024) {
+                        throw new IllegalArgumentException("File size must be less than 500KB");
+                }
+
+                Long currentCompanyId = CompanyContext.getCompanyId();
+                if (!id.equals(currentCompanyId)) {
+                        throw new SecurityException("Cannot upload logo for a company you are not currently managing");
+                }
+
+                Company updated = companyManagementService.uploadLogo(id, file);
+                return ResponseEntity.ok(CompanyDto.fromEntity(updated));
+        }
+
+        @DeleteMapping("/{id}/logo")
+        @PreAuthorize("hasRole('ADMIN')")
+        @Operation(summary = "Delete company logo", description = "**ADMIN only.** Removes the company logo.", responses = {
+                        @ApiResponse(responseCode = "200", description = "Logo deleted successfully"),
+                        @ApiResponse(responseCode = "403", description = "User is not ADMIN")
+        })
+        public ResponseEntity<CompanyDto> deleteLogo(@PathVariable Long id) {
+                Long currentCompanyId = CompanyContext.getCompanyId();
+                if (!id.equals(currentCompanyId)) {
+                        throw new SecurityException("Cannot delete logo for a company you are not currently managing");
+                }
+
+                Company updated = companyManagementService.deleteLogo(id);
+                return ResponseEntity.ok(CompanyDto.fromEntity(updated));
+        }
 }

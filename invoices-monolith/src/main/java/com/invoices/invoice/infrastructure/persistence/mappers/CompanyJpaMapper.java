@@ -31,6 +31,7 @@ public class CompanyJpaMapper {
                 jpaEntity.getLastHash(),
                 jpaEntity.getCertRef(),
                 jpaEntity.getCertPassword(),
+                jpaEntity.getLogoUrl(),
                 jpaEntity.getCreatedAt(),
                 jpaEntity.getUpdatedAt());
     }
@@ -55,6 +56,7 @@ public class CompanyJpaMapper {
         jpaEntity.setLastHash(domain.getLastHash());
         jpaEntity.setCertRef(domain.getCertRef());
         jpaEntity.setCertPassword(domain.getCertPassword());
+        jpaEntity.setLogoUrl(domain.getLogoUrl());
 
         return jpaEntity;
     }

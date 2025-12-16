@@ -320,7 +320,8 @@
         <!-- Header: Logo | Company | QR - NO BORDERS -->
         <div class="header-section">
             <div class="logo-space">
-                <!-- Future: Company logo -->
+                <img th:if="${company.logoUrl != null and company.logoUrl != ''}" th:src="${company.logoUrl}" alt="Logo"
+                    style="max-width: 100%; max-height: 45pt; object-fit: contain;" />
             </div>
             <div class="company-info">
                 <span class="company-name" th:text="${company.businessName}">EMPRESA S.L.</span>

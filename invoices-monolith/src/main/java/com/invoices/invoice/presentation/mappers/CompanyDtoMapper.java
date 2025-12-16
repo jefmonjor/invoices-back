@@ -28,6 +28,7 @@ public class CompanyDtoMapper {
                 .phone(company.getPhone())
                 .email(company.getEmail())
                 .iban(company.getIban())
+                .logoUrl(company.getLogoUrl())
                 .build();
     }
 

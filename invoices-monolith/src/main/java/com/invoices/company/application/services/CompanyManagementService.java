@@ -25,15 +25,21 @@ public class CompanyManagementService {
     private final UserCompanyRepository userCompanyRepository;
     private final UserRepository userRepository;
     private final com.invoices.invoice.domain.ports.InvoiceRepository invoiceRepository;
+    private final com.invoices.document.domain.ports.FileStorageService fileStorageService;
+    private final com.invoices.document.domain.services.StorageUrlResolver storageUrlResolver;
 
     public CompanyManagementService(CompanyRepository companyRepository,
             UserCompanyRepository userCompanyRepository,
             UserRepository userRepository,
-            com.invoices.invoice.domain.ports.InvoiceRepository invoiceRepository) {
+            com.invoices.invoice.domain.ports.InvoiceRepository invoiceRepository,
+            com.invoices.document.domain.ports.FileStorageService fileStorageService,
+            com.invoices.document.domain.services.StorageUrlResolver storageUrlResolver) {
         this.companyRepository = companyRepository;
         this.userCompanyRepository = userCompanyRepository;
         this.userRepository = userRepository;
         this.invoiceRepository = invoiceRepository;
+        this.fileStorageService = fileStorageService;
+        this.storageUrlResolver = storageUrlResolver;
     }
 
     @Transactional
@@ -76,13 +82,15 @@ public class CompanyManagementService {
                 .map(uc -> {
                     Company company = uc.getCompany();
                     if (company == null) {
-                        log.warn("Data inconsistency: UserCompany record exists for companyId {} but Company entity is missing",
+                        log.warn(
+                                "Data inconsistency: UserCompany record exists for companyId {} but Company entity is missing",
                                 uc.getId().getCompanyId());
                         return null;
                     }
                     boolean isDefault = company.getId().equals(user.getCurrentCompanyId());
+                    // Use URL resolver to convert logoUrl objectName to full S3 URL
                     return com.invoices.company.presentation.dto.CompanyDto.fromEntity(company, uc.getRole(),
-                            isDefault);
+                            isDefault, storageUrlResolver);
                 })
                 .filter(java.util.Objects::nonNull)
                 .collect(java.util.stream.Collectors.toList());
@@ -346,5 +354,58 @@ public class CompanyManagementService {
 
         // Delete company
         companyRepository.deleteById(companyId);
+    }
+
+    /**
+     * Upload company logo to S3 and update company with logoUrl.
+     */
+    @Transactional
+    public Company uploadLogo(Long companyId, org.springframework.web.multipart.MultipartFile file) {
+        Company company = companyRepository.findById(companyId)
+                .orElseThrow(() -> new RuntimeException("Company not found"));
+
+        try {
+            // Generate unique filename
+            String objectName = "logos/company-" + companyId + "-" + System.currentTimeMillis() + ".png";
+            byte[] fileBytes = file.getBytes();
+
+            // Create FileContent
+            com.invoices.document.domain.entities.FileContent fileContent = new com.invoices.document.domain.entities.FileContent(
+                    () -> new java.io.ByteArrayInputStream(fileBytes),
+                    fileBytes.length,
+                    "image/png");
+
+            // Upload to S3
+            fileStorageService.storeFile(objectName, fileContent);
+
+            // Update company with logo object name (will be resolved to URL when needed)
+            Company updatedCompany = company.withLogoUrl(objectName);
+            return companyRepository.save(updatedCompany);
+        } catch (java.io.IOException e) {
+            throw new RuntimeException("Failed to upload logo: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Delete company logo from S3 and remove logoUrl from company.
+     */
+    @Transactional
+    public Company deleteLogo(Long companyId) {
+        Company company = companyRepository.findById(companyId)
+                .orElseThrow(() -> new RuntimeException("Company not found"));
+
+        String logoUrl = company.getLogoUrl();
+        if (logoUrl != null && !logoUrl.isEmpty()) {
+            // Delete from S3 (best effort)
+            try {
+                fileStorageService.deleteFile(logoUrl);
+            } catch (Exception e) {
+                log.warn("Failed to delete logo file: {}", e.getMessage());
+            }
+        }
+
+        // Update company to remove logo URL
+        Company updatedCompany = company.withLogoUrl(null);
+        return companyRepository.save(updatedCompany);
     }
 }

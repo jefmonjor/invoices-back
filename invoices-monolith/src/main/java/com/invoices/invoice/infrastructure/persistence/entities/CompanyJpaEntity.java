@@ -60,6 +60,9 @@ public class CompanyJpaEntity {
     @Convert(converter = EncryptedStringConverter.class)
     private String certPassword;
 
+    @Column(name = "logo_url", length = 500)
+    private String logoUrl;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -192,6 +195,14 @@ public class CompanyJpaEntity {
 
     public void setCertPassword(String certPassword) {
         this.certPassword = certPassword;
+    }
+
+    public String getLogoUrl() {
+        return logoUrl;
+    }
+
+    public void setLogoUrl(String logoUrl) {
+        this.logoUrl = logoUrl;
     }
 
     public LocalDateTime getCreatedAt() {

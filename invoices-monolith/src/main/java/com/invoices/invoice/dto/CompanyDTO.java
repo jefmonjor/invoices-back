@@ -25,4 +25,5 @@ public class CompanyDTO {
     private String phone;
     private String email;
     private String iban;
+    private String logoUrl;
 }

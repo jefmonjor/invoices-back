@@ -28,6 +28,7 @@ public class Company {
     private final String lastHash;
     private final String certRef;
     private final String certPassword;
+    private final String logoUrl; // URL of company logo in S3
 
     private final java.time.LocalDateTime createdAt;
     private final java.time.LocalDateTime updatedAt;
@@ -43,7 +44,8 @@ public class Company {
             String phone,
             String email,
             String iban) {
-        this(id, businessName, taxId, address, city, postalCode, province, "España", phone, email, iban, null, null);
+        this(id, businessName, taxId, address, city, postalCode, province, "España", phone, email, iban, null, null,
+                null, null, null, null);
     }
 
     public Company(
@@ -61,6 +63,7 @@ public class Company {
             String lastHash,
             String certRef,
             String certPassword,
+            String logoUrl,
             java.time.LocalDateTime createdAt,
             java.time.LocalDateTime updatedAt) {
         validateMandatoryFields(businessName, taxId);
@@ -79,6 +82,7 @@ public class Company {
         this.lastHash = lastHash;
         this.certRef = certRef;
         this.certPassword = certPassword;
+        this.logoUrl = logoUrl;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
@@ -99,7 +103,7 @@ public class Company {
             java.time.LocalDateTime createdAt,
             java.time.LocalDateTime updatedAt) {
         this(id, businessName, taxId, address, city, postalCode, province, country, phone, email, iban, null, null,
-                null, createdAt, updatedAt);
+                null, null, createdAt, updatedAt);
     }
 
     // NOTE: Address validation is in CreateCompanyUseCase, not here
@@ -203,6 +207,10 @@ public class Company {
         return updatedAt;
     }
 
+    public String getLogoUrl() {
+        return logoUrl;
+    }
+
     public Company withDetails(
             String businessName,
             String address,
@@ -226,6 +234,7 @@ public class Company {
                 this.lastHash,
                 this.certRef,
                 this.certPassword,
+                this.logoUrl,
                 this.createdAt,
                 this.updatedAt);
     }
@@ -256,6 +265,7 @@ public class Company {
                 lastHash,
                 this.certRef,
                 this.certPassword,
+                this.logoUrl,
                 this.createdAt,
                 java.time.LocalDateTime.now());
     }
@@ -276,6 +286,28 @@ public class Company {
                 this.lastHash,
                 certRef,
                 certPassword,
+                this.logoUrl,
+                this.createdAt,
+                java.time.LocalDateTime.now());
+    }
+
+    public Company withLogoUrl(String logoUrl) {
+        return new Company(
+                this.id,
+                this.businessName,
+                this.taxId,
+                this.address,
+                this.city,
+                this.postalCode,
+                this.province,
+                this.country,
+                this.phone,
+                this.email,
+                this.iban,
+                this.lastHash,
+                this.certRef,
+                this.certPassword,
+                logoUrl,
                 this.createdAt,
                 java.time.LocalDateTime.now());
     }
