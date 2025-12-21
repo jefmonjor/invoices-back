@@ -12,9 +12,8 @@ import java.util.regex.Pattern;
 
 /**
  * Domain service for generating unique, sequential invoice numbers per company.
- * Format: XXX/YYYY (e.g., 001/2025)
- * - XXX: Sequential number (001-999)
- * - YYYY: Current year
+ * The generated numbers follow a sequential pattern (e.g., 001, 002)
+ * paired with the current year (e.g., 2025).
  */
 @Service
 @RequiredArgsConstructor
@@ -35,7 +34,8 @@ public class InvoiceNumberingService {
     public String generateNextNumber(Long companyId) {
         int currentYear = Year.now().getValue();
 
-        // Find the last invoice number for this company and year with pessimistic write lock
+        // Find the last invoice number for this company and year with pessimistic write
+        // lock
         // Lock ensures only one thread can generate a number at a time
         Optional<String> lastNumberOpt = invoiceRepository.findLastInvoiceNumberByCompanyAndYearWithLock(companyId,
                 currentYear);

@@ -94,6 +94,21 @@ public class InvoiceRepositoryImpl implements InvoiceRepository {
     }
 
     @Override
+    public long countByCompanyIdAndStatus(Long companyId, String status) {
+        return jpaRepository.countByCompanyIdAndVerifactuStatus(companyId, status);
+    }
+
+    @Override
+    public java.math.BigDecimal sumTotalAmountByCompanyId(Long companyId) {
+        return jpaRepository.sumTotalAmountByCompanyId(companyId);
+    }
+
+    @Override
+    public java.math.BigDecimal sumTotalAmountByCompanyIdAndStatus(Long companyId, String status) {
+        return jpaRepository.sumTotalByCompanyIdAndVerifactuStatus(companyId, status);
+    }
+
+    @Override
     public void deleteByCompanyId(Long companyId) {
         jpaRepository.deleteByCompanyId(companyId);
     }
@@ -192,6 +207,20 @@ public class InvoiceRepositoryImpl implements InvoiceRepository {
     @Override
     public List<Invoice> findByVerifactuStatusIn(List<String> statuses) {
         return jpaRepository.findByVerifactuStatusIn(statuses).stream()
+                .map(mapper::toDomainEntity)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<Invoice> findByCompanyIdAndQuarter(Long companyId, int year, int quarter) {
+        return jpaRepository.findByCompanyIdAndQuarter(companyId, year, quarter).stream()
+                .map(mapper::toDomainEntity)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<Invoice> findByCompanyIdAndYear(Long companyId, int year) {
+        return jpaRepository.findByCompanyIdAndYear(companyId, year).stream()
                 .map(mapper::toDomainEntity)
                 .collect(Collectors.toList());
     }

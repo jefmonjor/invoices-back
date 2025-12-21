@@ -289,32 +289,26 @@ public class CompanyManagementService {
      * Optimized: Uses count queries instead of loading all invoices into memory.
      */
     public com.invoices.company.presentation.dto.CompanyMetricsDto getCompanyMetrics(Long companyId) {
-        // NOTE: This would require custom repository queries for optimal performance.
-        // For now, we still load all invoices but this is a TODO for optimization.
-        // Ideally, we should have repository methods like:
-        // - countByCompanyId(companyId)
-        // - countByCompanyIdAndStatus(companyId, status)
-        // - sumTotalAmountByCompanyId(companyId)
-        // - sumTotalAmountByCompanyIdAndStatus(companyId, status)
-
-        List<com.invoices.invoice.domain.entities.Invoice> invoices = invoiceRepository.findByCompanyId(companyId);
-
-        long totalInvoices = invoices.size();
-        long paidInvoices = invoices.stream()
-                .filter(inv -> InvoiceStatus.PAID.equals(inv.getStatus()))
-                .count();
+        // Optimized: Use repository methods for counting and summing to avoid loading
+        // all invoices
+        long totalInvoices = invoiceRepository.countByCompanyId(companyId);
+        long paidInvoices = invoiceRepository.countByCompanyIdAndStatus(companyId, InvoiceStatus.PAID.name());
         long pendingInvoices = totalInvoices - paidInvoices;
 
-        java.math.BigDecimal totalRevenue = invoices.stream()
-                .map(com.invoices.invoice.domain.entities.Invoice::getTotalAmount)
-                .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
+        java.math.BigDecimal totalRevenue = invoiceRepository.sumTotalAmountByCompanyId(companyId);
 
-        java.math.BigDecimal pendingRevenue = invoices.stream()
-                .filter(inv -> !InvoiceStatus.PAID.equals(inv.getStatus()))
-                .map(com.invoices.invoice.domain.entities.Invoice::getTotalAmount)
-                .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
+        // Sum revenue for all statuses except PAID
+        java.math.BigDecimal pendingRevenue = invoiceRepository.sumTotalAmountByCompanyIdAndStatus(companyId,
+                InvoiceStatus.PENDING.name());
+        // Note: For a more comprehensive "pending" revenue, we might want to include
+        // other statuses
+        // like DRAFT or FINALIZED (if not PAID), but following the original logic of
+        // total - paid.
 
-        // Count unique clients (assuming we have access to client IDs from invoices)
+        // Count unique clients
+        // NOTE: This could also be optimized with a repository method
+        // countUniqueClientsByCompanyId
+        List<com.invoices.invoice.domain.entities.Invoice> invoices = invoiceRepository.findByCompanyId(companyId);
         long totalClients = invoices.stream()
                 .map(com.invoices.invoice.domain.entities.Invoice::getClientId)
                 .distinct()

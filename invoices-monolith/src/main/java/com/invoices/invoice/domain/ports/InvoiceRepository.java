@@ -42,6 +42,12 @@ public interface InvoiceRepository {
 
     long countByCompanyId(Long companyId);
 
+    long countByCompanyIdAndStatus(Long companyId, String status);
+
+    java.math.BigDecimal sumTotalAmountByCompanyId(Long companyId);
+
+    java.math.BigDecimal sumTotalAmountByCompanyIdAndStatus(Long companyId, String status);
+
     long countByCompanyId(Long companyId, String search, String status);
 
     void deleteByCompanyId(Long companyId);
@@ -74,4 +80,25 @@ public interface InvoiceRepository {
      * @return list of invoices with matching statuses
      */
     List<Invoice> findByVerifactuStatusIn(List<String> statuses);
+
+    /**
+     * Finds all invoices for a company in a specific quarter.
+     * Used for quarterly ZIP download.
+     *
+     * @param companyId the company ID
+     * @param year      the year
+     * @param quarter   the quarter (1-4)
+     * @return list of invoices for the quarter
+     */
+    List<Invoice> findByCompanyIdAndQuarter(Long companyId, int year, int quarter);
+
+    /**
+     * Finds all invoices for a company in a specific year.
+     * Used for full year download.
+     *
+     * @param companyId the company ID
+     * @param year      the year
+     * @return list of invoices for the year
+     */
+    List<Invoice> findByCompanyIdAndYear(Long companyId, int year);
 }

@@ -89,6 +89,16 @@ public interface JpaInvoiceRepository extends JpaRepository<InvoiceJpaEntity, Lo
 
         long countByCompanyId(Long companyId);
 
+        @Query("SELECT COUNT(i) FROM InvoiceJpaEntity i WHERE i.companyId = :companyId AND i.verifactuStatus = :status")
+        long countByCompanyIdAndVerifactuStatus(@Param("companyId") Long companyId, @Param("status") String status);
+
+        @Query("SELECT COALESCE(SUM(i.totalAmount), 0) FROM InvoiceJpaEntity i WHERE i.companyId = :companyId")
+        java.math.BigDecimal sumTotalAmountByCompanyId(@Param("companyId") Long companyId);
+
+        @Query("SELECT COALESCE(SUM(i.totalAmount), 0) FROM InvoiceJpaEntity i WHERE i.companyId = :companyId AND i.verifactuStatus = :status")
+        java.math.BigDecimal sumTotalByCompanyIdAndVerifactuStatus(@Param("companyId") Long companyId,
+                        @Param("status") String status);
+
         void deleteByCompanyId(Long companyId);
 
         /**
@@ -97,4 +107,40 @@ public interface JpaInvoiceRepository extends JpaRepository<InvoiceJpaEntity, Lo
          */
         java.util.Optional<InvoiceJpaEntity> findFirstByCompanyIdAndIdNotOrderByCreatedAtDesc(Long companyId,
                         Long excludedId);
+
+        /**
+         * Finds all invoices for a company in a specific quarter.
+         * Uses JOIN FETCH to avoid LazyInitializationException when accessing items.
+         */
+        @Query("SELECT DISTINCT i FROM InvoiceJpaEntity i LEFT JOIN FETCH i.items " +
+                        "WHERE i.companyId = :companyId " +
+                        "AND YEAR(i.issueDate) = :year " +
+                        "AND QUARTER(i.issueDate) = :quarter " +
+                        "ORDER BY i.issueDate DESC")
+        List<InvoiceJpaEntity> findByCompanyIdAndQuarter(
+                        @Param("companyId") Long companyId,
+                        @Param("year") int year,
+                        @Param("quarter") int quarter);
+
+        /**
+         * Finds all invoices for a company in a specific year.
+         * Uses JOIN FETCH to avoid LazyInitializationException when accessing items.
+         */
+        @Query("SELECT DISTINCT i FROM InvoiceJpaEntity i LEFT JOIN FETCH i.items " +
+                        "WHERE i.companyId = :companyId AND YEAR(i.issueDate) = :year " +
+                        "ORDER BY i.issueDate DESC")
+        List<InvoiceJpaEntity> findByCompanyIdAndYear(
+                        @Param("companyId") Long companyId,
+                        @Param("year") int year);
+
+        /**
+         * Counts invoices per quarter for a company in a specific year.
+         * Returns Object[] arrays with [quarter, count] pairs.
+         */
+        @Query("SELECT QUARTER(i.issueDate) as quarter, COUNT(i) as count FROM InvoiceJpaEntity i " +
+                        "WHERE i.companyId = :companyId AND YEAR(i.issueDate) = :year " +
+                        "GROUP BY QUARTER(i.issueDate) ORDER BY QUARTER(i.issueDate)")
+        List<Object[]> countByCompanyIdGroupedByQuarter(
+                        @Param("companyId") Long companyId,
+                        @Param("year") int year);
 }
