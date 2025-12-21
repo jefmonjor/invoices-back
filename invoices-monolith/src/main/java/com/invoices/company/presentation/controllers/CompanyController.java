@@ -10,6 +10,7 @@ import com.invoices.company.presentation.dto.InvitationResponse;
 import com.invoices.company.presentation.dto.UpdateCompanyRequest;
 import com.invoices.company.presentation.dto.UpdateRoleRequest;
 import com.invoices.company.presentation.dto.CompanyMetricsDto;
+import com.invoices.document.domain.services.StorageUrlResolver;
 import com.invoices.security.JwtUtil;
 import com.invoices.security.context.CompanyContext;
 import com.invoices.user.domain.entities.User;
@@ -39,6 +40,7 @@ public class CompanyController {
         private final CompanyInvitationService companyInvitationService;
         private final JwtUtil jwtUtil;
         private final UserDtoMapper userDtoMapper;
+        private final StorageUrlResolver storageUrlResolver;
 
         @GetMapping
         @PreAuthorize("isAuthenticated()")
@@ -316,7 +318,7 @@ public class CompanyController {
                 }
 
                 Company updated = companyManagementService.uploadLogo(id, file);
-                return ResponseEntity.ok(CompanyDto.fromEntity(updated));
+                return ResponseEntity.ok(CompanyDto.fromEntity(updated, storageUrlResolver));
         }
 
         @DeleteMapping("/{id}/logo")
@@ -332,6 +334,6 @@ public class CompanyController {
                 }
 
                 Company updated = companyManagementService.deleteLogo(id);
-                return ResponseEntity.ok(CompanyDto.fromEntity(updated));
+                return ResponseEntity.ok(CompanyDto.fromEntity(updated, storageUrlResolver));
         }
 }
