@@ -315,3 +315,5 @@ verifactu:
 app:
   frontend:
     url: ${APP_FRONTEND_URL:https://www.transolido.com}
+  backend:
+    url: ${APP_BACKEND_URL:https://invoices-backend-956132093434.europe-west1.run.app}

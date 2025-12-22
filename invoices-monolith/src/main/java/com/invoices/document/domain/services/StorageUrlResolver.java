@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class StorageUrlResolver {
 
-    @Value("${app.backend-url:}")
+    @Value("${app.backend.url:}")
     private String backendUrl;
 
     /**
