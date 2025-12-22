@@ -57,6 +57,8 @@ public class CompanyJpaMapper {
         jpaEntity.setCertRef(domain.getCertRef());
         jpaEntity.setCertPassword(domain.getCertPassword());
         jpaEntity.setLogoUrl(domain.getLogoUrl());
+        jpaEntity.setCreatedAt(domain.getCreatedAt());
+        jpaEntity.setUpdatedAt(domain.getUpdatedAt());
 
         return jpaEntity;
     }
