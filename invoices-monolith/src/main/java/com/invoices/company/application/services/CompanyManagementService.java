@@ -87,10 +87,15 @@ public class CompanyManagementService {
                                 uc.getId().getCompanyId());
                         return null;
                     }
+                    log.info("getUserCompanies: Company {} has logoUrl={}", company.getBusinessName(),
+                            company.getLogoUrl());
                     boolean isDefault = company.getId().equals(user.getCurrentCompanyId());
                     // Use URL resolver to convert logoUrl objectName to full S3 URL
-                    return com.invoices.company.presentation.dto.CompanyDto.fromEntity(company, uc.getRole(),
-                            isDefault, storageUrlResolver);
+                    com.invoices.company.presentation.dto.CompanyDto dto = com.invoices.company.presentation.dto.CompanyDto
+                            .fromEntity(company, uc.getRole(),
+                                    isDefault, storageUrlResolver);
+                    log.info("getUserCompanies: DTO logoUrl={}", dto.getLogoUrl());
+                    return dto;
                 })
                 .filter(java.util.Objects::nonNull)
                 .collect(java.util.stream.Collectors.toList());
