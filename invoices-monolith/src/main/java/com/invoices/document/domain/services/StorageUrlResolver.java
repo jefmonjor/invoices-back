@@ -1,30 +1,41 @@
 package com.invoices.document.domain.services;
 
+import io.minio.GetPresignedObjectUrlArgs;
+import io.minio.MinioClient;
+import io.minio.http.Method;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.util.concurrent.TimeUnit;
+
 /**
- * Service to resolve storage object names to public URLs.
- * Used for displaying logos and other public assets.
+ * Service to resolve storage object names to presigned URLs.
+ * Used for displaying logos and other assets with time-limited access.
  */
 @Service
+@Slf4j
 public class StorageUrlResolver {
 
-    @Value("${s3.endpoint}")
-    private String s3Endpoint;
+    private final MinioClient minioClient;
 
     @Value("${s3.bucket-name}")
     private String bucketName;
 
-    @Value("${s3.path-style-access:true}")
-    private boolean pathStyleAccess;
+    @Value("${s3.presigned-url-expiry-hours:24}")
+    private int presignedUrlExpiryHours;
+
+    public StorageUrlResolver(MinioClient minioClient) {
+        this.minioClient = minioClient;
+    }
 
     /**
-     * Convert an object name (storage key) to a public URL.
+     * Convert an object name (storage key) to a presigned URL.
+     * The URL will be valid for a limited time (default: 24 hours).
      * 
-     * For Backblaze B2 with path-style:
-     * https://s3.region.backblazeb2.com/bucket/object
-     * For virtual-host style: https://bucket.s3.region.backblazeb2.com/object
+     * @param objectName The object name in storage (e.g.,
+     *                   "logos/company-7-xxx.png")
+     * @return A presigned URL that grants temporary read access
      */
     public String resolvePublicUrl(String objectName) {
         if (objectName == null || objectName.isEmpty()) {
@@ -36,20 +47,21 @@ public class StorageUrlResolver {
             return objectName;
         }
 
-        // Build the URL based on path style
-        String normalizedEndpoint = s3Endpoint.endsWith("/")
-                ? s3Endpoint.substring(0, s3Endpoint.length() - 1)
-                : s3Endpoint;
+        try {
+            String presignedUrl = minioClient.getPresignedObjectUrl(
+                    GetPresignedObjectUrlArgs.builder()
+                            .method(Method.GET)
+                            .bucket(bucketName)
+                            .object(objectName)
+                            .expiry(presignedUrlExpiryHours, TimeUnit.HOURS)
+                            .build());
 
-        if (pathStyleAccess) {
-            // Path style: endpoint/bucket/object
-            return normalizedEndpoint + "/" + bucketName + "/" + objectName;
-        } else {
-            // Virtual host style: bucket.endpoint/object
-            // Replace schema with bucket prefix
-            String withoutSchema = normalizedEndpoint.replaceFirst("^https?://", "");
-            String schema = normalizedEndpoint.startsWith("https") ? "https://" : "http://";
-            return schema + bucketName + "." + withoutSchema + "/" + objectName;
+            log.debug("Generated presigned URL for object: {} (expires in {} hours)", objectName,
+                    presignedUrlExpiryHours);
+            return presignedUrl;
+        } catch (Exception e) {
+            log.error("Failed to generate presigned URL for object: {}", objectName, e);
+            return null;
         }
     }
 }
