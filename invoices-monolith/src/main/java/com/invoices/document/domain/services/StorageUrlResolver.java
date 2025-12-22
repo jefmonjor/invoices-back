@@ -1,41 +1,27 @@
 package com.invoices.document.domain.services;
 
-import io.minio.GetPresignedObjectUrlArgs;
-import io.minio.MinioClient;
-import io.minio.http.Method;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.util.concurrent.TimeUnit;
-
 /**
- * Service to resolve storage object names to presigned URLs.
- * Used for displaying logos and other assets with time-limited access.
+ * Service to resolve storage object names to accessible URLs.
+ * Returns backend proxy URLs to avoid CORS issues with direct S3 access.
  */
 @Service
 @Slf4j
 public class StorageUrlResolver {
 
-    private final MinioClient minioClient;
-
-    @Value("${s3.bucket-name}")
-    private String bucketName;
-
-    @Value("${s3.presigned-url-expiry-hours:24}")
-    private int presignedUrlExpiryHours;
-
-    public StorageUrlResolver(MinioClient minioClient) {
-        this.minioClient = minioClient;
-    }
+    @Value("${app.backend-url:}")
+    private String backendUrl;
 
     /**
-     * Convert an object name (storage key) to a presigned URL.
-     * The URL will be valid for a limited time (default: 24 hours).
+     * Convert an object name (storage key) to a proxy URL.
+     * The URL points to the backend file proxy endpoint.
      * 
      * @param objectName The object name in storage (e.g.,
      *                   "logos/company-7-xxx.png")
-     * @return A presigned URL that grants temporary read access
+     * @return A URL to the backend proxy endpoint
      */
     public String resolvePublicUrl(String objectName) {
         if (objectName == null || objectName.isEmpty()) {
@@ -47,21 +33,14 @@ public class StorageUrlResolver {
             return objectName;
         }
 
-        try {
-            String presignedUrl = minioClient.getPresignedObjectUrl(
-                    GetPresignedObjectUrlArgs.builder()
-                            .method(Method.GET)
-                            .bucket(bucketName)
-                            .object(objectName)
-                            .expiry(presignedUrlExpiryHours, TimeUnit.HOURS)
-                            .build());
+        // Build proxy URL through backend
+        // For logos: logos/company-7-xxx.png -> /api/files/logos/company-7-xxx.png
+        String baseUrl = backendUrl != null && !backendUrl.isEmpty()
+                ? backendUrl
+                : "";
 
-            log.debug("Generated presigned URL for object: {} (expires in {} hours)", objectName,
-                    presignedUrlExpiryHours);
-            return presignedUrl;
-        } catch (Exception e) {
-            log.error("Failed to generate presigned URL for object: {}", objectName, e);
-            return null;
-        }
+        String proxyUrl = baseUrl + "/api/files/" + objectName;
+        log.debug("Resolved logo URL: {} -> {}", objectName, proxyUrl);
+        return proxyUrl;
     }
 }
