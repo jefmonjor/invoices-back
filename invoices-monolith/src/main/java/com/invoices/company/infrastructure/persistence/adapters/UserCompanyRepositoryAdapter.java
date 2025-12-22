@@ -112,6 +112,7 @@ public class UserCompanyRepositoryAdapter implements UserCompanyRepository {
         if (jpaEntity.getCompany() != null && Hibernate.isInitialized(jpaEntity.getCompany())) {
             com.invoices.invoice.infrastructure.persistence.entities.CompanyJpaEntity jpaCompany = jpaEntity
                     .getCompany();
+            // Use full constructor to include all fields (including logoUrl)
             com.invoices.invoice.domain.entities.Company company = new com.invoices.invoice.domain.entities.Company(
                     jpaCompany.getId(),
                     jpaCompany.getBusinessName(),
@@ -120,9 +121,16 @@ public class UserCompanyRepositoryAdapter implements UserCompanyRepository {
                     jpaCompany.getCity(),
                     jpaCompany.getPostalCode(),
                     jpaCompany.getProvince(),
+                    jpaCompany.getCountry(),
                     jpaCompany.getPhone(),
                     jpaCompany.getEmail(),
-                    jpaCompany.getIban());
+                    jpaCompany.getIban(),
+                    jpaCompany.getLastHash(),
+                    jpaCompany.getCertRef(),
+                    jpaCompany.getCertPassword(),
+                    jpaCompany.getLogoUrl(),
+                    jpaCompany.getCreatedAt(),
+                    jpaCompany.getUpdatedAt());
             domain.setCompany(company);
         }
 
