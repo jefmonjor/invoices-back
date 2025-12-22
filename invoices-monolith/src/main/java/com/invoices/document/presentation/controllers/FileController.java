@@ -10,7 +10,6 @@ import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.InputStream;
@@ -29,11 +28,9 @@ public class FileController {
     private final FileStorageService fileStorageService;
 
     @GetMapping("/logos/{objectName}")
-    @PreAuthorize("isAuthenticated()")
-    @Operation(summary = "Get company logo", description = "Retrieves a company logo from storage. Proxies through backend to avoid CORS issues.", responses = {
+    @Operation(summary = "Get company logo", description = "Retrieves a company logo from storage. Public endpoint for PDF generation.", responses = {
             @ApiResponse(responseCode = "200", description = "Logo retrieved successfully"),
-            @ApiResponse(responseCode = "404", description = "Logo not found"),
-            @ApiResponse(responseCode = "401", description = "Unauthorized")
+            @ApiResponse(responseCode = "404", description = "Logo not found")
     })
     public ResponseEntity<InputStreamResource> getLogo(@PathVariable String objectName) {
         String fullPath = "logos/" + objectName;

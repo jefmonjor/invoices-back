@@ -106,6 +106,8 @@ public class SecurityConfig {
                                                 // Public endpoints - authentication not required
                                                 .requestMatchers(
                                                                 "/api/auth/**",
+                                                                "/api/files/logos/**", // Logo images - public for PDF
+                                                                                       // generation
                                                                 "/health/simple", // Simple health check for Railway
                                                                 "/health/ready", // Lightweight readiness probe
                                                                 "/actuator/health",
