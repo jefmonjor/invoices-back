@@ -1,7 +1,6 @@
 package com.invoices.document.presentation.controllers;
 
 import com.invoices.document.domain.ports.FileStorageService;
-import com.invoices.document.domain.entities.FileContent;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -13,6 +12,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.io.InputStream;
 
 /**
  * Controller to proxy file access from S3 storage.
@@ -39,8 +40,8 @@ public class FileController {
         log.info("Serving logo: {}", fullPath);
 
         try {
-            FileContent content = fileStorageService.retrieveFile(fullPath);
-            if (content == null) {
+            InputStream inputStream = fileStorageService.retrieveFile(fullPath);
+            if (inputStream == null) {
                 log.warn("Logo not found: {}", fullPath);
                 return ResponseEntity.notFound().build();
             }
@@ -49,7 +50,7 @@ public class FileController {
                     .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + objectName + "\"")
                     .header(HttpHeaders.CACHE_CONTROL, "public, max-age=86400") // Cache for 24 hours
                     .contentType(MediaType.IMAGE_PNG)
-                    .body(new InputStreamResource(content.getContentStream()));
+                    .body(new InputStreamResource(inputStream));
         } catch (Exception e) {
             log.error("Error serving logo: {}", fullPath, e);
             return ResponseEntity.notFound().build();
