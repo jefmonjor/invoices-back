@@ -355,8 +355,12 @@ public class CompanyManagementService {
      */
     @Transactional
     public Company uploadLogo(Long companyId, org.springframework.web.multipart.MultipartFile file) {
+        log.info("uploadLogo: Starting for companyId={}", companyId);
+
         Company company = companyRepository.findById(companyId)
                 .orElseThrow(() -> new RuntimeException("Company not found"));
+
+        log.info("uploadLogo: Found company={}, current logoUrl={}", company.getBusinessName(), company.getLogoUrl());
 
         try {
             // Generate unique filename
@@ -371,11 +375,18 @@ public class CompanyManagementService {
 
             // Upload to S3
             fileStorageService.storeFile(objectName, fileContent);
+            log.info("uploadLogo: File stored at objectName={}", objectName);
 
             // Update company with logo object name (will be resolved to URL when needed)
             Company updatedCompany = company.withLogoUrl(objectName);
-            return companyRepository.save(updatedCompany);
+            log.info("uploadLogo: Created updated company with logoUrl={}", updatedCompany.getLogoUrl());
+
+            Company savedCompany = companyRepository.save(updatedCompany);
+            log.info("uploadLogo: Saved company, returned logoUrl={}", savedCompany.getLogoUrl());
+
+            return savedCompany;
         } catch (java.io.IOException e) {
+            log.error("uploadLogo: Failed with error", e);
             throw new RuntimeException("Failed to upload logo: " + e.getMessage(), e);
         }
     }
