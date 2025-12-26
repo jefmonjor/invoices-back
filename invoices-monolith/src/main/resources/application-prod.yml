@@ -3,6 +3,12 @@ spring:
   config:
     activate:
       on-profile: prod
+
+# Application base URL for security.txt and other services
+app:
+  base-url: ${APP_BASE_URL:https://transolido.com}
+  security:
+    contact-email: ${APP_SECURITY_CONTACT_EMAIL:security@transolido.com}
   
   # WebSocket configuration
   websocket:

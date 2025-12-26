@@ -99,7 +99,12 @@ public class SecurityConfig {
                                                 .addHeaderWriter(
                                                                 new org.springframework.security.web.header.writers.StaticHeadersWriter(
                                                                                 "Permissions-Policy",
-                                                                                "geolocation=(), microphone=(), camera=()")))
+                                                                                "geolocation=(), microphone=(), camera=()"))
+                                                // X-XSS-Protection (deprecated but some scanners still check for it)
+                                                .addHeaderWriter(
+                                                                new org.springframework.security.web.header.writers.StaticHeadersWriter(
+                                                                                "X-XSS-Protection",
+                                                                                "1; mode=block")))
 
                                 // Configure authorization rules
                                 .authorizeHttpRequests(auth -> auth
@@ -108,6 +113,8 @@ public class SecurityConfig {
                                                                 "/api/auth/**",
                                                                 "/api/files/logos/**", // Logo images - public for PDF
                                                                                        // generation
+                                                                "/.well-known/**", // Security.txt and other well-known
+                                                                                   // files
                                                                 "/health/simple", // Simple health check for Railway
                                                                 "/health/ready", // Lightweight readiness probe
                                                                 "/actuator/health",
