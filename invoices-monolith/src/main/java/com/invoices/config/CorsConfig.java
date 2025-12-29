@@ -25,7 +25,7 @@ public class CorsConfig implements WebMvcConfigurer {
     @Value("${cors.allowed-headers}")
     private String[] allowedHeaders;
 
-    @Value("${cors.exposed-headers:Authorization,X-Rate-Limit-Remaining}")
+    @Value("${cors.exposed-headers:Authorization,X-Rate-Limit-Remaining,X-Rate-Limit-Reset,X-Total-Count,Content-Disposition,Content-Type}")
     private String[] exposedHeaders;
 
     @Value("${cors.allow-credentials}")
