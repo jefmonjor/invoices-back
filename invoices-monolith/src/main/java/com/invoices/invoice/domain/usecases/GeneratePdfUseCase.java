@@ -19,6 +19,7 @@ import java.io.ByteArrayInputStream;
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@SuppressWarnings("unused") // verifactuPublisher temporarily disabled
 public class GeneratePdfUseCase {
 
         private final InvoiceRepository invoiceRepository;
@@ -73,14 +74,15 @@ public class GeneratePdfUseCase {
                 invoice.setCanonicalJson(canonicalJson); // Canonical JSON (for audit)
                 invoice.setDocumentHash(canonicalHash); // SHA-256 of canonical JSON
                 invoice.setPdfServerPath(objectName);
-                invoice.setVerifactuStatus("PENDING");
-                invoice.setPdfIsFinal(false); // Draft PDF initially
+                // VERIFACTU DISABLED TEMPORARILY
+                invoice.setVerifactuStatus("DISABLED");
+                invoice.setPdfIsFinal(true); // Final PDF since no VeriFactu verification
                 invoiceRepository.save(invoice);
 
                 // 8. Enqueue for VeriFactu verification
-                verifactuPublisher.enqueueForVerification(invoice.getId());
-                log.info("PDF generated, stored, and enqueued for VeriFactu. Invoice: {}, Hash: {}",
-                                invoice.getInvoiceNumber(), canonicalHash);
+                // VERIFACTU DISABLED - Enqueue for verification commented out
+                // verifactuPublisher.enqueueForVerification(invoice.getId());
+                log.info("PDF generated and stored. VeriFactu DISABLED. Invoice: {}", invoice.getInvoiceNumber());
 
                 return invoice;
         }
